@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: oklch(0.97 0.008 70);
+  --color-bg-page: oklch(0.94 0.01 60);
+  --color-ink: oklch(0.24 0.02 50);
+  --color-ink-muted: oklch(0.55 0.02 50);
+  --color-ink-secondary: oklch(0.45 0.02 50);
+  --color-accent: oklch(0.58 0.15 35);
+  --color-accent-hover: oklch(0.5 0.16 35);
+  --color-accent-soft: oklch(0.94 0.045 35);
+  --color-success: oklch(0.55 0.13 150);
+  --color-success-soft: oklch(0.94 0.05 150);
+  --color-warn: oklch(0.6 0.14 85);
+  --color-warn-soft: oklch(0.95 0.06 85);
+  --color-danger: oklch(0.55 0.17 25);
+  --color-danger-soft: oklch(0.94 0.05 25);
+  --color-line: oklch(0.9 0.01 60);
+  --color-line-soft: oklch(0.92 0.01 60);
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-bg-page: var(--color-bg-page);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-secondary: var(--color-ink-secondary);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-warn: var(--color-warn);
+  --color-warn-soft: var(--color-warn-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-line: var(--color-line);
+  --color-line-soft: var(--color-line-soft);
+  --font-sans: var(--font-pretendard);
+}
+
+/* Base element defaults must live in Tailwind's `base` layer — unlayered
+   CSS always wins over layered utilities in the CSS cascade regardless of
+   specificity, which would otherwise make e.g. `text-white` on a link
+   unable to override this file's default anchor color. */
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--color-bg-page);
+    color: var(--color-ink);
+    font-family: var(--font-pretendard), -apple-system, system-ui, sans-serif;
+  }
+
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--color-accent-hover);
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}

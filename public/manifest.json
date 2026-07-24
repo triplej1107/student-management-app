@@ -1,0 +1,23 @@
+{
+  "name": "유종의미 국어학원 학생관리",
+  "short_name": "유종의미",
+  "description": "유종의미 국어학원 학생관리 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "oklch(0.94 0.01 60)",
+  "theme_color": "#ad6042",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

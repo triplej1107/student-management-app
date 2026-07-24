@@ -16,19 +16,33 @@ export function RosterListManager({ students }: { students: Student[] }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [filter, setFilter] = useState("");
+  const [classFilter, setClassFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkClassKey, setBulkClassKey] = useState<ClassKey>(CLASSES[0]);
 
+  // Derived from the actual data (not the CLASSES constant) so old class
+  // names still on students remain filterable/selectable even after the
+  // constant changes (e.g. semester ↔ break class-name switches).
+  const classOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of students) if (s.class_key) set.add(s.class_key);
+    return Array.from(set).sort();
+  }, [students]);
+
   const filtered = useMemo(() => {
+    let list = students;
+    if (classFilter) list = list.filter((s) => s.class_key === classFilter);
     const q = filter.trim();
-    if (!q) return students;
-    return students.filter(
-      (s) =>
-        s.name.includes(q) ||
-        s.student_code.includes(q) ||
-        (s.school ?? "").includes(q)
-    );
-  }, [students, filter]);
+    if (q) {
+      list = list.filter(
+        (s) =>
+          s.name.includes(q) ||
+          s.student_code.includes(q) ||
+          (s.school ?? "").includes(q)
+      );
+    }
+    return list;
+  }, [students, filter, classFilter]);
 
   function toggle(id: number) {
     setSelected((prev) => {
@@ -80,7 +94,35 @@ export function RosterListManager({ students }: { students: Student[] }) {
     <div>
       <BulkImportPanel onDone={() => router.refresh()} />
 
-      <div className="mt-5 flex gap-1.5">
+      <div className="mt-5 flex flex-wrap gap-1.5">
+        <button
+          onClick={() => setClassFilter(null)}
+          className={
+            "rounded-full border px-3 py-1.5 text-xs font-bold " +
+            (classFilter === null
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line bg-white text-ink-secondary")
+          }
+        >
+          전체
+        </button>
+        {classOptions.map((c) => (
+          <button
+            key={c}
+            onClick={() => setClassFilter(c)}
+            className={
+              "rounded-full border px-3 py-1.5 text-xs font-bold " +
+              (classFilter === c
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-line bg-white text-ink-secondary")
+            }
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-2.5 flex gap-1.5">
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}

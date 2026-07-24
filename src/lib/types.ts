@@ -1,6 +1,10 @@
 export type Role = "student" | "parent" | "staff" | "zongju";
 
-export const CLASSES = ["배명고1", "배명고2", "가락고1", "예비고1"] as const;
+// Current (방학 기간) class names. 학기 중에는 "배명고1"/"배명고2"/"가락고1"/"예비고1"
+// 4개 반이었고, 방학 동안은 "1학년정규"(舊 배명고1+가락고1)/"2학년정규"(舊 배명고2)/
+// "예비고1" 3개 반으로 합쳐 운영 중 — 2학기 시작하면 다시 4개 반으로 되돌려야 함
+// (그때는 students.school 필드로 배명고/가락고를 구분해 되돌릴 수 있음).
+export const CLASSES = ["1학년정규", "2학년정규", "예비고1"] as const;
 export type ClassKey = (typeof CLASSES)[number];
 
 export const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"] as const;

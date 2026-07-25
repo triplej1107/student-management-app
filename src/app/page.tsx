@@ -32,7 +32,7 @@ export default async function RoleSelectPage() {
       />
       <div className="mt-3 text-lg font-extrabold text-ink">유종의미 국어학원</div>
       <div className="mt-1.5 text-[13px] italic text-ink-muted">
-        &ldquo;국어는 오직 유종의미&rdquo;
+        &ldquo;배명&amp;가락 국어1타 장종주T&rdquo;
       </div>
 
       <div className="mt-7 flex w-full flex-col gap-[11px]">

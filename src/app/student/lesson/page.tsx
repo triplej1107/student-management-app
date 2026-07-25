@@ -25,6 +25,7 @@ export default async function StudentLessonPage({
     <div className="box-border px-5 pt-2 pb-7">
       <div className="border-b border-line pb-3 text-center">
         <ScreenTitle>수업</ScreenTitle>
+        <div className="mt-1 text-xs italic text-ink-muted">유종의미 종주T</div>
         <div className="mt-1.5 text-[13px] font-bold text-ink">{weekLabel(selectedWeekStart)}</div>
       </div>
 

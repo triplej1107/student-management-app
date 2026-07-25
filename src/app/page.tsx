@@ -9,6 +9,10 @@ const roles = [
   { role: "zongju", label: "종주T", style: "dark" },
 ] as const;
 
+// 임시: 여름방학 6주 특강 기간에만 노출. 방학 끝나면 이 상수와 아래 <a> 블록을 삭제.
+const VACATION_SCORE_URL =
+  "https://script.google.com/macros/s/AKfycbzNyUuPwkb17yz35lBrr3LCAhn2lk-e7rF07xwW7wIKRnGz7sKT5bi34WdYqyuvWs_zkQ/exec";
+
 export default async function RoleSelectPage() {
   const session = await getSession();
   if (session.role === "staff") redirect("/staff");
@@ -45,6 +49,15 @@ export default async function RoleSelectPage() {
             </span>
           </Link>
         ))}
+        <a
+          href={VACATION_SCORE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full items-center justify-between rounded-2xl border border-line bg-white p-4 text-base font-bold text-ink"
+        >
+          방학특강 성적조회
+          <span className="text-accent">›</span>
+        </a>
       </div>
     </div>
   );

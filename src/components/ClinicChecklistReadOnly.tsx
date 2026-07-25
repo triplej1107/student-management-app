@@ -61,8 +61,8 @@ export function ClinicChecklistReadOnly({
         </div>
       )}
 
-      <div className="mt-[18px] flex flex-col gap-2 border-t border-line-soft pt-[18px]">
-        <div className="flex items-center gap-2.5 rounded-[10px] bg-bg-page p-2.5">
+      <div className="mt-[18px] flex gap-2 border-t border-line-soft pt-[18px]">
+        <div className="flex flex-1 items-center gap-2 rounded-[10px] bg-bg-page p-2.5">
           <span
             className={
               "flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[5px] border text-xs font-extrabold text-white " +
@@ -71,11 +71,9 @@ export function ClinicChecklistReadOnly({
           >
             {check?.staff_approved ? "✓" : ""}
           </span>
-          <span className="flex-1 text-[13px] text-ink-muted">
-            조교 확인 {check?.staff_approved ? "완료" : "대기중"}
-          </span>
+          <span className="text-[13px] text-ink-muted">조교 확인</span>
         </div>
-        <div className="flex items-center gap-2.5 rounded-[10px] bg-bg-page p-2.5">
+        <div className="flex flex-1 items-center gap-2 rounded-[10px] bg-bg-page p-2.5">
           <span
             className={
               "flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[5px] border text-xs font-extrabold text-white " +
@@ -84,9 +82,7 @@ export function ClinicChecklistReadOnly({
           >
             {check?.zongju_approved ? "✓" : ""}
           </span>
-          <span className="flex-1 text-[13px] text-ink-muted">
-            원장 확인 {check?.zongju_approved ? "완료" : "대기중"}
-          </span>
+          <span className="text-[13px] text-ink-muted">종주T 확인</span>
         </div>
       </div>
     </>

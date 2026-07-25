@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
@@ -21,9 +22,14 @@ export default async function RoleSelectPage() {
 
   return (
     <div className="flex h-full flex-1 flex-col items-center px-7 pb-5 pt-6">
-      <div className="mt-2 flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-accent text-xl font-extrabold text-white">
-        유
-      </div>
+      <Image
+        src="/icon-192.png"
+        alt="유종의미 국어학원"
+        width={52}
+        height={52}
+        className="mt-2 rounded-2xl border border-line-soft"
+        priority
+      />
       <div className="mt-3 text-lg font-extrabold text-ink">유종의미 국어학원</div>
       <div className="mt-1.5 text-[13px] italic text-ink-muted">
         &ldquo;국어는 오직 유종의미&rdquo;

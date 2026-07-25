@@ -22,11 +22,26 @@ export function mondayOf(date: Date): Date {
   return d;
 }
 
-/** "7월 4주차" — month of the week's Monday + ceil(day-of-month / 7). */
+/**
+ * "7월 4주차" — the week belongs to whichever month's 1st day falls inside it
+ * (so the week spanning e.g. 6/29~7/5 counts as "7월 1주차", not "6월 5주차"),
+ * and is numbered by how many Mondays it is from that month's first week.
+ */
 export function weekLabel(weekStart: Date): string {
-  const month = weekStart.getMonth() + 1;
-  const round = Math.ceil(weekStart.getDate() / 7);
-  return `${month}월 ${round}주차`;
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  const y = weekStart.getFullYear();
+  const m = weekStart.getMonth();
+  const firstOfNextMonth = new Date(y, m + 1, 1);
+  const owningMonthFirst =
+    firstOfNextMonth >= weekStart && firstOfNextMonth <= weekEnd
+      ? firstOfNextMonth
+      : new Date(y, m, 1);
+
+  const monday1 = mondayOf(owningMonthFirst);
+  const round = Math.round((weekStart.getTime() - monday1.getTime()) / (7 * 86400000)) + 1;
+  return `${owningMonthFirst.getMonth() + 1}월 ${round}주차`;
 }
 
 /** Rolling window of week_start dates (Mondays), newest first. */

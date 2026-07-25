@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ClassKey, ClinicTemplate } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 import { saveTemplateFieldAction } from "@/app/admin/students/templates/actions";
 
 export function TemplateEditor({
@@ -15,6 +16,7 @@ export function TemplateEditor({
   template: ClinicTemplate | null;
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [month, setMonth] = useState(template?.month ?? "");
   const [round, setRound] = useState(template?.round ?? "");
@@ -26,6 +28,7 @@ export function TemplateEditor({
   function commit(field: Parameters<typeof saveTemplateFieldAction>[2], value: string) {
     startTransition(async () => {
       await saveTemplateFieldAction(classKey, weekStartISO, field, value);
+      showToast("저장됨");
       router.refresh();
     });
   }

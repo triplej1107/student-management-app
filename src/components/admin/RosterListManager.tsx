@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CLASSES, type ClassKey, type Student } from "@/lib/types";
 import { IMPORT_COLUMNS } from "@/lib/parseRoster";
 import type { BulkImportResult } from "@/lib/data";
+import { useToast } from "@/components/Toast";
 import {
   bulkImportAction,
   bulkDeleteAction,
@@ -14,6 +15,7 @@ import {
 
 export function RosterListManager({ students }: { students: Student[] }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [filter, setFilter] = useState("");
   const [classFilter, setClassFilter] = useState<string | null>(null);
@@ -65,27 +67,33 @@ export function RosterListManager({ students }: { students: Student[] }) {
     if (!confirm(`선택한 ${selected.size}명을 삭제할까요? 출결·클리닉 기록도 함께 삭제되며 되돌릴 수 없어요.`)) {
       return;
     }
+    const count = selected.size;
     startTransition(async () => {
       await bulkDeleteAction(Array.from(selected));
       setSelected(new Set());
+      showToast(`${count}명 삭제됨`);
       router.refresh();
     });
   }
 
   function runBulkClassKey() {
     if (selected.size === 0) return;
+    const count = selected.size;
     startTransition(async () => {
       await bulkSetClassKeyAction(Array.from(selected), bulkClassKey);
       setSelected(new Set());
+      showToast(`${count}명 ${bulkClassKey}(으)로 반 배정됨`);
       router.refresh();
     });
   }
 
   function runBulkEnrolled(enrolled: boolean) {
     if (selected.size === 0) return;
+    const count = selected.size;
     startTransition(async () => {
       await bulkSetEnrolledAction(Array.from(selected), enrolled);
       setSelected(new Set());
+      showToast(`${count}명 ${enrolled ? "재원" : "퇴원"}(으)로 변경됨`);
       router.refresh();
     });
   }

@@ -10,7 +10,7 @@ export type ClassKey = (typeof CLASSES)[number];
 export const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"] as const;
 export type DayOfWeek = (typeof DAY_ORDER)[number];
 
-export type AttendanceStatus = "출석" | "지각" | "결석";
+export type AttendanceStatus = "출석" | "지각" | "연기" | "결석";
 
 export interface StudentOverrides {
   midScore?: number | null;
@@ -92,6 +92,7 @@ export interface MakeupSchedule {
   session_date: string;
   makeup_day: string;
   makeup_time: string;
+  note: string | null; // 연기 사유/다음 조교에게 전달사항
   created_at: string;
 }
 
@@ -147,6 +148,24 @@ export interface DutyCheck {
   item_id: number;
   check_date: string;
   checked: boolean;
+}
+
+export interface ClassPlan {
+  id: number;
+  class_key: ClassKey;
+  week_start: string;
+  progress_content: string;
+  clinic_content: string;
+  homework_content: string;
+  updated_at: string;
+}
+
+export interface CalendarNote {
+  id: number;
+  note_date: string;
+  class_key: ClassKey | null; // null = 전체 반
+  content: string;
+  created_at: string;
 }
 
 export interface SessionData {

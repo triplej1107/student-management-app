@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Image from "next/image";
+import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -41,7 +42,7 @@ export default function RootLayout({
           </div>
         </div>
         <div className="relative z-10 mx-auto flex min-h-full w-full max-w-[440px] flex-1 flex-col bg-bg shadow-[0_0_40px_rgba(0,0,0,0.03)]">
-          {children}
+          <ToastProvider>{children}</ToastProvider>
         </div>
       </body>
     </html>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DAY_ORDER, type Staff } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 import {
   updateStaffFieldAction,
   toggleStaffWorkDayAction,
@@ -12,6 +13,7 @@ import {
 
 export function StaffProfileCard({ staff }: { staff: Staff }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [name, setName] = useState(staff.name);
   const [username, setUsername] = useState(staff.username);
@@ -23,6 +25,7 @@ export function StaffProfileCard({ staff }: { staff: Staff }) {
   function commit(field: "name" | "username" | "work_time" | "work_period" | "note", value: string) {
     startTransition(async () => {
       await updateStaffFieldAction(staff.id, field, value);
+      showToast("저장됨");
       router.refresh();
     });
   }
@@ -30,6 +33,7 @@ export function StaffProfileCard({ staff }: { staff: Staff }) {
   function toggleDay(day: string) {
     startTransition(async () => {
       await toggleStaffWorkDayAction(staff.id, day);
+      showToast("저장됨");
       router.refresh();
     });
   }
@@ -39,6 +43,7 @@ export function StaffProfileCard({ staff }: { staff: Staff }) {
     startTransition(async () => {
       await setStaffPasswordAction(staff.id, newPassword);
       setNewPassword("");
+      showToast("비밀번호 변경됨");
       router.refresh();
     });
   }
@@ -46,6 +51,7 @@ export function StaffProfileCard({ staff }: { staff: Staff }) {
   function remove() {
     startTransition(async () => {
       await deleteStaffAction(staff.id);
+      showToast("조교 삭제됨");
       router.refresh();
     });
   }

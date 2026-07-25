@@ -20,10 +20,11 @@ export async function saveMakeupAction(
   studentId: number,
   dateISO: string,
   makeupDay: string,
-  makeupTime: string
+  makeupTime: string,
+  note?: string
 ) {
   await requireStaffSession();
-  await setMakeup(studentId, new Date(dateISO), makeupDay, makeupTime);
+  await setMakeup(studentId, new Date(dateISO), makeupDay, makeupTime, note);
   revalidatePath("/staff/attendance");
   revalidatePath("/staff/clinic");
   revalidatePath("/staff");

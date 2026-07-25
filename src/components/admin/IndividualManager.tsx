@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CLASSES, DAY_ORDER, effectiveStudentFields, type Student } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 import {
   searchStudentsAction,
   updateIndividualOverrideAction,
@@ -117,6 +118,7 @@ const emptyNewStudent = {
 };
 
 function AddStudentForm({ onCreated }: { onCreated: (student: Student) => void }) {
+  const { showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyNewStudent);
   const [error, setError] = useState<string | null>(null);
@@ -132,11 +134,13 @@ function AddStudentForm({ onCreated }: { onCreated: (student: Student) => void }
       const result = await createStudentAction(form);
       if (!result.ok || !result.student) {
         setError(result.error ?? "학생을 추가하지 못했어요.");
+        showToast(result.error ?? "학생을 추가하지 못했어요.", "error");
         return;
       }
       onCreated(result.student);
       setForm(emptyNewStudent);
       setOpen(false);
+      showToast(`${result.student.name} 학생 추가됨`);
     });
   }
 
@@ -282,6 +286,7 @@ function IndividualEditForm({
   student: Student;
   onDeleted: () => void;
 }) {
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const eff = effectiveStudentFields(student);
   const [midScore, setMidScore] = useState(eff.midScore?.toString() ?? "");
@@ -312,13 +317,22 @@ function IndividualEditForm({
     field: "midScore" | "midRank" | "finalCompScore" | "finalCompRank" | "mock3Label",
     value: string
   ) {
-    startTransition(() => updateIndividualOverrideAction(student.id, field, value));
+    startTransition(async () => {
+      await updateIndividualOverrideAction(student.id, field, value);
+      showToast("저장됨");
+    });
   }
   function commitField(fields: Parameters<typeof updateIndividualFieldAction>[1]) {
-    startTransition(() => updateIndividualFieldAction(student.id, fields));
+    startTransition(async () => {
+      await updateIndividualFieldAction(student.id, fields);
+      showToast("저장됨");
+    });
   }
   function commitRoster(field: string, value: string) {
-    startTransition(() => updateRosterFieldAction(student.id, field, value));
+    startTransition(async () => {
+      await updateRosterFieldAction(student.id, field, value);
+      showToast("저장됨");
+    });
   }
 
   function remove() {
@@ -328,6 +342,7 @@ function IndividualEditForm({
     setDeleting(true);
     startTransition(async () => {
       await deleteStudentAction(student.id);
+      showToast(`${student.name} 학생 삭제됨`);
       onDeleted();
     });
   }

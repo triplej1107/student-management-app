@@ -45,7 +45,7 @@ export default async function AdminApprovalDetailPage({
         <div className="mt-1 text-xs italic text-ink-muted">{classKey ?? "미배정"}</div>
         {template && (
           <div className="mt-1.5 text-[13px] font-bold text-ink">
-            {template.month} {template.round}
+            {weekLabel(selectedWeekStart)}
           </div>
         )}
       </div>
@@ -74,6 +74,7 @@ export default async function AdminApprovalDetailPage({
 
       {template && (
         <AdminApprovalChecklist
+          key={selectedWeekISO}
           studentId={student.id}
           weekStartISO={selectedWeekISO}
           template={template}

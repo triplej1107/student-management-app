@@ -3,10 +3,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Notice } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 import { updateNoticeFieldAction, deleteNoticeAction } from "@/app/admin/students/notices/actions";
 
 export function NoticeEditorRow({ notice }: { notice: Notice }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [title, setTitle] = useState(notice.title);
   const [date, setDate] = useState(notice.notice_date);
@@ -16,6 +18,7 @@ export function NoticeEditorRow({ notice }: { notice: Notice }) {
   function commit(field: "title" | "notice_date" | "tag" | "content", value: string) {
     startTransition(async () => {
       await updateNoticeFieldAction(notice.id, field, value);
+      showToast("저장됨");
       router.refresh();
     });
   }
@@ -23,6 +26,7 @@ export function NoticeEditorRow({ notice }: { notice: Notice }) {
   function remove() {
     startTransition(async () => {
       await deleteNoticeAction(notice.id);
+      showToast("공지 삭제됨");
       router.refresh();
     });
   }

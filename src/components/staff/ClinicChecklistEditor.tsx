@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ClinicCheck, ClinicTemplate, TestScore } from "@/lib/types";
 import { filledHwSlots, filledTestSlots } from "@/lib/clinicProgress";
+import { useToast } from "@/components/Toast";
 import {
   toggleHwCheckAction,
   updateTestScoreAction,
@@ -28,6 +29,7 @@ export function ClinicChecklistEditor({
   zongjuApproved: boolean;
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const hwSlots = filledHwSlots(template);
   const testSlots = filledTestSlots(template);
@@ -46,6 +48,7 @@ export function ClinicChecklistEditor({
     setApprovedByName(next ? currentStaffName : null);
     startTransition(async () => {
       await toggleStaffApprovalAction(studentId, weekStartISO, next);
+      showToast(next ? "조교 결재 완료" : "조교 결재 취소됨");
       router.refresh();
     });
   }
@@ -55,6 +58,7 @@ export function ClinicChecklistEditor({
     setHwChecks((prev) => prev.map((v, idx) => (idx === i ? next : v)));
     startTransition(async () => {
       await toggleHwCheckAction(studentId, weekStartISO, i, next);
+      showToast("저장됨");
       router.refresh();
     });
   }
@@ -66,6 +70,7 @@ export function ClinicChecklistEditor({
   function commitScore(i: number, field: "score" | "total", value: string) {
     startTransition(async () => {
       await updateTestScoreAction(studentId, weekStartISO, i, field, value);
+      showToast("저장됨");
       router.refresh();
     });
   }

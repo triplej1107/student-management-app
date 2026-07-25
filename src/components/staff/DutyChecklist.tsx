@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { DutyItem } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 import { toggleDutyCheckAction } from "@/app/staff/checklist/actions";
 
 export function DutyChecklist({
@@ -15,6 +16,7 @@ export function DutyChecklist({
   dateISO: string;
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [checked, setChecked] = useState<Record<number, boolean>>(initialChecked);
 
@@ -23,6 +25,7 @@ export function DutyChecklist({
     setChecked((prev) => ({ ...prev, [itemId]: next }));
     startTransition(async () => {
       await toggleDutyCheckAction(itemId, dateISO, next);
+      showToast(next ? "체크됨" : "체크 해제됨");
       router.refresh();
     });
   }

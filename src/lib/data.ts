@@ -4,7 +4,9 @@ import { toISODate } from "./weeks";
 import { classKeyFor } from "./classKey";
 import type {
   AttendanceStatus,
+  CalendarNote,
   ClassKey,
+  ClassPlan,
   ClinicCheck,
   ClinicTemplate,
   DutyCheck,
@@ -260,7 +262,8 @@ export async function setMakeup(
   studentId: number,
   sessionDate: Date,
   makeupDay: string,
-  makeupTime: string
+  makeupTime: string,
+  note?: string
 ) {
   await supabase.from("makeup_schedules").upsert(
     {
@@ -268,6 +271,7 @@ export async function setMakeup(
       session_date: toISODate(sessionDate),
       makeup_day: makeupDay,
       makeup_time: makeupTime,
+      note: note ?? null,
     },
     { onConflict: "student_id,session_date" }
   );
@@ -555,6 +559,81 @@ export async function updateNotice(
 
 export async function deleteNotice(id: number) {
   await supabase.from("notices").delete().eq("id", id);
+}
+
+// ============================================================
+// class plans ("수업" 탭 — 진도/클리닉/과제, 클리닉 점검표와 동일한 class+week 구조)
+// ============================================================
+
+export async function getClassPlan(
+  classKey: ClassKey,
+  weekStart: Date
+): Promise<ClassPlan | null> {
+  const { data } = await supabase
+    .from("class_plans")
+    .select("*")
+    .eq("class_key", classKey)
+    .eq("week_start", toISODate(weekStart))
+    .maybeSingle();
+  return (data as ClassPlan) ?? null;
+}
+
+export async function upsertClassPlanField(
+  classKey: ClassKey,
+  weekStart: Date,
+  field: "progress_content" | "clinic_content" | "homework_content",
+  value: string
+) {
+  const existing = await getClassPlan(classKey, weekStart);
+  await supabase.from("class_plans").upsert(
+    {
+      class_key: classKey,
+      week_start: toISODate(weekStart),
+      progress_content: existing?.progress_content ?? "",
+      clinic_content: existing?.clinic_content ?? "",
+      homework_content: existing?.homework_content ?? "",
+      [field]: value,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "class_key,week_start" }
+  );
+}
+
+// ============================================================
+// calendar notes (학생/학부모 홈 하단 월 달력에 표시되는 날짜별 메모)
+// ============================================================
+
+export async function listCalendarNotesForRange(
+  rangeStart: Date,
+  rangeEnd: Date
+): Promise<CalendarNote[]> {
+  const { data } = await supabase
+    .from("calendar_notes")
+    .select("*")
+    .gte("note_date", toISODate(rangeStart))
+    .lte("note_date", toISODate(rangeEnd))
+    .order("note_date");
+  return (data as CalendarNote[]) ?? [];
+}
+
+export async function createCalendarNote(noteDate: Date, classKey: ClassKey | null) {
+  const { data } = await supabase
+    .from("calendar_notes")
+    .insert({ note_date: toISODate(noteDate), class_key: classKey, content: "" })
+    .select("*")
+    .single();
+  return data as CalendarNote;
+}
+
+export async function updateCalendarNote(
+  id: number,
+  fields: Partial<{ note_date: string; class_key: ClassKey | null; content: string }>
+) {
+  await supabase.from("calendar_notes").update(fields).eq("id", id);
+}
+
+export async function deleteCalendarNote(id: number) {
+  await supabase.from("calendar_notes").delete().eq("id", id);
 }
 
 // ============================================================

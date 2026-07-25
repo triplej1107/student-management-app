@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ClinicCheck, ClinicTemplate } from "@/lib/types";
 import { filledHwSlots, filledTestSlots } from "@/lib/clinicProgress";
+import { useToast } from "@/components/Toast";
 import { toggleZongjuApprovalAction } from "@/app/admin/students/approvals/actions";
 
 export function AdminApprovalChecklist({
@@ -20,6 +21,7 @@ export function AdminApprovalChecklist({
   staffApprovedByName: string | null;
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const hwSlots = filledHwSlots(template);
   const testSlots = filledTestSlots(template);
@@ -30,6 +32,7 @@ export function AdminApprovalChecklist({
     setZongjuApproved(next);
     startTransition(async () => {
       await toggleZongjuApprovalAction(studentId, weekStartISO, next);
+      showToast(next ? "최종 결재 완료" : "최종 결재 취소됨");
       router.refresh();
     });
   }

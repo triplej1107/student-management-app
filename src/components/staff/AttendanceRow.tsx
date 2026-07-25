@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DAY_ORDER } from "@/lib/types";
 import type { AttendanceStatus, MakeupSchedule, Student } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 import {
   markAttendanceAction,
   saveMakeupAction,
@@ -17,6 +18,7 @@ const STATUS_STYLE: Record<
 > = {
   출석: { border: "border-success", bg: "bg-success-soft", color: "text-success" },
   지각: { border: "border-warn", bg: "bg-warn-soft", color: "text-warn" },
+  연기: { border: "border-accent", bg: "bg-accent-soft", color: "text-accent" },
   결석: { border: "border-danger", bg: "bg-danger-soft", color: "text-danger" },
 };
 const UNSET_STYLE = { border: "border-line", bg: "bg-white", color: "text-ink-muted" };
@@ -37,17 +39,22 @@ export function AttendanceRow({
   dateISO: string;
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
   const [editingMakeup, setEditingMakeup] = useState(false);
+  const [editingStatus, setEditingStatus] = useState<AttendanceStatus | null>(null);
   const [dayDraft, setDayDraft] = useState(makeup?.makeup_day ?? "");
   const [timeDraft, setTimeDraft] = useState(makeup?.makeup_time ?? "");
+  const [noteDraft, setNoteDraft] = useState(makeup?.note ?? "");
 
   function mark(next: AttendanceStatus) {
     startTransition(async () => {
       await markAttendanceAction(student.id, dateISO, next);
-      if (next === "지각" || next === "결석") {
+      if (next === "지각" || next === "연기" || next === "결석") {
+        setEditingStatus(next);
         setEditingMakeup(true);
       }
+      showToast(`${student.name} ${next} 처리됨`);
       router.refresh();
     });
   }
@@ -55,8 +62,15 @@ export function AttendanceRow({
   function saveMakeup() {
     if (!dayDraft || !timeDraft.trim()) return;
     startTransition(async () => {
-      await saveMakeupAction(student.id, dateISO, dayDraft, timeDraft.trim());
+      await saveMakeupAction(
+        student.id,
+        dateISO,
+        dayDraft,
+        timeDraft.trim(),
+        editingStatus === "연기" ? noteDraft.trim() : undefined
+      );
       setEditingMakeup(false);
+      showToast("대체 일정 저장됨");
       router.refresh();
     });
   }
@@ -67,6 +81,8 @@ export function AttendanceRow({
       setEditingMakeup(false);
       setDayDraft("");
       setTimeDraft("");
+      setNoteDraft("");
+      showToast("대체 일정 삭제됨");
       router.refresh();
     });
   }
@@ -82,16 +98,19 @@ export function AttendanceRow({
               대체: {makeup?.makeup_day} {makeup?.makeup_time}
             </div>
           )}
+          {hasMakeup && makeup?.note && (
+            <div className="mt-0.5 text-[11px] text-ink-muted">전달사항: {makeup.note}</div>
+          )}
         </Link>
-        <div className="flex gap-1.5">
-          {(["출석", "지각", "결석"] as AttendanceStatus[]).map((s) => {
+        <div className="flex gap-1">
+          {(["출석", "지각", "연기", "결석"] as AttendanceStatus[]).map((s) => {
             const style = status === s ? STATUS_STYLE[s] : UNSET_STYLE;
             return (
               <button
                 key={s}
                 disabled={pending}
                 onClick={() => mark(s)}
-                className={`h-9 w-11 rounded-[9px] border text-[13px] font-bold ${style.border} ${style.bg} ${style.color}`}
+                className={`h-9 w-9 rounded-[9px] border text-[12px] font-bold ${style.border} ${style.bg} ${style.color}`}
               >
                 {s}
               </button>
@@ -126,6 +145,16 @@ export function AttendanceRow({
               placeholder="예: 20:00"
               className="flex-1 rounded-lg border border-line px-2.5 py-2 text-[13px]"
             />
+          </div>
+          {editingStatus === "연기" && (
+            <textarea
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              placeholder="다음 조교에게 전달사항"
+              className="mt-2 min-h-[52px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
+            />
+          )}
+          <div className="mt-2 flex items-center gap-2">
             <button
               onClick={saveMakeup}
               className="rounded-lg bg-accent px-3.5 py-2 text-xs font-bold text-white"
@@ -155,6 +184,8 @@ export function AttendanceRow({
           onClick={() => {
             setDayDraft(makeup?.makeup_day ?? "");
             setTimeDraft(makeup?.makeup_time ?? "");
+            setNoteDraft(makeup?.note ?? "");
+            setEditingStatus(status ?? null);
             setEditingMakeup(true);
           }}
           className="mt-2 text-[11px] font-bold text-ink-muted underline"

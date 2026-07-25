@@ -31,7 +31,7 @@ export default async function StudentClinicPage({
         <div className="mt-1 text-xs italic text-ink-muted">유종의미 종주T</div>
         {template && (
           <div className="mt-1.5 text-[13px] font-bold text-ink">
-            {template.month} {template.round}
+            {weekLabel(selectedWeekStart)}
           </div>
         )}
       </div>

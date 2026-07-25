@@ -3,16 +3,19 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { DutyItem } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 import { updateDutyItemAction, deleteDutyItemAction } from "@/app/admin/staff/duty/actions";
 
 export function DutyItemEditor({ item }: { item: DutyItem }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [label, setLabel] = useState(item.label);
 
   function commit(value: string) {
     startTransition(async () => {
       await updateDutyItemAction(item.id, value);
+      showToast("저장됨");
       router.refresh();
     });
   }
@@ -20,6 +23,7 @@ export function DutyItemEditor({ item }: { item: DutyItem }) {
   function remove() {
     startTransition(async () => {
       await deleteDutyItemAction(item.id);
+      showToast("항목 삭제됨");
       router.refresh();
     });
   }

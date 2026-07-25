@@ -1,13 +1,13 @@
 import { requireZongjuSession } from "@/lib/authz";
-import { getClinicTemplate } from "@/lib/data";
+import { getClassPlan } from "@/lib/data";
 import { CLASSES, type ClassKey } from "@/lib/types";
 import { rollingWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { AdminSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink } from "@/components/ui";
-import { TemplateEditor } from "@/components/admin/TemplateEditor";
+import { LessonPlanEditor } from "@/components/admin/LessonPlanEditor";
 import { STUDENT_SUB_TABS } from "../subTabs";
 
-export default async function AdminTemplatesPage({
+export default async function AdminLessonPlansPage({
   searchParams,
 }: {
   searchParams: Promise<{ class?: string; week?: string }>;
@@ -22,7 +22,7 @@ export default async function AdminTemplatesPage({
   const selectedWeekStart = weekParam ? parseISODate(weekParam) : weeks[0];
   const selectedWeekISO = toISODate(selectedWeekStart);
 
-  const template = await getClinicTemplate(classKey, selectedWeekStart);
+  const plan = await getClassPlan(classKey, selectedWeekStart);
 
   return (
     <div>
@@ -30,7 +30,7 @@ export default async function AdminTemplatesPage({
 
       <div className="mt-4 flex flex-wrap gap-2">
         {CLASSES.map((c) => (
-          <PillLink key={c} href={`/admin/students/templates?class=${c}&week=${selectedWeekISO}`} active={c === classKey}>
+          <PillLink key={c} href={`/admin/students/plans?class=${c}&week=${selectedWeekISO}`} active={c === classKey}>
             {c}
           </PillLink>
         ))}
@@ -39,18 +39,18 @@ export default async function AdminTemplatesPage({
         {weeks.map((w) => {
           const iso = toISODate(w);
           return (
-            <PillLink key={iso} href={`/admin/students/templates?class=${classKey}&week=${iso}`} active={iso === selectedWeekISO}>
+            <PillLink key={iso} href={`/admin/students/plans?class=${classKey}&week=${iso}`} active={iso === selectedWeekISO}>
               {weekLabel(w)}
             </PillLink>
           );
         })}
       </div>
 
-      <TemplateEditor
+      <LessonPlanEditor
         key={`${classKey}_${selectedWeekISO}`}
         classKey={classKey}
         weekStartISO={selectedWeekISO}
-        template={template}
+        plan={plan}
       />
     </div>
   );

@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
-import { getStudentById, getClinicTemplate, getClinicCheck, listNoticesForClass } from "@/lib/data";
+import {
+  getStudentById,
+  getClinicTemplate,
+  getClinicCheck,
+  listNoticesForClass,
+  listCalendarNotesForRange,
+} from "@/lib/data";
 import { getToday } from "@/lib/today";
-import { weekLabel } from "@/lib/weeks";
+import { weekLabel, monthStart, monthEnd } from "@/lib/weeks";
 import { EmptyState } from "@/components/ui";
 import { ClinicChecklistReadOnly } from "@/components/ClinicChecklistReadOnly";
+import { MonthCalendar } from "@/components/MonthCalendar";
 import { logoutAction } from "@/app/login/actions";
 
 export default async function StudentHomePage() {
@@ -13,10 +20,15 @@ export default async function StudentHomePage() {
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const { weekStart } = getToday();
+  const { weekStart, today } = getToday();
   const template = student.class_key ? await getClinicTemplate(student.class_key, weekStart) : null;
   const check = await getClinicCheck(student.id, weekStart);
   const notices = student.class_key ? await listNoticesForClass(student.class_key, 3) : [];
+
+  const allMonthNotes = await listCalendarNotesForRange(monthStart(today), monthEnd(today));
+  const calendarNotes = allMonthNotes.filter(
+    (n) => n.class_key === null || n.class_key === student.class_key
+  );
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
@@ -58,6 +70,8 @@ export default async function StudentHomePage() {
           </div>
         ))}
       </div>
+
+      <MonthCalendar monthDate={today} notes={calendarNotes} />
     </div>
   );
 }

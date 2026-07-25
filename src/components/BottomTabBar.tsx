@@ -37,6 +37,7 @@ export const STAFF_TABS = [
 
 export const STUDENT_TABS = [
   { href: "/student", label: "홈" },
+  { href: "/student/lesson", label: "수업" },
   { href: "/student/clinic", label: "클리닉" },
   { href: "/student/notices", label: "공지" },
 ];

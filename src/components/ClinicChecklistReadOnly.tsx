@@ -60,6 +60,35 @@ export function ClinicChecklistReadOnly({
           </div>
         </div>
       )}
+
+      <div className="mt-[18px] flex flex-col gap-2 border-t border-line-soft pt-[18px]">
+        <div className="flex items-center gap-2.5 rounded-[10px] bg-bg-page p-2.5">
+          <span
+            className={
+              "flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[5px] border text-xs font-extrabold text-white " +
+              (check?.staff_approved ? "border-accent bg-accent" : "border-line bg-white")
+            }
+          >
+            {check?.staff_approved ? "✓" : ""}
+          </span>
+          <span className="flex-1 text-[13px] text-ink-muted">
+            조교 확인 {check?.staff_approved ? "완료" : "대기중"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-[10px] bg-bg-page p-2.5">
+          <span
+            className={
+              "flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[5px] border text-xs font-extrabold text-white " +
+              (check?.zongju_approved ? "border-accent bg-accent" : "border-line bg-white")
+            }
+          >
+            {check?.zongju_approved ? "✓" : ""}
+          </span>
+          <span className="flex-1 text-[13px] text-ink-muted">
+            원장 확인 {check?.zongju_approved ? "완료" : "대기중"}
+          </span>
+        </div>
+      </div>
     </>
   );
 }

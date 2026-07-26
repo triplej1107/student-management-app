@@ -7,8 +7,22 @@ import {
   getClinicTemplatesForWeek,
   getWeeklyRoster,
 } from "@/lib/data";
-import { clinicProgressLabel, isClinicComplete } from "@/lib/clinicProgress";
-import { ScreenTitle, ScrollPillRow, PillLink, EmptyState } from "@/components/ui";
+import {
+  approvalLabel,
+  approvalStatus,
+  clinicProgressLabel,
+  isClinicComplete,
+  testProgressLabel,
+} from "@/lib/clinicProgress";
+import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
+import { SearchableRoster } from "@/components/SearchableRoster";
+
+const APPROVAL_BADGE_STYLE: Record<string, string> = {
+  "no-template": "bg-line-soft text-ink-muted",
+  unchecked: "bg-line-soft text-ink-muted",
+  "staff-approved": "bg-accent-soft text-accent",
+  "zongju-approved": "bg-success-soft text-success",
+};
 
 export default async function StaffClinicListPage({
   searchParams,
@@ -39,6 +53,63 @@ export default async function StaffClinicListPage({
     getClinicTemplatesForWeek(weekStart),
   ]);
 
+  const items = roster.map(({ student, effTime }) => {
+    const template = student.class_key ? templatesMap.get(student.class_key) : undefined;
+    const check = checksMap.get(student.id);
+    const hwLabel = clinicProgressLabel(template, check);
+    const hwComplete = template ? isClinicComplete(template, check) : false;
+    const testLabel = testProgressLabel(template, check);
+    const status = approvalStatus(template, check);
+    const schoolGrade = [student.school, student.grade ? `${student.grade}학년` : null]
+      .filter(Boolean)
+      .join(" ");
+
+    return {
+      key: student.id,
+      searchText: `${student.name} ${student.school ?? ""} ${student.grade ?? ""}`,
+      node: (
+        <Link
+          href={`/staff/clinic/${student.id}`}
+          className="flex items-center justify-between rounded-2xl border border-line-soft bg-white p-3.5"
+        >
+          <div>
+            <div className="text-[15px] font-bold text-ink">{student.name}</div>
+            <div className="mt-0.5 text-xs text-ink-muted">
+              {effTime}
+              {schoolGrade && ` · ${schoolGrade}`}
+            </div>
+          </div>
+          {!template ? (
+            <span className="rounded-full bg-line-soft px-2.5 py-1.5 text-xs font-bold text-ink-muted">
+              원본 없음
+            </span>
+          ) : (
+            <div className="flex flex-col items-end gap-1">
+              <span
+                className={
+                  "rounded-full px-2 py-1 text-[11px] font-bold " +
+                  (hwComplete ? "bg-success-soft text-success" : "bg-accent-soft text-accent")
+                }
+              >
+                {hwLabel}
+              </span>
+              {testLabel && (
+                <span className="rounded-full bg-line-soft px-2 py-1 text-[11px] font-bold text-ink-muted">
+                  {testLabel}
+                </span>
+              )}
+              <span
+                className={`rounded-full px-2 py-1 text-[11px] font-bold ${APPROVAL_BADGE_STYLE[status]}`}
+              >
+                {approvalLabel(status)}
+              </span>
+            </div>
+          )}
+        </Link>
+      ),
+    };
+  });
+
   return (
     <div className="box-border px-5 pt-2 pb-6">
       <ScreenTitle>클리닉 점검표</ScreenTitle>
@@ -50,39 +121,7 @@ export default async function StaffClinicListPage({
         ))}
       </ScrollPillRow>
 
-      <div className="mt-3.5 flex flex-col gap-2.5">
-        {roster.length === 0 && <EmptyState>이 요일에는 학생이 없어요.</EmptyState>}
-        {roster.map(({ student, effTime }) => {
-          const template = student.class_key ? templatesMap.get(student.class_key) : undefined;
-          const check = checksMap.get(student.id);
-          const label = clinicProgressLabel(template, check);
-          const complete = template ? isClinicComplete(template, check) : false;
-          return (
-            <Link
-              key={student.id}
-              href={`/staff/clinic/${student.id}`}
-              className="flex items-center justify-between rounded-2xl border border-line-soft bg-white p-3.5"
-            >
-              <div>
-                <div className="text-[15px] font-bold text-ink">{student.name}</div>
-                <div className="mt-0.5 text-xs text-ink-muted">{effTime}</div>
-              </div>
-              <span
-                className={
-                  "rounded-full px-2.5 py-1.5 text-xs font-bold " +
-                  (label === "원본 없음"
-                    ? "bg-line-soft text-ink-muted"
-                    : complete
-                      ? "bg-success-soft text-success"
-                      : "bg-accent-soft text-accent")
-                }
-              >
-                {label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+      <SearchableRoster items={items} placeholder="이름/학교로 검색" emptyLabel="이 요일에는 학생이 없어요." />
     </div>
   );
 }

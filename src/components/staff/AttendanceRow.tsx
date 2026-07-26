@@ -101,7 +101,11 @@ export function AttendanceRow({
       <div className="flex items-center justify-between">
         <Link href={`/staff/clinic/${student.id}`} className="cursor-pointer">
           <div className="text-[15px] font-bold text-ink">{student.name}</div>
-          <div className="mt-0.5 text-xs text-ink-muted">{effTime}</div>
+          <div className="mt-0.5 text-xs text-ink-muted">
+            {effTime}
+            {(student.school || student.grade) &&
+              ` · ${[student.school, student.grade ? `${student.grade}학년` : null].filter(Boolean).join(" ")}`}
+          </div>
           {hasMakeup && (
             <div className="mt-0.5 text-[11px] font-bold text-accent">
               대체: {makeup?.makeup_day} {makeup?.makeup_time}

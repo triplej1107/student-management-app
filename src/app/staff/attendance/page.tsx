@@ -7,8 +7,9 @@ import {
   getWeeklyRoster,
 } from "@/lib/data";
 import { DAY_ORDER } from "@/lib/types";
-import { ScreenTitle, ScrollPillRow, PillLink, EmptyState } from "@/components/ui";
+import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
 import { AttendanceRow } from "@/components/staff/AttendanceRow";
+import { SearchableRoster } from "@/components/SearchableRoster";
 
 export default async function StaffAttendancePage({
   searchParams,
@@ -51,20 +52,24 @@ export default async function StaffAttendancePage({
         </div>
       )}
 
-      <div className="mt-3 flex flex-col gap-2.5">
-        {roster.length === 0 && <EmptyState>이 요일에는 학생이 없어요.</EmptyState>}
-        {roster.map((entry) => (
-          <AttendanceRow
-            key={entry.student.id}
-            student={entry.student}
-            effTime={entry.effTime}
-            hasMakeup={entry.hasMakeup}
-            makeup={entry.makeup}
-            status={attendanceMap.get(entry.student.id)}
-            dateISO={dateISO}
-          />
-        ))}
-      </div>
+      <SearchableRoster
+        placeholder="이름/학교로 검색"
+        emptyLabel="이 요일에는 학생이 없어요."
+        items={roster.map((entry) => ({
+          key: entry.student.id,
+          searchText: `${entry.student.name} ${entry.student.school ?? ""} ${entry.student.grade ?? ""}`,
+          node: (
+            <AttendanceRow
+              student={entry.student}
+              effTime={entry.effTime}
+              hasMakeup={entry.hasMakeup}
+              makeup={entry.makeup}
+              status={attendanceMap.get(entry.student.id)}
+              dateISO={dateISO}
+            />
+          ),
+        }))}
+      />
     </div>
   );
 }

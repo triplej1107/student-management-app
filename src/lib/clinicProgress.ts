@@ -26,6 +26,19 @@ export function clinicProgressLabel(
   return `${done}/${slots.length} 체크`;
 }
 
+export function testProgressLabel(
+  template: ClinicTemplate | undefined,
+  check: ClinicCheck | undefined
+): string | null {
+  const slots = filledTestSlots(template);
+  if (slots.length === 0) return null;
+  const done = slots.filter((i) => {
+    const t = check?.test_scores?.[i];
+    return !!(t?.score || t?.total);
+  }).length;
+  return `${done}/${slots.length} 테스트`;
+}
+
 export function isClinicComplete(
   template: ClinicTemplate | undefined,
   check: ClinicCheck | undefined

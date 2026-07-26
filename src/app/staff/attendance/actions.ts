@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireStaffSession } from "@/lib/authz";
-import { setAttendance, setMakeup, clearMakeup } from "@/lib/data";
+import { setAttendance, clearAttendance, setMakeup, clearMakeup } from "@/lib/data";
 import type { AttendanceStatus } from "@/lib/types";
 
 export async function markAttendanceAction(
@@ -12,6 +12,13 @@ export async function markAttendanceAction(
 ) {
   const session = await requireStaffSession();
   await setAttendance(studentId, new Date(dateISO), status, session.staffId);
+  revalidatePath("/staff/attendance");
+  revalidatePath("/staff");
+}
+
+export async function clearAttendanceAction(studentId: number, dateISO: string) {
+  await requireStaffSession();
+  await clearAttendance(studentId, new Date(dateISO));
   revalidatePath("/staff/attendance");
   revalidatePath("/staff");
 }

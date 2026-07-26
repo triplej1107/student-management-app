@@ -21,11 +21,12 @@ export default async function StudentHomePage() {
   if (!student) notFound();
 
   const { weekStart, today } = getToday();
-  const template = student.class_key ? await getClinicTemplate(student.class_key, weekStart) : null;
-  const check = await getClinicCheck(student.id, weekStart);
-  const notices = student.class_key ? await listNoticesForClass(student.class_key, 3) : [];
-
-  const allMonthNotes = await listCalendarNotesForRange(monthStart(today), monthEnd(today));
+  const [template, check, notices, allMonthNotes] = await Promise.all([
+    student.class_key ? getClinicTemplate(student.class_key, weekStart) : null,
+    getClinicCheck(student.id, weekStart),
+    student.class_key ? listNoticesForClass(student.class_key, 3) : [],
+    listCalendarNotesForRange(monthStart(today), monthEnd(today)),
+  ]);
   const calendarNotes = allMonthNotes.filter(
     (n) => n.class_key === null || n.class_key === student.class_key
   );

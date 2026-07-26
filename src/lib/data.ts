@@ -293,6 +293,32 @@ export interface RosterEntry {
   makeup?: MakeupSchedule;
 }
 
+/** Enrolled students' effective clinic day/time this week (accounting for
+ * any makeup schedule) — fetches students + makeup map once so pages that
+ * need both a day's roster and the full set of active days don't each
+ * re-query the same data. */
+export async function getWeeklyRoster(weekStart: Date, weekEnd: Date): Promise<RosterEntry[]> {
+  const [students, makeupMap] = await Promise.all([
+    listStudents({ enrolledOnly: true }),
+    getMakeupMapForWeek(weekStart, weekEnd),
+  ]);
+
+  return students.map((student) => {
+    const makeup = makeupMap.get(student.id);
+    const effDay = makeup?.makeup_day ?? student.clinic_day ?? "";
+    const effTime = makeup?.makeup_time ?? student.clinic_time ?? "";
+    return { student, effDay, effTime, hasMakeup: !!makeup, makeup };
+  });
+}
+
+/** Distinct effective clinic days among enrolled students this week, in
+ * 월~일 order — used to render only the day tabs that actually have students. */
+export function activeClinicDaysFrom(roster: RosterEntry[]): string[] {
+  const days = new Set(roster.map((r) => r.effDay).filter(Boolean));
+  const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"];
+  return DAY_ORDER.filter((d) => days.has(d));
+}
+
 /** Enrolled students whose *effective* clinic day (accounting for this
  * week's makeup schedule) equals `day`. */
 export async function getRosterForDay(
@@ -300,39 +326,13 @@ export async function getRosterForDay(
   weekStart: Date,
   weekEnd: Date
 ): Promise<RosterEntry[]> {
-  const [students, makeupMap] = await Promise.all([
-    listStudents({ enrolledOnly: true }),
-    getMakeupMapForWeek(weekStart, weekEnd),
-  ]);
-
-  return students
-    .map((student) => {
-      const makeup = makeupMap.get(student.id);
-      const effDay = makeup?.makeup_day ?? student.clinic_day ?? "";
-      const effTime = makeup?.makeup_time ?? student.clinic_time ?? "";
-      return { student, effDay, effTime, hasMakeup: !!makeup, makeup };
-    })
-    .filter((entry) => entry.effDay === day);
+  const roster = await getWeeklyRoster(weekStart, weekEnd);
+  return roster.filter((entry) => entry.effDay === day);
 }
 
-/** Distinct effective clinic days among enrolled students this week, in
- * 월~일 order — used to render only the day tabs that actually have students. */
-export async function getActiveClinicDays(
-  weekStart: Date,
-  weekEnd: Date
-): Promise<string[]> {
-  const [students, makeupMap] = await Promise.all([
-    listStudents({ enrolledOnly: true }),
-    getMakeupMapForWeek(weekStart, weekEnd),
-  ]);
-  const days = new Set<string>();
-  for (const student of students) {
-    const makeup = makeupMap.get(student.id);
-    const effDay = makeup?.makeup_day ?? student.clinic_day;
-    if (effDay) days.add(effDay);
-  }
-  const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"];
-  return DAY_ORDER.filter((d) => days.has(d));
+/** Distinct effective clinic days among enrolled students this week. */
+export async function getActiveClinicDays(weekStart: Date, weekEnd: Date): Promise<string[]> {
+  return activeClinicDaysFrom(await getWeeklyRoster(weekStart, weekEnd));
 }
 
 // ============================================================
@@ -368,6 +368,14 @@ export async function setAttendance(
     },
     { onConflict: "student_id,session_date" }
   );
+}
+
+export async function clearAttendance(studentId: number, date: Date) {
+  await supabase
+    .from("attendance_records")
+    .delete()
+    .eq("student_id", studentId)
+    .eq("session_date", toISODate(date));
 }
 
 // ============================================================
@@ -610,16 +618,17 @@ export async function listCalendarNotesForRange(
   const { data } = await supabase
     .from("calendar_notes")
     .select("*")
-    .gte("note_date", toISODate(rangeStart))
     .lte("note_date", toISODate(rangeEnd))
+    .gte("end_date", toISODate(rangeStart))
     .order("note_date");
   return (data as CalendarNote[]) ?? [];
 }
 
 export async function createCalendarNote(noteDate: Date, classKey: ClassKey | null) {
+  const iso = toISODate(noteDate);
   const { data } = await supabase
     .from("calendar_notes")
-    .insert({ note_date: toISODate(noteDate), class_key: classKey, content: "" })
+    .insert({ note_date: iso, end_date: iso, class_key: classKey, content: "" })
     .select("*")
     .single();
   return data as CalendarNote;
@@ -627,7 +636,7 @@ export async function createCalendarNote(noteDate: Date, classKey: ClassKey | nu
 
 export async function updateCalendarNote(
   id: number,
-  fields: Partial<{ note_date: string; class_key: ClassKey | null; content: string }>
+  fields: Partial<{ note_date: string; end_date: string; class_key: ClassKey | null; content: string }>
 ) {
   await supabase.from("calendar_notes").update(fields).eq("id", id);
 }

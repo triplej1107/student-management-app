@@ -8,6 +8,7 @@ import type { AttendanceStatus, MakeupSchedule, Student } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import {
   markAttendanceAction,
+  clearAttendanceAction,
   saveMakeupAction,
   cancelMakeupAction,
 } from "@/app/staff/attendance/actions";
@@ -48,6 +49,14 @@ export function AttendanceRow({
   const [noteDraft, setNoteDraft] = useState(makeup?.note ?? "");
 
   function mark(next: AttendanceStatus) {
+    if (status === next) {
+      startTransition(async () => {
+        await clearAttendanceAction(student.id, dateISO);
+        showToast(`${student.name} 출결 취소됨`);
+        router.refresh();
+      });
+      return;
+    }
     startTransition(async () => {
       await markAttendanceAction(student.id, dateISO, next);
       if (next === "지각" || next === "연기" || next === "결석") {

@@ -17,8 +17,13 @@ export default async function AdminHomePage() {
   await requireZongjuSession();
   const { today, weekStart, weekEnd, dayLabel } = getToday();
 
-  const roster = await getRosterForDay(dayLabel, weekStart, weekEnd);
-  const attendanceMap = await getAttendanceMapForDate(today);
+  const [roster, attendanceMap, staff, dutyItems, dutyChecksByStaff] = await Promise.all([
+    getRosterForDay(dayLabel, weekStart, weekEnd),
+    getAttendanceMapForDate(today),
+    listStaff(),
+    listDutyItems(),
+    getDutyChecksForDate(today),
+  ]);
   const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
 
   const [checksMap, templatesMap] = await Promise.all([
@@ -38,12 +43,6 @@ export default async function AdminHomePage() {
     const check = checksMap.get(r.student.id);
     return check?.staff_approved && !check.zongju_approved;
   }).length;
-
-  const [staff, dutyItems, dutyChecksByStaff] = await Promise.all([
-    listStaff(),
-    listDutyItems(),
-    getDutyChecksForDate(today),
-  ]);
 
   const dateLabel = `${today.getMonth() + 1}월 ${today.getDate()}일 ${dayLabel}요일`;
 

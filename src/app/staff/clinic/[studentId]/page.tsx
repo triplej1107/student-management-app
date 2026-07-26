@@ -25,9 +25,11 @@ export default async function StaffClinicDetailPage({
   const selectedWeekISO = toISODate(selectedWeekStart);
 
   const classKey = student.class_key;
-  const template = classKey ? await getClinicTemplate(classKey, selectedWeekStart) : null;
-  const check = await getClinicCheck(student.id, selectedWeekStart);
-  const currentStaff = await getStaffById(session.staffId);
+  const [template, check, currentStaff] = await Promise.all([
+    classKey ? getClinicTemplate(classKey, selectedWeekStart) : null,
+    getClinicCheck(student.id, selectedWeekStart),
+    getStaffById(session.staffId),
+  ]);
   const approvedByStaff = check?.staff_approved_by ? await getStaffById(check.staff_approved_by) : null;
 
   const today = new Date();

@@ -18,12 +18,22 @@ import { logoutAction } from "@/app/login/actions";
 
 export default async function StaffHomePage() {
   const session = await requireStaffSession();
-  const staff = await getStaffById(session.staffId);
   const { today, weekStart, weekEnd, dayLabel } = getToday();
 
-  const roster = await getRosterForDay(dayLabel, weekStart, weekEnd);
-  const attendanceMap = await getAttendanceMapForDate(today);
+  const [staff, roster, attendanceMap, dutyItems, dutyChecks, noticeLists] = await Promise.all([
+    getStaffById(session.staffId),
+    getRosterForDay(dayLabel, weekStart, weekEnd),
+    getAttendanceMapForDate(today),
+    listDutyItems(),
+    getDutyChecksForStaffDate(session.staffId, today),
+    Promise.all(CLASSES.map((c) => listNoticesForClass(c, 2))),
+  ]);
   const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
+  const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
+  const notices = noticeLists
+    .flat()
+    .sort((a, b) => (a.notice_date < b.notice_date ? 1 : -1))
+    .slice(0, 2);
 
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(
@@ -37,17 +47,6 @@ export default async function StaffHomePage() {
     if (!template) return false; // 원본 미등록 학생은 "미완료" 집계에서 제외
     return !isClinicComplete(template, checksMap.get(r.student.id));
   }).length;
-
-  const dutyItems = await listDutyItems();
-  const dutyChecks = await getDutyChecksForStaffDate(session.staffId, today);
-  const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
-
-  const notices = (
-    await Promise.all(CLASSES.map((c) => listNoticesForClass(c, 2)))
-  )
-    .flat()
-    .sort((a, b) => (a.notice_date < b.notice_date ? 1 : -1))
-    .slice(0, 2);
 
   const dateLabel = `${today.getMonth() + 1}월 ${today.getDate()}일 ${dayLabel}요일`;
 

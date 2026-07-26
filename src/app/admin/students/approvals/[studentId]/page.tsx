@@ -25,8 +25,10 @@ export default async function AdminApprovalDetailPage({
   const selectedWeekISO = toISODate(selectedWeekStart);
 
   const classKey = student.class_key;
-  const template = classKey ? await getClinicTemplate(classKey, selectedWeekStart) : null;
-  const check = await getClinicCheck(student.id, selectedWeekStart);
+  const [template, check] = await Promise.all([
+    classKey ? getClinicTemplate(classKey, selectedWeekStart) : null,
+    getClinicCheck(student.id, selectedWeekStart),
+  ]);
   const approvedByStaff = check?.staff_approved_by ? await getStaffById(check.staff_approved_by) : null;
 
   const today = new Date();

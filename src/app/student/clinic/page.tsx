@@ -19,10 +19,10 @@ export default async function StudentClinicPage({
   const selectedWeekStart = week ? parseISODate(week) : weeks[0];
   const selectedWeekISO = toISODate(selectedWeekStart);
 
-  const template = student.class_key
-    ? await getClinicTemplate(student.class_key, selectedWeekStart)
-    : null;
-  const check = await getClinicCheck(student.id, selectedWeekStart);
+  const [template, check] = await Promise.all([
+    student.class_key ? getClinicTemplate(student.class_key, selectedWeekStart) : null,
+    getClinicCheck(student.id, selectedWeekStart),
+  ]);
 
   return (
     <div className="box-border px-5 pt-2 pb-7">

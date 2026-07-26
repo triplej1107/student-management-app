@@ -1,6 +1,11 @@
 import type { CalendarNote } from "@/lib/types";
 import { DAY_ORDER } from "@/lib/types";
-import { toISODate } from "@/lib/weeks";
+import { parseISODate, toISODate } from "@/lib/weeks";
+
+function dateLabel(iso: string) {
+  const [, m, d] = iso.split("-");
+  return `${Number(m)}/${Number(d)}`;
+}
 
 export function MonthCalendar({
   monthDate,
@@ -20,9 +25,14 @@ export function MonthCalendar({
 
   const notesByDate = new Map<string, CalendarNote[]>();
   for (const n of notes) {
-    const list = notesByDate.get(n.note_date) ?? [];
-    list.push(n);
-    notesByDate.set(n.note_date, list);
+    const start = parseISODate(n.note_date);
+    const end = parseISODate(n.end_date);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const iso = toISODate(d);
+      const list = notesByDate.get(iso) ?? [];
+      list.push(n);
+      notesByDate.set(iso, list);
+    }
   }
 
   const cells: (number | null)[] = [
@@ -72,9 +82,11 @@ export function MonthCalendar({
           {notes.map((n) => (
             <div key={n.id} className="flex items-start gap-2 rounded-xl border border-line-soft bg-white px-3 py-2">
               <span className="flex-none text-xs font-bold text-accent">
-                {Number(n.note_date.split("-")[1])}/{Number(n.note_date.split("-")[2])}
+                {n.note_date === n.end_date
+                  ? dateLabel(n.note_date)
+                  : `${dateLabel(n.note_date)}~${dateLabel(n.end_date)}`}
               </span>
-              <span className="text-xs text-ink-secondary">{n.content}</span>
+              <span className="text-xs text-ink-secondary whitespace-pre-wrap">{n.content}</span>
             </div>
           ))}
         </div>

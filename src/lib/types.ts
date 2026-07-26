@@ -163,6 +163,7 @@ export interface ClassPlan {
 export interface CalendarNote {
   id: number;
   note_date: string;
+  end_date: string;
   class_key: ClassKey | null; // null = 전체 반
   content: string;
   created_at: string;

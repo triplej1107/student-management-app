@@ -2,10 +2,10 @@ import Link from "next/link";
 import { requireStaffSession } from "@/lib/authz";
 import { getToday } from "@/lib/today";
 import {
-  getActiveClinicDays,
+  activeClinicDaysFrom,
   getClinicChecksForStudents,
   getClinicTemplatesForWeek,
-  getRosterForDay,
+  getWeeklyRoster,
 } from "@/lib/data";
 import { clinicProgressLabel, isClinicComplete } from "@/lib/clinicProgress";
 import { ScreenTitle, ScrollPillRow, PillLink, EmptyState } from "@/components/ui";
@@ -19,7 +19,8 @@ export default async function StaffClinicListPage({
   const { weekStart, weekEnd, dayLabel: todayLabel } = getToday();
   const { day: dayParam } = await searchParams;
 
-  const activeDays = await getActiveClinicDays(weekStart, weekEnd);
+  const weeklyRoster = await getWeeklyRoster(weekStart, weekEnd);
+  const activeDays = activeClinicDaysFrom(weeklyRoster);
   const selectedDay =
     dayParam && activeDays.includes(dayParam)
       ? dayParam
@@ -27,7 +28,7 @@ export default async function StaffClinicListPage({
         ? todayLabel
         : activeDays[0];
 
-  const roster = selectedDay ? await getRosterForDay(selectedDay, weekStart, weekEnd) : [];
+  const roster = selectedDay ? weeklyRoster.filter((r) => r.effDay === selectedDay) : [];
   roster.sort((a, b) => a.effTime.localeCompare(b.effTime));
 
   const [checksMap, templatesMap] = await Promise.all([

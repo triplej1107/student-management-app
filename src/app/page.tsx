@@ -6,9 +6,15 @@ import { getSession } from "@/lib/session";
 const roles = [
   { role: "student", label: "학생", style: "white" },
   { role: "parent", label: "학부모", style: "white" },
-  { role: "staff", label: "조교", style: "soft" },
-  { role: "zongju", label: "종주T", style: "soft" },
+  { role: "staff", label: "조교", style: "staff" },
+  { role: "zongju", label: "종주T", style: "zongju" },
 ] as const;
+
+const TILE_STYLE: Record<string, string> = {
+  white: "bg-white text-ink",
+  staff: "bg-[#E7EAFA] text-[#3E5FC4]",
+  zongju: "bg-[#EAE6F5] text-[#5B5490]",
+};
 
 // 임시: 여름방학 6주 특강 기간에만 노출. 방학 끝나면 이 상수와 아래 <a> 블록을 삭제.
 const VACATION_SCORE_URL =
@@ -25,13 +31,13 @@ export default async function RoleSelectPage() {
       <Image
         src="/icon-192.png"
         alt="유종의미 국어학원"
-        width={52}
-        height={52}
-        className="mt-2 rounded-2xl border border-line-soft"
+        width={92}
+        height={92}
+        className="mt-2 rounded-[26px] shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         priority
       />
-      <div className="mt-3 text-lg font-extrabold text-ink">유종의미 국어학원</div>
-      <div className="mt-1.5 text-[13px] italic text-ink-muted">
+      <div className="mt-4 text-lg font-extrabold text-ink">유종의미 국어학원</div>
+      <div className="mt-1 text-xs italic text-ink-muted">
         &ldquo;배명&amp;가락 국어1타 장종주T&rdquo;
       </div>
 
@@ -42,11 +48,11 @@ export default async function RoleSelectPage() {
             href={`/login/${role}`}
             className={
               "flex w-full items-center justify-between rounded-2xl p-4 text-base font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
-              (style === "soft" ? "bg-accent-soft text-accent" : "bg-white text-ink")
+              TILE_STYLE[style]
             }
           >
             {label}
-            <span className="text-accent">›</span>
+            <span>›</span>
           </Link>
         ))}
         <a

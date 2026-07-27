@@ -27,6 +27,11 @@ export default async function AdminCalendarPage({
   const end = monthEnd(monthDate);
   const notes = await listCalendarNotesForRange(start, end);
 
+  const today = new Date();
+  const isCurrentMonth =
+    today.getFullYear() === monthDate.getFullYear() && today.getMonth() === monthDate.getMonth();
+  const defaultNoteDate = isCurrentMonth ? today : start;
+
   const prevMonth = toYearMonth(addMonths(monthDate, -1));
   const nextMonth = toYearMonth(addMonths(monthDate, 1));
 
@@ -56,7 +61,7 @@ export default async function AdminCalendarPage({
         {notes.map((n) => (
           <CalendarNoteEditorRow key={n.id} note={n} />
         ))}
-        <form action={addCalendarNoteAction.bind(null, toISODate(new Date()))}>
+        <form action={addCalendarNoteAction.bind(null, toISODate(defaultNoteDate))}>
           <button
             type="submit"
             className="w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary"

@@ -12,17 +12,27 @@ import {
 } from "@/lib/data";
 import { isClinicComplete } from "@/lib/clinicProgress";
 import { Card } from "@/components/ui";
+import { DAY_ORDER } from "@/lib/types";
+
+const PRIORITY_DAYS = ["수", "목", "금", "토", "일", "월", "화"] as const;
 
 export default async function AdminHomePage() {
   await requireZongjuSession();
   const { today, weekStart, weekEnd, dayLabel } = getToday();
 
-  const [roster, attendanceMap, staff, dutyItems, dutyChecksByStaff] = await Promise.all([
+  const [roster, attendanceMap, staff, dutyItems, dutyChecksByDay] = await Promise.all([
     getRosterForDay(dayLabel, weekStart, weekEnd),
     getAttendanceMapForDate(today),
     listStaff(),
     listDutyItems(),
-    getDutyChecksForDate(today),
+    Promise.all(
+      PRIORITY_DAYS.map(async (day) => {
+        const offset = DAY_ORDER.indexOf(day);
+        const date = new Date(weekStart);
+        date.setDate(date.getDate() + offset);
+        return { day, date, checksByStaff: await getDutyChecksForDate(date) };
+      })
+    ),
   ]);
   const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
 
@@ -71,27 +81,40 @@ export default async function AdminHomePage() {
         </div>
 
         <div className="mt-2">
-          <div className="mb-2.5 text-sm font-bold text-ink">조교별 업무 체크리스트 현황</div>
+          <div className="mb-2.5 text-sm font-bold text-ink">요일별 조교 업무 체크리스트 현황</div>
           {staff.length === 0 && (
             <div className="text-[13px] text-ink-muted/70">등록된 조교가 없어요.</div>
           )}
-          <div className="flex flex-col gap-2">
-            {staff.map((s) => {
-              const checks = dutyChecksByStaff.get(s.id);
-              const done = dutyItems.filter((i) => checks?.get(i.id)).length;
-              const complete = dutyItems.length > 0 && done === dutyItems.length;
+          <div className="flex flex-col gap-3">
+            {dutyChecksByDay.map(({ day, date, checksByStaff }) => {
+              const dayStaff = staff.filter((s) => s.work_days.includes(day));
+              if (dayStaff.length === 0) return null;
               return (
-                <Card key={s.id} className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-ink">{s.name}</div>
-                  <span
-                    className={
-                      "rounded-full px-2.5 py-1 text-xs font-bold " +
-                      (complete ? "bg-success-soft text-success" : "bg-line-soft text-ink-muted")
-                    }
-                  >
-                    {done}/{dutyItems.length}
-                  </span>
-                </Card>
+                <div key={day}>
+                  <div className="mb-1.5 text-xs font-bold text-ink-muted">
+                    {day}요일 · {date.getMonth() + 1}/{date.getDate()}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {dayStaff.map((s) => {
+                      const checks = checksByStaff.get(s.id);
+                      const done = dutyItems.filter((i) => checks?.get(i.id)).length;
+                      const complete = dutyItems.length > 0 && done === dutyItems.length;
+                      return (
+                        <Card key={s.id} className="flex items-center justify-between">
+                          <div className="text-sm font-semibold text-ink">{s.name}</div>
+                          <span
+                            className={
+                              "rounded-full px-2.5 py-1 text-xs font-bold " +
+                              (complete ? "bg-success-soft text-success" : "bg-line-soft text-ink-muted")
+                            }
+                          >
+                            {done}/{dutyItems.length}
+                          </span>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>

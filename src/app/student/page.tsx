@@ -28,7 +28,10 @@ export default async function StudentHomePage() {
     listCalendarNotesForRange(monthStart(today), monthEnd(today)),
   ]);
   const calendarNotes = allMonthNotes.filter(
-    (n) => n.class_key === null || n.class_key === student.class_key
+    (n) =>
+      !n.class_keys ||
+      n.class_keys.length === 0 ||
+      (student.class_key !== null && n.class_keys.includes(student.class_key))
   );
 
   return (

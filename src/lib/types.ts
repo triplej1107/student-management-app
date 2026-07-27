@@ -26,6 +26,7 @@ export interface Student {
   name: string;
   nickname: string | null;
   enrolled: boolean;
+  withdrawn_at: string | null; // set when enrolled flips to false; cleared on re-enroll
   level: string | null;
   school: string | null;
   grade: string | null;
@@ -126,6 +127,58 @@ export interface ClinicCheck {
   updated_at: string;
 }
 
+// 내신 시험 슬롯 — 고정된 순서/코드. 학생별로 슬롯당 한 행씩 upsert.
+export const SCHOOL_EXAMS = [
+  { key: "g1s1mid", label: "1학년 1학기 중간" },
+  { key: "g1s1fin", label: "1학년 1학기 기말" },
+  { key: "g1s2mid", label: "1학년 2학기 중간" },
+  { key: "g1s2fin", label: "1학년 2학기 기말" },
+  { key: "g2s1mid", label: "2학년 1학기 중간" },
+  { key: "g2s1fin", label: "2학년 1학기 기말" },
+  { key: "g2s2mid", label: "2학년 2학기 중간" },
+  { key: "g2s2fin", label: "2학년 2학기 기말" },
+  { key: "g3s1mid", label: "3학년 1학기 중간" },
+  { key: "g3s1fin", label: "3학년 1학기 기말" },
+] as const;
+export type SchoolExamKey = (typeof SCHOOL_EXAMS)[number]["key"];
+
+// 모의고사 슬롯.
+export const MOCK_EXAMS = [
+  { key: "g1_03", label: "고1 3월" },
+  { key: "g1_06", label: "고1 6월" },
+  { key: "g1_09", label: "고1 9월" },
+  { key: "g1_10", label: "고1 10월" },
+  { key: "g2_03", label: "고2 3월" },
+  { key: "g2_06", label: "고2 6월" },
+  { key: "g2_09", label: "고2 9월" },
+  { key: "g2_10", label: "고2 10월" },
+  { key: "g3_03", label: "고3 3월" },
+  { key: "g3_06", label: "고3 6월" },
+] as const;
+export type MockExamKey = (typeof MOCK_EXAMS)[number]["key"];
+
+export interface SchoolExam {
+  id: number;
+  student_id: number;
+  exam_key: string;
+  score: number | null;
+  rank: number | null;
+  grade: number | null;
+  note: string | null;
+  updated_at: string;
+}
+
+export interface MockExam {
+  id: number;
+  student_id: number;
+  exam_key: string;
+  score: number | null;
+  percentile: number | null;
+  grade: number | null;
+  note: string | null;
+  updated_at: string;
+}
+
 export interface Notice {
   id: number;
   class_key: ClassKey;
@@ -164,7 +217,7 @@ export interface CalendarNote {
   id: number;
   note_date: string;
   end_date: string;
-  class_key: ClassKey | null; // null = 전체 반
+  class_keys: ClassKey[] | null; // null/empty = 전체 반
   content: string;
   created_at: string;
 }

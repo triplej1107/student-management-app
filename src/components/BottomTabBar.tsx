@@ -54,6 +54,13 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
       <path d="M12 6.5h7.5M12 13h7.5M12 19.5h7.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  성적: (active) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
+      <path d="M4 19.5h16" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m4.5 15 4.5-5 3.5 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 6h4v4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 };
 
 export function BottomTabBar({ tabs }: { tabs: { href: string; label: string }[] }) {
@@ -97,5 +104,6 @@ export const STUDENT_TABS = [
   { href: "/student", label: "홈" },
   { href: "/student/lesson", label: "수업" },
   { href: "/student/clinic", label: "클리닉" },
+  { href: "/student/grades", label: "성적" },
   { href: "/student/notices", label: "공지" },
 ];

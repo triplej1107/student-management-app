@@ -11,14 +11,16 @@ export async function addCalendarNoteAction(dateISO: string) {
   revalidatePath("/admin/students/calendar");
 }
 
-export async function updateCalendarNoteFieldAction(
-  id: number,
-  field: "class_key" | "content",
-  value: string
-) {
+export async function updateCalendarNoteContentAction(id: number, value: string) {
   await requireZongjuSession();
-  const fields = field === "class_key" ? { class_key: (value || null) as ClassKey | null } : { content: value };
-  await updateCalendarNote(id, fields);
+  await updateCalendarNote(id, { content: value });
+  revalidatePath("/admin/students/calendar");
+  revalidatePath("/student");
+}
+
+export async function updateCalendarNoteClassesAction(id: number, classKeys: ClassKey[]) {
+  await requireZongjuSession();
+  await updateCalendarNote(id, { class_keys: classKeys.length === 0 ? null : classKeys });
   revalidatePath("/admin/students/calendar");
   revalidatePath("/student");
 }

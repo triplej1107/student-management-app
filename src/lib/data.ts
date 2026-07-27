@@ -12,7 +12,9 @@ import type {
   DutyCheck,
   DutyItem,
   MakeupSchedule,
+  MockExam,
   Notice,
+  SchoolExam,
   Staff,
   Student,
   StudentOverrides,
@@ -87,9 +89,11 @@ export type RosterFieldUpdate = Partial<
 >;
 
 export async function updateStudentRosterFields(id: number, fields: RosterFieldUpdate) {
+  const withdrawnAt =
+    fields.enrolled === undefined ? {} : { withdrawn_at: fields.enrolled ? null : new Date().toISOString() };
   await supabase
     .from("students")
-    .update({ ...fields, updated_at: new Date().toISOString() })
+    .update({ ...fields, ...withdrawnAt, updated_at: new Date().toISOString() })
     .eq("id", id);
 }
 
@@ -139,7 +143,11 @@ export async function bulkSetEnrolled(ids: number[], enrolled: boolean) {
   if (ids.length === 0) return;
   await supabase
     .from("students")
-    .update({ enrolled, updated_at: new Date().toISOString() })
+    .update({
+      enrolled,
+      withdrawn_at: enrolled ? null : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .in("id", ids);
 }
 
@@ -624,11 +632,11 @@ export async function listCalendarNotesForRange(
   return (data as CalendarNote[]) ?? [];
 }
 
-export async function createCalendarNote(noteDate: Date, classKey: ClassKey | null) {
+export async function createCalendarNote(noteDate: Date, classKeys: ClassKey[] | null) {
   const iso = toISODate(noteDate);
   const { data } = await supabase
     .from("calendar_notes")
-    .insert({ note_date: iso, end_date: iso, class_key: classKey, content: "" })
+    .insert({ note_date: iso, end_date: iso, class_keys: classKeys, content: "" })
     .select("*")
     .single();
   return data as CalendarNote;
@@ -636,7 +644,7 @@ export async function createCalendarNote(noteDate: Date, classKey: ClassKey | nu
 
 export async function updateCalendarNote(
   id: number,
-  fields: Partial<{ note_date: string; end_date: string; class_key: ClassKey | null; content: string }>
+  fields: Partial<{ note_date: string; end_date: string; class_keys: ClassKey[] | null; content: string }>
 ) {
   await supabase.from("calendar_notes").update(fields).eq("id", id);
 }
@@ -756,5 +764,75 @@ export async function toggleDutyCheck(
   await supabase.from("duty_checks").upsert(
     { staff_id: staffId, item_id: itemId, check_date: toISODate(date), checked },
     { onConflict: "staff_id,item_id,check_date" }
+  );
+}
+
+// ============================================================
+// grades — 내신(school_exams) / 모의고사(mock_exams)
+// ============================================================
+
+export async function getSchoolExams(studentId: number): Promise<Map<string, SchoolExam>> {
+  const { data } = await supabase.from("school_exams").select("*").eq("student_id", studentId);
+  const map = new Map<string, SchoolExam>();
+  for (const row of (data as SchoolExam[]) ?? []) map.set(row.exam_key, row);
+  return map;
+}
+
+export async function upsertSchoolExam(
+  studentId: number,
+  examKey: string,
+  fields: Partial<Pick<SchoolExam, "score" | "rank" | "grade" | "note">>
+) {
+  const { data: existing } = await supabase
+    .from("school_exams")
+    .select("score, rank, grade, note")
+    .eq("student_id", studentId)
+    .eq("exam_key", examKey)
+    .maybeSingle();
+  await supabase.from("school_exams").upsert(
+    {
+      student_id: studentId,
+      exam_key: examKey,
+      score: existing?.score ?? null,
+      rank: existing?.rank ?? null,
+      grade: existing?.grade ?? null,
+      note: existing?.note ?? null,
+      ...fields,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,exam_key" }
+  );
+}
+
+export async function getMockExams(studentId: number): Promise<Map<string, MockExam>> {
+  const { data } = await supabase.from("mock_exams").select("*").eq("student_id", studentId);
+  const map = new Map<string, MockExam>();
+  for (const row of (data as MockExam[]) ?? []) map.set(row.exam_key, row);
+  return map;
+}
+
+export async function upsertMockExam(
+  studentId: number,
+  examKey: string,
+  fields: Partial<Pick<MockExam, "score" | "percentile" | "grade" | "note">>
+) {
+  const { data: existing } = await supabase
+    .from("mock_exams")
+    .select("score, percentile, grade, note")
+    .eq("student_id", studentId)
+    .eq("exam_key", examKey)
+    .maybeSingle();
+  await supabase.from("mock_exams").upsert(
+    {
+      student_id: studentId,
+      exam_key: examKey,
+      score: existing?.score ?? null,
+      percentile: existing?.percentile ?? null,
+      grade: existing?.grade ?? null,
+      note: existing?.note ?? null,
+      ...fields,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,exam_key" }
   );
 }

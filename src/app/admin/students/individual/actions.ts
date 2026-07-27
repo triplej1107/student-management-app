@@ -10,11 +10,15 @@ import {
   getStudentById,
   createStudent,
   deleteStudent,
+  getSchoolExams,
+  upsertSchoolExam,
+  getMockExams,
+  upsertMockExam,
   type RosterFieldUpdate,
   type NewStudentInput,
 } from "@/lib/data";
 import { classKeyFor } from "@/lib/classKey";
-import type { ClassKey, Student, StudentOverrides } from "@/lib/types";
+import type { ClassKey, MockExam, SchoolExam, Student, StudentOverrides } from "@/lib/types";
 
 export async function searchStudentsAction(query: {
   name?: string;
@@ -117,4 +121,36 @@ export async function deleteStudentAction(studentId: number) {
   await requireZongjuSession();
   await deleteStudent(studentId);
   revalidatePath("/admin/students/individual");
+}
+
+export async function getSchoolExamsAction(studentId: number): Promise<Record<string, SchoolExam>> {
+  await requireZongjuSession();
+  return Object.fromEntries(await getSchoolExams(studentId));
+}
+
+export async function upsertSchoolExamAction(
+  studentId: number,
+  examKey: string,
+  fields: Partial<Pick<SchoolExam, "score" | "rank" | "grade" | "note">>
+) {
+  await requireZongjuSession();
+  await upsertSchoolExam(studentId, examKey, fields);
+  revalidatePath("/admin/students/individual");
+  revalidatePath("/student");
+}
+
+export async function getMockExamsAction(studentId: number): Promise<Record<string, MockExam>> {
+  await requireZongjuSession();
+  return Object.fromEntries(await getMockExams(studentId));
+}
+
+export async function upsertMockExamAction(
+  studentId: number,
+  examKey: string,
+  fields: Partial<Pick<MockExam, "score" | "percentile" | "grade" | "note">>
+) {
+  await requireZongjuSession();
+  await upsertMockExam(studentId, examKey, fields);
+  revalidatePath("/admin/students/individual");
+  revalidatePath("/student");
 }

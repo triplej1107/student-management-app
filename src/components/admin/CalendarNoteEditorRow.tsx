@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CLASSES, type CalendarNote } from "@/lib/types";
+import { CLASSES, type CalendarNote, type ClassKey } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import {
-  updateCalendarNoteFieldAction,
+  updateCalendarNoteContentAction,
+  updateCalendarNoteClassesAction,
   updateCalendarNoteRangeAction,
   deleteCalendarNoteAction,
 } from "@/app/admin/students/calendar/actions";
@@ -16,12 +17,22 @@ export function CalendarNoteEditorRow({ note }: { note: CalendarNote }) {
   const [, startTransition] = useTransition();
   const [startDate, setStartDate] = useState(note.note_date);
   const [endDate, setEndDate] = useState(note.end_date);
-  const [classKey, setClassKey] = useState(note.class_key ?? "");
+  const [classKeys, setClassKeys] = useState<ClassKey[]>(note.class_keys ?? []);
   const [content, setContent] = useState(note.content);
 
-  function commit(field: "class_key" | "content", value: string) {
+  function commitContent(value: string) {
     startTransition(async () => {
-      await updateCalendarNoteFieldAction(note.id, field, value);
+      await updateCalendarNoteContentAction(note.id, value);
+      showToast("저장됨");
+      router.refresh();
+    });
+  }
+
+  function toggleClass(c: (typeof CLASSES)[number]) {
+    const next = classKeys.includes(c) ? classKeys.filter((k) => k !== c) : [...classKeys, c];
+    setClassKeys(next);
+    startTransition(async () => {
+      await updateCalendarNoteClassesAction(note.id, next);
       showToast("저장됨");
       router.refresh();
     });
@@ -68,25 +79,44 @@ export function CalendarNoteEditorRow({ note }: { note: CalendarNote }) {
           삭제
         </button>
       </div>
-      <select
-        value={classKey}
-        onChange={(e) => {
-          setClassKey(e.target.value);
-          commit("class_key", e.target.value);
-        }}
-        className="mb-1.5 w-full box-border rounded-lg border border-line bg-white px-2.5 py-2 text-xs"
-      >
-        <option value="">전체 반</option>
+      <div className="mb-1.5 flex flex-wrap gap-1.5">
+        <button
+          onClick={() => {
+            setClassKeys([]);
+            startTransition(async () => {
+              await updateCalendarNoteClassesAction(note.id, []);
+              showToast("저장됨");
+              router.refresh();
+            });
+          }}
+          className={
+            "rounded-lg border px-2.5 py-1.5 text-xs font-bold " +
+            (classKeys.length === 0
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line bg-white text-ink-secondary")
+          }
+        >
+          전체 반
+        </button>
         {CLASSES.map((c) => (
-          <option key={c} value={c}>
+          <button
+            key={c}
+            onClick={() => toggleClass(c)}
+            className={
+              "rounded-lg border px-2.5 py-1.5 text-xs font-bold " +
+              (classKeys.includes(c)
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-line bg-white text-ink-secondary")
+            }
+          >
             {c}
-          </option>
+          </button>
         ))}
-      </select>
+      </div>
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        onBlur={(e) => commit("content", e.target.value)}
+        onBlur={(e) => commitContent(e.target.value)}
         placeholder="예: 모의고사, 여름특강 시작"
         className="min-h-[52px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-xs"
       />

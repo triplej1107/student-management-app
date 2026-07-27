@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CLASSES, DAY_ORDER, type Student } from "@/lib/types";
+import { CLASSES, DAY_ORDER, SCHOOL_EXAMS, MOCK_EXAMS, type Student } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import {
   searchStudentsAction,
@@ -10,7 +10,12 @@ import {
   updateRosterFieldAction,
   createStudentAction,
   deleteStudentAction,
+  getSchoolExamsAction,
+  upsertSchoolExamAction,
+  getMockExamsAction,
+  upsertMockExamAction,
 } from "@/app/admin/students/individual/actions";
+import { GradesEditor } from "@/components/admin/GradesEditor";
 
 export function IndividualManager() {
   const router = useRouter();
@@ -477,6 +482,25 @@ function IndividualEditForm({
           ))}
         </select>
       </div>
+
+      <GradesEditor
+        title="내신 성적"
+        studentId={student.id}
+        slots={SCHOOL_EXAMS}
+        secondFieldKey="rank"
+        secondFieldLabel="등수"
+        fetchAction={getSchoolExamsAction}
+        saveAction={upsertSchoolExamAction}
+      />
+      <GradesEditor
+        title="모의고사 성적"
+        studentId={student.id}
+        slots={MOCK_EXAMS}
+        secondFieldKey="percentile"
+        secondFieldLabel="백분위"
+        fetchAction={getMockExamsAction}
+        saveAction={upsertMockExamAction}
+      />
     </div>
   );
 }

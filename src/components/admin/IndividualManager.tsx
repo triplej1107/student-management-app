@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CLASSES, DAY_ORDER, effectiveStudentFields, type Student } from "@/lib/types";
+import { CLASSES, DAY_ORDER, type Student } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import {
   searchStudentsAction,
-  updateIndividualOverrideAction,
   updateIndividualFieldAction,
   updateRosterFieldAction,
   createStudentAction,
@@ -288,16 +287,6 @@ function IndividualEditForm({
 }) {
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
-  const eff = effectiveStudentFields(student);
-  const [midScore, setMidScore] = useState(eff.midScore?.toString() ?? "");
-  const [midRank, setMidRank] = useState(eff.midRank?.toString() ?? "");
-  const [finalScore, setFinalScore] = useState(eff.finalCompScore?.toString() ?? "");
-  const [finalRank, setFinalRank] = useState(eff.finalCompRank?.toString() ?? "");
-  const [mock3, setMock3] = useState(eff.mock3Label ?? "");
-  const [note, setNote] = useState(student.note_to_next_ta);
-  const [mainBook, setMainBook] = useState(student.main_book);
-  const [hwBook, setHwBook] = useState(student.hw_book);
-  const [mgmtBook, setMgmtBook] = useState(student.mgmt_book);
   const [classKey, setClassKey] = useState(student.class_key ?? CLASSES[0]);
 
   const [nickname, setNickname] = useState(student.nickname ?? "");
@@ -313,15 +302,6 @@ function IndividualEditForm({
   const [enrolled, setEnrolled] = useState(student.enrolled);
   const [deleting, setDeleting] = useState(false);
 
-  function commitOverride(
-    field: "midScore" | "midRank" | "finalCompScore" | "finalCompRank" | "mock3Label",
-    value: string
-  ) {
-    startTransition(async () => {
-      await updateIndividualOverrideAction(student.id, field, value);
-      showToast("저장됨");
-    });
-  }
   function commitField(fields: Parameters<typeof updateIndividualFieldAction>[1]) {
     startTransition(async () => {
       await updateIndividualFieldAction(student.id, fields);
@@ -479,88 +459,6 @@ function IndividualEditForm({
         </div>
       </div>
 
-      <div className="mb-2 flex gap-1.5">
-        <input
-          value={midScore}
-          onChange={(e) => setMidScore(e.target.value)}
-          onBlur={(e) => commitOverride("midScore", e.target.value)}
-          placeholder="중간점수"
-          className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
-        />
-        <input
-          value={midRank}
-          onChange={(e) => setMidRank(e.target.value)}
-          onBlur={(e) => commitOverride("midRank", e.target.value)}
-          placeholder="중간등수"
-          className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
-        />
-      </div>
-      <div className="mb-2 flex gap-1.5">
-        <input
-          value={finalScore}
-          onChange={(e) => setFinalScore(e.target.value)}
-          onBlur={(e) => commitOverride("finalCompScore", e.target.value)}
-          placeholder="기말경쟁전 점수"
-          className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
-        />
-        <input
-          value={finalRank}
-          onChange={(e) => setFinalRank(e.target.value)}
-          onBlur={(e) => commitOverride("finalCompRank", e.target.value)}
-          placeholder="기말경쟁전 순위"
-          className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
-        />
-      </div>
-      <input
-        value={mock3}
-        onChange={(e) => setMock3(e.target.value)}
-        onBlur={(e) => commitOverride("mock3Label", e.target.value)}
-        placeholder="3모 (예: 95/(1))"
-        className="mb-2 w-full box-border rounded-lg border border-line px-2.5 py-2 text-xs"
-      />
-
-      <div className="mb-2 flex gap-1.5">
-        <button
-          onClick={() => {
-            const next = !mainBook;
-            setMainBook(next);
-            commitField({ main_book: next });
-          }}
-          className={
-            "flex-1 rounded-lg border px-2 py-2 text-xs font-bold " +
-            (mainBook ? "border-accent bg-accent-soft text-accent" : "border-line bg-white text-ink-secondary")
-          }
-        >
-          본교재 {mainBook ? "✓" : ""}
-        </button>
-        <button
-          onClick={() => {
-            const next = !hwBook;
-            setHwBook(next);
-            commitField({ hw_book: next });
-          }}
-          className={
-            "flex-1 rounded-lg border px-2 py-2 text-xs font-bold " +
-            (hwBook ? "border-accent bg-accent-soft text-accent" : "border-line bg-white text-ink-secondary")
-          }
-        >
-          숙제교재 {hwBook ? "✓" : ""}
-        </button>
-        <button
-          onClick={() => {
-            const next = !mgmtBook;
-            setMgmtBook(next);
-            commitField({ mgmt_book: next });
-          }}
-          className={
-            "flex-1 rounded-lg border px-2 py-2 text-xs font-bold " +
-            (mgmtBook ? "border-accent bg-accent-soft text-accent" : "border-line bg-white text-ink-secondary")
-          }
-        >
-          관리북 {mgmtBook ? "✓" : ""}
-        </button>
-      </div>
-
       <div className="mb-2">
         <div className="mb-1 text-[11px] font-bold text-ink-muted">반 배정</div>
         <select
@@ -579,14 +477,6 @@ function IndividualEditForm({
           ))}
         </select>
       </div>
-
-      <textarea
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        onBlur={(e) => commitField({ note_to_next_ta: e.target.value })}
-        placeholder="다음 조교에게 전달"
-        className="min-h-[60px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-xs"
-      />
     </div>
   );
 }

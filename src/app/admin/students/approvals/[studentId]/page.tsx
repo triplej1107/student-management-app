@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireZongjuSession } from "@/lib/authz";
 import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from "@/lib/data";
-import { rollingWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
+import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
 import { AdminApprovalChecklist } from "@/components/admin/AdminApprovalChecklist";
 
@@ -20,7 +20,7 @@ export default async function AdminApprovalDetailPage({
   const student = await getStudentById(Number(studentId));
   if (!student) notFound();
 
-  const weeks = rollingWeeks(8);
+  const weeks = rollingClinicWeeks(8);
   const selectedWeekStart = week ? parseISODate(week) : weeks[0];
   const selectedWeekISO = toISODate(selectedWeekStart);
 

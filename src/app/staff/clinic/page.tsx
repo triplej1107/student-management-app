@@ -30,7 +30,7 @@ export default async function StaffClinicListPage({
   searchParams: Promise<{ day?: string }>;
 }) {
   await requireStaffSession();
-  const { weekStart, weekEnd, dayLabel: todayLabel } = getToday();
+  const { weekStart, weekEnd, clinicWeekStart, dayLabel: todayLabel } = getToday();
   const { day: dayParam } = await searchParams;
 
   const weeklyRoster = await getWeeklyRoster(weekStart, weekEnd);
@@ -48,9 +48,9 @@ export default async function StaffClinicListPage({
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(
       roster.map((r) => r.student.id),
-      weekStart
+      clinicWeekStart
     ),
-    getClinicTemplatesForWeek(weekStart),
+    getClinicTemplatesForWeek(clinicWeekStart),
   ]);
 
   const items = roster.map(({ student, effTime }) => {

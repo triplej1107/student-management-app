@@ -54,6 +54,16 @@ export function rollingWeeks(count: number, today: Date = new Date()): Date[] {
   });
 }
 
+/** rollingWeeks anchored one week back. 수업/클리닉 콘텐츠는 주말 수업이
+ * 끝난 다음 주에 기록되므로 (예: 7월 4주차 클리닉은 8월 1주차 동안 진행),
+ * 진행 중인 달력상 이번 주는 아직 목록에 나타나면 안 된다 — 최신 주차는
+ * 항상 "지난주"다. */
+export function rollingClinicWeeks(count: number, today: Date = new Date()): Date[] {
+  const anchor = new Date(today);
+  anchor.setDate(anchor.getDate() - 7);
+  return rollingWeeks(count, anchor);
+}
+
 /** 월요일=0 ... 일요일=6 index for a JS Date. */
 export function dayLabelOf(date: Date): (typeof DAY_ORDER)[number] {
   const jsDay = date.getDay(); // 0=Sun

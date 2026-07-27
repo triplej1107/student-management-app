@@ -25,7 +25,7 @@ export default async function AdminApprovalsPage({
   searchParams: Promise<{ day?: string }>;
 }) {
   await requireZongjuSession();
-  const { weekStart, weekEnd, dayLabel: todayLabel } = getToday();
+  const { weekStart, weekEnd, clinicWeekStart, dayLabel: todayLabel } = getToday();
   const { day: dayParam } = await searchParams;
 
   const weeklyRoster = await getWeeklyRoster(weekStart, weekEnd);
@@ -43,9 +43,9 @@ export default async function AdminApprovalsPage({
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(
       roster.map((r) => r.student.id),
-      weekStart
+      clinicWeekStart
     ),
-    getClinicTemplatesForWeek(weekStart),
+    getClinicTemplatesForWeek(clinicWeekStart),
   ]);
 
   return (

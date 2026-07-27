@@ -20,10 +20,10 @@ export default async function StudentHomePage() {
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const { weekStart, today } = getToday();
+  const { clinicWeekStart, today } = getToday();
   const [template, check, notices, allMonthNotes] = await Promise.all([
-    student.class_key ? getClinicTemplate(student.class_key, weekStart) : null,
-    getClinicCheck(student.id, weekStart),
+    student.class_key ? getClinicTemplate(student.class_key, clinicWeekStart) : null,
+    getClinicCheck(student.id, clinicWeekStart),
     student.class_key ? listNoticesForClass(student.class_key, 3) : [],
     listCalendarNotesForRange(monthStart(today), monthEnd(today)),
   ]);
@@ -51,7 +51,7 @@ export default async function StudentHomePage() {
 
       <div className="mt-5">
         <div className="mb-1 text-sm font-bold text-ink">이번주 클리닉 점검표</div>
-        <div className="mb-2.5 text-xs text-ink-muted">{weekLabel(weekStart)}</div>
+        <div className="mb-2.5 text-xs text-ink-muted">{weekLabel(clinicWeekStart)}</div>
         {!template && <EmptyState>이번 주는 아직 등록된 점검표가 없어요.</EmptyState>}
         {template && <ClinicChecklistReadOnly template={template} check={check ?? undefined} />}
       </div>

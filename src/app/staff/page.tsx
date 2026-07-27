@@ -18,7 +18,7 @@ import { logoutAction } from "@/app/login/actions";
 
 export default async function StaffHomePage() {
   const session = await requireStaffSession();
-  const { today, weekStart, weekEnd, dayLabel } = getToday();
+  const { today, weekStart, weekEnd, clinicWeekStart, dayLabel } = getToday();
 
   const [staff, roster, attendanceMap, dutyItems, dutyChecks, noticeLists] = await Promise.all([
     getStaffById(session.staffId),
@@ -38,9 +38,9 @@ export default async function StaffHomePage() {
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(
       roster.map((r) => r.student.id),
-      weekStart
+      clinicWeekStart
     ),
-    getClinicTemplatesForWeek(weekStart),
+    getClinicTemplatesForWeek(clinicWeekStart),
   ]);
   const incompleteCount = roster.filter((r) => {
     const template = r.student.class_key ? templatesMap.get(r.student.class_key) : undefined;

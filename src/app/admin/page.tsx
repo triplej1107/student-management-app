@@ -18,7 +18,7 @@ const PRIORITY_DAYS = ["수", "목", "금", "토", "일", "월", "화"] as const
 
 export default async function AdminHomePage() {
   await requireZongjuSession();
-  const { today, weekStart, weekEnd, dayLabel } = getToday();
+  const { today, weekStart, weekEnd, clinicWeekStart, dayLabel } = getToday();
 
   const [roster, attendanceMap, staff, dutyItems, dutyChecksByDay] = await Promise.all([
     getRosterForDay(dayLabel, weekStart, weekEnd),
@@ -39,9 +39,9 @@ export default async function AdminHomePage() {
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(
       roster.map((r) => r.student.id),
-      weekStart
+      clinicWeekStart
     ),
-    getClinicTemplatesForWeek(weekStart),
+    getClinicTemplatesForWeek(clinicWeekStart),
   ]);
   const incompleteCount = roster.filter((r) => {
     const template = r.student.class_key ? templatesMap.get(r.student.class_key) : undefined;

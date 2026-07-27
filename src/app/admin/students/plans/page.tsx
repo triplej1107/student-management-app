@@ -1,7 +1,7 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { getClassPlan } from "@/lib/data";
 import { CLASSES, type ClassKey } from "@/lib/types";
-import { rollingWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
+import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { AdminSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink } from "@/components/ui";
 import { LessonPlanEditor } from "@/components/admin/LessonPlanEditor";
@@ -18,7 +18,7 @@ export default async function AdminLessonPlansPage({
   const classKey: ClassKey = CLASSES.includes(classParam as ClassKey)
     ? (classParam as ClassKey)
     : CLASSES[0];
-  const weeks = rollingWeeks(8);
+  const weeks = rollingClinicWeeks(8);
   const selectedWeekStart = weekParam ? parseISODate(weekParam) : weeks[0];
   const selectedWeekISO = toISODate(selectedWeekStart);
 

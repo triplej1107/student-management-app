@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
 import { getStudentById, getClinicTemplate, getClinicCheck } from "@/lib/data";
-import { rollingWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
+import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState, ScreenTitle } from "@/components/ui";
 import { ClinicChecklistReadOnly } from "@/components/ClinicChecklistReadOnly";
 
@@ -15,7 +15,7 @@ export default async function StudentClinicPage({
   if (!student) notFound();
 
   const { week } = await searchParams;
-  const weeks = rollingWeeks(8);
+  const weeks = rollingClinicWeeks(8);
   const selectedWeekStart = week ? parseISODate(week) : weeks[0];
   const selectedWeekISO = toISODate(selectedWeekStart);
 

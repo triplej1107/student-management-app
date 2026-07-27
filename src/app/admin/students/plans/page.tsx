@@ -28,14 +28,14 @@ export default async function AdminLessonPlansPage({
     <div>
       <AdminSubNav tabs={STUDENT_SUB_TABS} />
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2 border-b border-line-soft pb-4">
         {CLASSES.map((c) => (
           <PillLink key={c} href={`/admin/students/plans?class=${c}&week=${selectedWeekISO}`} active={c === classKey}>
             {c}
           </PillLink>
         ))}
       </div>
-      <div className="mt-2.5 flex gap-1.5 overflow-x-auto">
+      <div className="mt-3.5 flex gap-1.5 overflow-x-auto">
         {weeks.map((w) => {
           const iso = toISODate(w);
           return (

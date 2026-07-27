@@ -13,7 +13,7 @@ export function AdminTopNav() {
   const pathname = usePathname();
 
   return (
-    <div className="mt-4 flex gap-2">
+    <div className="mt-4 flex gap-2 border-b border-line-soft pb-4">
       {TOP_TABS.map((tab) => (
         <Link
           key={tab.href}
@@ -39,7 +39,7 @@ export function AdminSubNav({
 }) {
   const pathname = usePathname();
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
+    <div className="mt-4 flex flex-wrap gap-2 border-b border-line-soft pb-4">
       {tabs.map((tab) => {
         const isCurrent = pathname === tab.href.split("?")[0];
         return (

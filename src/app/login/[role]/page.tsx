@@ -15,7 +15,7 @@ const ROLE_META: Record<
   parent: {
     roleLabel: "학부모",
     idLabel: "학부모 전화번호",
-    idPlaceholder: "예: 01012345678 (하이픈 없이 입력하셔도 돼요)",
+    idPlaceholder: "예: 01012345678",
     hasPassword: false,
   },
   staff: {

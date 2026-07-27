@@ -36,13 +36,15 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${pretendard.variable} h-full antialiased`}>
       <body className="relative min-h-full flex flex-col bg-bg-page">
-        <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center opacity-5">
-          <div className="relative h-[480px] w-[480px]">
-            <Image src="/logo-full.png" alt="" fill className="object-contain" priority />
+        <div className="relative mx-auto flex min-h-full w-full max-w-[440px] flex-1 flex-col overflow-hidden bg-bg shadow-[0_0_40px_rgba(0,0,0,0.03)]">
+          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-5">
+            <div className="relative h-[480px] w-[480px]">
+              <Image src="/logo-full.png" alt="" fill className="object-contain" priority />
+            </div>
           </div>
-        </div>
-        <div className="relative z-10 mx-auto flex min-h-full w-full max-w-[440px] flex-1 flex-col bg-bg shadow-[0_0_40px_rgba(0,0,0,0.03)]">
-          <ToastProvider>{children}</ToastProvider>
+          <div className="relative z-10 flex flex-1 flex-col">
+            <ToastProvider>{children}</ToastProvider>
+          </div>
         </div>
       </body>
     </html>

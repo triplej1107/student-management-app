@@ -21,7 +21,7 @@ export default async function RoleSelectPage() {
   if (session.role === "student" || session.role === "parent") redirect("/student");
 
   return (
-    <div className="flex h-full flex-1 flex-col items-center px-7 pb-5 pt-6">
+    <div className="flex h-full flex-1 flex-col items-center justify-center px-7 pb-5 pt-6">
       <Image
         src="/icon-192.png"
         alt="유종의미 국어학원"

@@ -41,7 +41,7 @@ export default async function RoleSelectPage() {
             key={role}
             href={`/login/${role}`}
             className={
-              "flex w-full items-center justify-between rounded-2xl p-4 text-base font-bold shadow-[0_2px_10px_rgba(0,86,255,0.08)] " +
+              "flex w-full items-center justify-between rounded-2xl p-4 text-base font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
               (style === "soft" ? "bg-accent-soft text-accent" : "bg-white text-ink")
             }
           >
@@ -53,7 +53,7 @@ export default async function RoleSelectPage() {
           href={VACATION_SCORE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-between rounded-2xl bg-white p-4 text-base font-bold text-ink shadow-[0_2px_10px_rgba(0,86,255,0.08)]"
+          className="flex w-full items-center justify-between rounded-2xl bg-white p-4 text-base font-bold text-ink shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         >
           방학특강 성적조회
           <span className="text-accent">›</span>

@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg: oklch(0.97 0.008 70);
-  --color-bg-page: oklch(0.94 0.01 60);
+  --color-bg: oklch(0.975 0.006 255);
+  --color-bg-page: oklch(0.95 0.012 255);
   --color-ink: oklch(0.24 0.02 50);
   --color-ink-muted: oklch(0.55 0.02 50);
   --color-ink-secondary: oklch(0.45 0.02 50);
@@ -15,8 +15,8 @@
   --color-warn-soft: oklch(0.95 0.06 85);
   --color-danger: oklch(0.55 0.17 25);
   --color-danger-soft: oklch(0.94 0.05 25);
-  --color-line: oklch(0.9 0.01 60);
-  --color-line-soft: oklch(0.92 0.01 60);
+  --color-line: oklch(0.9 0.012 255);
+  --color-line-soft: oklch(0.92 0.01 255);
 }
 
 @theme inline {

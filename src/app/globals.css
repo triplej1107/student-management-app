@@ -6,9 +6,9 @@
   --color-ink: oklch(0.24 0.02 50);
   --color-ink-muted: oklch(0.55 0.02 50);
   --color-ink-secondary: oklch(0.45 0.02 50);
-  --color-accent: oklch(0.58 0.15 35);
-  --color-accent-hover: oklch(0.5 0.16 35);
-  --color-accent-soft: oklch(0.94 0.045 35);
+  --color-accent: #0056ff;
+  --color-accent-hover: #0044dd;
+  --color-accent-soft: #e3e7fc;
   --color-success: oklch(0.55 0.13 150);
   --color-success-soft: oklch(0.94 0.05 150);
   --color-warn: oklch(0.6 0.14 85);

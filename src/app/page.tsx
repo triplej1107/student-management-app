@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 
 const roles = [
-  { role: "student", label: "학생", style: "outline" },
-  { role: "parent", label: "학부모", style: "outline" },
-  { role: "staff", label: "조교", style: "accent" },
-  { role: "zongju", label: "종주T", style: "dark" },
+  { role: "student", label: "학생", style: "white" },
+  { role: "parent", label: "학부모", style: "white" },
+  { role: "staff", label: "조교", style: "soft" },
+  { role: "zongju", label: "종주T", style: "soft" },
 ] as const;
 
 // 임시: 여름방학 6주 특강 기간에만 노출. 방학 끝나면 이 상수와 아래 <a> 블록을 삭제.
@@ -41,25 +41,19 @@ export default async function RoleSelectPage() {
             key={role}
             href={`/login/${role}`}
             className={
-              "flex w-full items-center justify-between rounded-2xl p-4 text-base font-bold " +
-              (style === "outline"
-                ? "border border-line bg-white text-ink"
-                : style === "accent"
-                  ? "border-none bg-accent text-white"
-                  : "border-none bg-ink text-white")
+              "flex w-full items-center justify-between rounded-2xl p-4 text-base font-bold shadow-[0_2px_10px_rgba(0,86,255,0.08)] " +
+              (style === "soft" ? "bg-accent-soft text-accent" : "bg-white text-ink")
             }
           >
             {label}
-            <span className={style === "outline" ? "text-accent" : "text-white"}>
-              ›
-            </span>
+            <span className="text-accent">›</span>
           </Link>
         ))}
         <a
           href={VACATION_SCORE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-between rounded-2xl border border-line bg-white p-4 text-base font-bold text-ink"
+          className="flex w-full items-center justify-between rounded-2xl bg-white p-4 text-base font-bold text-ink shadow-[0_2px_10px_rgba(0,86,255,0.08)]"
         >
           방학특강 성적조회
           <span className="text-accent">›</span>

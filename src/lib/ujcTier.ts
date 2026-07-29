@@ -33,6 +33,8 @@ export function gradeForScore(score: number): TierGrade {
   return TIER_BOUNDARIES.find((b) => score >= b.min)!.grade;
 }
 
+export const TIER_GRADES_DESC: TierGrade[] = TIER_BOUNDARIES.map((b) => b.grade);
+
 export interface StudentTierInfo {
   studentId: number;
   name: string;

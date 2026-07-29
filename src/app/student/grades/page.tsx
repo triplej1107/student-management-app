@@ -54,6 +54,9 @@ export default async function StudentGradesPage() {
             { from: 50, to: 75, opacity: 0.05 },
           ]}
         />
+        <div className="mt-2 text-[11px] leading-relaxed text-ink-muted/70">
+          같은 주에 점수가 입력된 같은 반 학생들끼리 등수를 매겨요. 클리닉테스트가 여러 개면 각각의 등수를 평균한 뒤 백분위로 환산해요.
+        </div>
       </div>
 
       <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">

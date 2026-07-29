@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { getClinicCheck } from "./data";
+import { getClinicCheck, listStudents } from "./data";
 import { toISODate } from "./weeks";
 import type { UjcExchangeAmount } from "./types";
 
@@ -48,6 +48,32 @@ export async function getUjcHistory(studentId: number, limit = 50): Promise<UjcT
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data as UjcTransaction[]) ?? [];
+}
+
+export interface UjcBalanceLeaderboardRow {
+  studentId: number;
+  name: string;
+  nickname: string | null;
+  balance: number;
+}
+
+/** UJC 보유량 랭킹 — 성실도 티어와 달리 산정 유예 없이 재원생 전체를
+ * 보유량 순으로 보여준다 (별개의 랭킹). */
+export async function getUjcBalanceLeaderboard(): Promise<UjcBalanceLeaderboardRow[]> {
+  const students = await listStudents({ enrolledOnly: true });
+  const ids = students.map((s) => s.id);
+  if (ids.length === 0) return [];
+
+  const { data } = await supabase.from("ujc_transactions").select("student_id, amount").in("student_id", ids);
+  const balances = new Map<number, number>();
+  for (const row of data ?? []) {
+    balances.set(row.student_id, (balances.get(row.student_id) ?? 0) + row.amount);
+  }
+
+  return students
+    .map((s) => ({ studentId: s.id, name: s.name, nickname: s.nickname, balance: balances.get(s.id) ?? 0 }))
+    .filter((r) => r.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
 }
 
 /**

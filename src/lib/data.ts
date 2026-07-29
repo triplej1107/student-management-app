@@ -468,6 +468,26 @@ export async function getClinicChecksForStudents(
   return map;
 }
 
+/** AI 피드백 생성 시 "저번 주와 다른 표현 쓰기" 참고용 — 같은 학생의
+ * 최근 피드백 문장들(현재 주차 제외)을 최신순으로 가져온다. */
+export async function getRecentFeedbackTexts(
+  studentId: number,
+  excludeWeekStartISO: string,
+  limit = 3
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("clinic_checks")
+    .select("feedback_text, week_start")
+    .eq("student_id", studentId)
+    .not("feedback_text", "is", null)
+    .neq("week_start", excludeWeekStartISO)
+    .order("week_start", { ascending: false })
+    .limit(limit);
+  return ((data as { feedback_text: string | null }[]) ?? [])
+    .map((r) => r.feedback_text)
+    .filter((t): t is string => !!t);
+}
+
 export async function setClinicHwCheck(
   studentId: number,
   weekStart: Date,

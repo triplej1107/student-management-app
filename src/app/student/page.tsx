@@ -74,7 +74,7 @@ export default async function StudentHomePage() {
             href="/student/tier-leaderboard"
             className="mt-2 block text-center text-xs font-bold text-accent"
           >
-            성실도 리더보드 보기 →
+            리더보드 확인하기 →
           </Link>
 
           {history.length > 0 && (

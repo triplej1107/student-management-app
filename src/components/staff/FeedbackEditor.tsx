@@ -41,7 +41,7 @@ export function FeedbackEditor({
       const res = await fetch("/api/feedback-generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tags }),
+        body: JSON.stringify({ tags, studentId, weekStartISO }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -74,6 +74,9 @@ export function FeedbackEditor({
       <div className="mb-2 text-[13px] font-bold text-ink">
         조교T의 피드백{" "}
         <span className="font-normal text-ink-muted">(저장 후 종주T 최종 결재가 나야 학부모에게 노출돼요)</span>
+      </div>
+      <div className="mb-2 text-[11px] text-ink-muted">
+        모든 카테고리를 다 체크할 필요는 없어요. 어느 카테고리든 학생에게 꼭 해당하는 항목만 최소 1개 이상 선택해주세요.
       </div>
       <div className="flex flex-col gap-2">
         {FEEDBACK_CATEGORIES.map(({ key, label, options }) => (

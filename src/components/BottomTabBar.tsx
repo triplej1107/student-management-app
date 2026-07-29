@@ -104,8 +104,8 @@ export const STAFF_TABS = [
   { href: "/staff", label: "홈" },
   { href: "/staff/attendance", label: "출결" },
   { href: "/staff/clinic", label: "클리닉" },
-  { href: "/staff/checklist", label: "체크리스트" },
   { href: "/staff/clinic-backlog", label: "밀림" },
+  { href: "/staff/checklist", label: "체크리스트" },
 ];
 
 export const STUDENT_TABS = [

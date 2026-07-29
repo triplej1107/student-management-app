@@ -1,5 +1,6 @@
 import { requireStaffSession } from "@/lib/authz";
-import { BottomTabBar, STAFF_TABS } from "@/components/BottomTabBar";
+import { BottomTabBar } from "@/components/BottomTabBar";
+import { STAFF_TABS } from "@/lib/navTabs";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   await requireStaffSession();

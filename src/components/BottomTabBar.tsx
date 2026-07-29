@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import type { NavTab } from "@/lib/navTabs";
 
 const ICONS: Record<string, (active: boolean) => ReactNode> = {
   홈: (active) => (
@@ -76,11 +77,7 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
   ),
 };
 
-export function BottomTabBar({
-  tabs,
-}: {
-  tabs: { href: string; label: string; icon?: string; popped?: boolean }[];
-}) {
+export function BottomTabBar({ tabs }: { tabs: NavTab[] }) {
   const pathname = usePathname();
   return (
     <div
@@ -132,19 +129,3 @@ export function BottomTabBar({
     </div>
   );
 }
-
-export const STAFF_TABS = [
-  { href: "/staff", label: "홈" },
-  { href: "/staff/attendance", label: "출결" },
-  { href: "/staff/clinic", label: "클리닉" },
-  { href: "/staff/clinic-backlog", label: "밀림" },
-  { href: "/staff/checklist", label: "체크리스트" },
-];
-
-export const STUDENT_TABS = [
-  { href: "/student/lesson", label: "수업" },
-  { href: "/student/clinic", label: "클리닉" },
-  { href: "/student", label: "UJC", icon: "UJC", popped: true },
-  { href: "/student/grades", label: "성적" },
-  { href: "/student/notices", label: "공지" },
-];

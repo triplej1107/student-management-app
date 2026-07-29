@@ -1,5 +1,6 @@
 import { requireStudentSession } from "@/lib/authz";
-import { BottomTabBar, STUDENT_TABS } from "@/components/BottomTabBar";
+import { BottomTabBar } from "@/components/BottomTabBar";
+import { STUDENT_TABS } from "@/lib/navTabs";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await requireStudentSession();

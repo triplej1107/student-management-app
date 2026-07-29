@@ -1,23 +1,28 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/ui";
 import { ClinicContactRow } from "@/components/ClinicContactRow";
+import { ClinicClearButton } from "@/components/ClinicClearButton";
 import type { ClinicBacklogEntry } from "@/lib/clinicBacklog";
 import type { ClinicContactLog } from "@/lib/types";
 
 /** 관리자(/admin/clinic-backlog)와 조교(/staff/clinic-backlog) 양쪽에서
- * 쓰는 밀림 목록 뷰 — 링크 대상과 서버 액션만 페이지별로 주입받는다. */
+ * 쓰는 밀림 목록 뷰 — 링크 대상과 서버 액션만 페이지별로 주입받는다.
+ * clearAction은 종주T 전용 기능이라 admin 쪽에서만 넘겨준다 (undefined면
+ * 버튼 자체가 안 보임). */
 export function ClinicBacklogView({
   entries,
   contactLogs,
   detailHref,
   toggleAction,
   saveNoteAction,
+  clearAction,
 }: {
   entries: ClinicBacklogEntry[];
   contactLogs: Map<number, ClinicContactLog>;
   detailHref: (entry: ClinicBacklogEntry) => string;
   toggleAction: (studentId: number, contacted: boolean) => Promise<void>;
   saveNoteAction: (studentId: number, note: string) => Promise<void>;
+  clearAction?: (studentId: number, weekStartISO: string) => Promise<void>;
 }) {
   const oneWeek = entries.filter((e) => e.weeksOverdue === 1);
   const twoPlus = entries.filter((e) => e.weeksOverdue >= 2);
@@ -81,6 +86,15 @@ export function ClinicBacklogView({
                   initialNote={log?.note ?? null}
                   toggleAction={toggleAction}
                   saveNoteAction={saveNoteAction}
+                />
+              )}
+              {clearAction && (
+                <ClinicClearButton
+                  studentId={e.studentId}
+                  weekStartISO={e.oldestIncompleteWeekISO}
+                  studentName={e.studentName}
+                  weekLabel={e.oldestIncompleteLabel}
+                  clearAction={clearAction}
                 />
               )}
             </div>

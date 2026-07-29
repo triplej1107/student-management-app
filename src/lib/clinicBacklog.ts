@@ -1,4 +1,5 @@
 import "server-only";
+import { supabase } from "./supabase";
 import { listStudents, getClinicTemplatesForWeek, getClinicChecksForStudents } from "./data";
 import { filledHwSlots, filledTestSlots } from "./clinicProgress";
 import { rollingClinicWeeks, toISODate, weekLabel } from "./weeks";
@@ -44,9 +45,10 @@ export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklo
   const weeksAsc = weeksDesc.slice(1).reverse(); // 채점 중인 최신 주는 빼고, 과거 → 최근
   const studentIds = students.map((s) => s.id);
 
-  const [templatesByWeek, checksByWeek] = await Promise.all([
+  const [templatesByWeek, checksByWeek, clearedSet] = await Promise.all([
     Promise.all(weeksAsc.map((w) => getClinicTemplatesForWeek(w))),
     Promise.all(weeksAsc.map((w) => getClinicChecksForStudents(studentIds, w))),
+    getClearedWeekSet(studentIds),
   ]);
 
   const entries: ClinicBacklogEntry[] = [];
@@ -56,8 +58,10 @@ export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklo
 
     let oldestIncompleteIdx: number | null = null;
     for (let i = 0; i < weeksAsc.length; i++) {
+      const week = weeksAsc[i];
       const template = templatesByWeek[i].get(classKey);
       if (!template) continue; // 그 주에 배정된 클리닉이 없으면 대상에서 제외
+      if (clearedSet.has(`${student.id}_${toISODate(week)}`)) continue; // 종주T가 청산 처리함
       const check = checksByWeek[i].get(student.id);
       if (!isWeekFullyDone(template, check)) {
         oldestIncompleteIdx = i;
@@ -80,6 +84,34 @@ export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklo
 
   entries.sort((a, b) => b.weeksOverdue - a.weeksOverdue);
   return entries;
+}
+
+async function getClearedWeekSet(studentIds: number[]): Promise<Set<string>> {
+  if (studentIds.length === 0) return new Set();
+  const { data } = await supabase
+    .from("clinic_backlog_clears")
+    .select("student_id, week_start")
+    .in("student_id", studentIds);
+  return new Set((data ?? []).map((r) => `${r.student_id}_${r.week_start}`));
+}
+
+/** 종주T가 특정 학생의 특정 주차 밀림을 "청산" 처리 — 실제 숙제/테스트
+ * 완료 여부(clinic_checks)는 그대로 두고, getClinicBacklog가 그 주를
+ * 건너뛰게만 만든다. */
+export async function clearClinicBacklogEntry(
+  studentId: number,
+  weekStart: Date,
+  staffId?: number
+) {
+  await supabase.from("clinic_backlog_clears").upsert(
+    {
+      student_id: studentId,
+      week_start: toISODate(weekStart),
+      cleared_by: staffId ?? null,
+      cleared_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,week_start" }
+  );
 }
 
 /** The most recent clinic week whose grading period has fully closed —

@@ -1,21 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireZongjuSession } from "@/lib/authz";
+import { requireStaffSession } from "@/lib/authz";
 import { setClinicContact, setClinicContactNote } from "@/lib/clinicContactLog";
 import { currentBacklogEvalWeek } from "@/lib/clinicBacklog";
 
 export async function toggleContactAction(studentId: number, contacted: boolean) {
-  await requireZongjuSession();
-  await setClinicContact(studentId, currentBacklogEvalWeek(), { contacted });
-  revalidatePath("/admin/clinic-backlog");
-  revalidatePath("/admin");
+  const session = await requireStaffSession();
+  await setClinicContact(studentId, currentBacklogEvalWeek(), { contacted, staffId: session.staffId });
   revalidatePath("/staff/clinic-backlog");
+  revalidatePath("/admin/clinic-backlog");
 }
 
 export async function saveContactNoteAction(studentId: number, note: string) {
-  await requireZongjuSession();
+  await requireStaffSession();
   await setClinicContactNote(studentId, currentBacklogEvalWeek(), note);
-  revalidatePath("/admin/clinic-backlog");
   revalidatePath("/staff/clinic-backlog");
+  revalidatePath("/admin/clinic-backlog");
 }

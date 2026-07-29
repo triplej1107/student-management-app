@@ -4,12 +4,14 @@ import { requireStudentSession } from "@/lib/authz";
 import { getStudentById, getClinicTemplate, getClinicCheck, listNoticesForClass } from "@/lib/data";
 import { getUjcBalance, getUjcHistory } from "@/lib/ujc";
 import { getStudentTier } from "@/lib/ujcTier";
+import { getStudentBacklogDetail } from "@/lib/clinicBacklog";
 import { getToday } from "@/lib/today";
 import { weekLabel } from "@/lib/weeks";
 import { EmptyState } from "@/components/ui";
 import { ClinicChecklistReadOnly } from "@/components/ClinicChecklistReadOnly";
 import { PushSubscribeBanner } from "@/components/PushSubscribeBanner";
 import { UjcWalletCard } from "@/components/UjcWalletCard";
+import { BacklogWarningModal } from "@/components/BacklogWarningModal";
 import { logoutAction } from "@/app/login/actions";
 
 const UJC_REASON_LABEL: Record<string, string> = {
@@ -27,13 +29,14 @@ export default async function StudentHomePage() {
   const { clinicWeekStart } = getToday();
   const isStudent = session.role === "student";
 
-  const [template, check, notices, balance, tier, history] = await Promise.all([
+  const [template, check, notices, balance, tier, history, backlog] = await Promise.all([
     student.class_key ? getClinicTemplate(student.class_key, clinicWeekStart) : null,
     getClinicCheck(student.id, clinicWeekStart),
     student.class_key ? listNoticesForClass(student.class_key, 3) : [],
     isStudent ? getUjcBalance(student.id) : Promise.resolve(null),
     isStudent ? getStudentTier(student.id) : Promise.resolve(null),
     isStudent ? getUjcHistory(student.id, 5) : Promise.resolve([]),
+    isStudent ? getStudentBacklogDetail(student.id) : Promise.resolve(null),
   ]);
 
   return (
@@ -50,6 +53,16 @@ export default async function StudentHomePage() {
           </button>
         </form>
       </div>
+
+      {isStudent && backlog && (
+        <BacklogWarningModal
+          key={backlog.oldestIncompleteWeekISO}
+          weeksOverdue={backlog.weeksOverdue}
+          oldestIncompleteLabel={backlog.oldestIncompleteLabel}
+          missingHwLabels={backlog.missingHwLabels}
+          missingTestLabels={backlog.missingTestLabels}
+        />
+      )}
 
       {(session.role === "student" || session.role === "parent") && <PushSubscribeBanner />}
 

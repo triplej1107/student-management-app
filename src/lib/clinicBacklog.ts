@@ -1,7 +1,14 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { listStudents, getClinicTemplatesForWeek, getClinicChecksForStudents } from "./data";
-import { isClinicFullyDone } from "./clinicProgress";
+import {
+  listStudents,
+  getClinicTemplatesForWeek,
+  getClinicChecksForStudents,
+  getStudentById,
+  getClinicTemplate,
+  getClinicCheck,
+} from "./data";
+import { isClinicFullyDone, filledHwSlots, filledTestSlots } from "./clinicProgress";
 import { rollingClinicWeeks, toISODate, weekLabel } from "./weeks";
 import type { ClassKey } from "./types";
 
@@ -101,6 +108,62 @@ export async function clearClinicBacklogEntry(
     },
     { onConflict: "student_id,week_start" }
   );
+}
+
+export interface StudentBacklogDetail {
+  weeksOverdue: number;
+  oldestIncompleteLabel: string;
+  oldestIncompleteWeekISO: string;
+  missingHwLabels: string[];
+  missingTestLabels: string[];
+}
+
+/**
+ * 학생 개인용 — 로그인 시 "지금 나한테 뭐가 밀려있는지" 보여주는 경고
+ * 모달용. getClinicBacklog와 같은 "가장 오래된 미완료 주" 판정 로직을
+ * 쓰지만, 그 학생 한 명만 조회하므로 훨씬 가볍다 (홈 화면처럼 자주
+ * 여는 곳에서 호출 가능).
+ */
+export async function getStudentBacklogDetail(
+  studentId: number,
+  lookbackWeeks = 10
+): Promise<StudentBacklogDetail | null> {
+  const student = await getStudentById(studentId);
+  if (!student?.class_key) return null;
+  const classKey = student.class_key;
+
+  const weeksDesc = rollingClinicWeeks(lookbackWeeks + 1);
+  const weeksAsc = weeksDesc.slice(1).reverse();
+
+  const [templatesByWeek, checksByWeek, clearedSet] = await Promise.all([
+    Promise.all(weeksAsc.map((w) => getClinicTemplate(classKey, w))),
+    Promise.all(weeksAsc.map((w) => getClinicCheck(studentId, w))),
+    getClearedWeekSet([studentId]),
+  ]);
+
+  for (let i = 0; i < weeksAsc.length; i++) {
+    const week = weeksAsc[i];
+    const template = templatesByWeek[i];
+    if (!template) continue;
+    if (clearedSet.has(`${studentId}_${toISODate(week)}`)) continue;
+    const check = checksByWeek[i];
+    if (!isClinicFullyDone(template, check ?? undefined)) {
+      const missingHwLabels = filledHwSlots(template)
+        .filter((idx) => !check?.hw_checks?.[idx])
+        .map((idx) => template.hw_labels[idx]);
+      const missingTestLabels = filledTestSlots(template)
+        .filter((idx) => !check?.test_scores?.[idx]?.score)
+        .map((idx) => template.test_labels[idx]);
+      return {
+        weeksOverdue: weeksAsc.length - i,
+        oldestIncompleteLabel: weekLabel(week),
+        oldestIncompleteWeekISO: toISODate(week),
+        missingHwLabels,
+        missingTestLabels,
+      };
+    }
+  }
+  return null;
 }
 
 /** The most recent clinic week whose grading period has fully closed —

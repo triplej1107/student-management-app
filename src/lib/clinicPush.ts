@@ -43,16 +43,25 @@ export async function getPushSubscriptionsForStudents(
   return map;
 }
 
-/** 밀린 클리닉 1주차 알림을 학생의 모든 구독 기기에 보낸다. 더 이상
- * 유효하지 않은 구독(410 Gone/404)은 조용히 지운다. */
-export async function sendClinicBacklogPush(subs: PushSubscriptionRow[]) {
+/** 밀린 클리닉 알림을 학생의 모든 구독 기기에 보낸다. weeksOverdue가
+ * 2 이상이면 더 강한 경고 문구를 쓴다. 더 이상 유효하지 않은 구독
+ * (410 Gone/404)은 조용히 지운다. */
+export async function sendClinicBacklogPush(subs: PushSubscriptionRow[], weeksOverdue: number) {
   if (!publicKey || !privateKey || subs.length === 0) return;
 
-  const payload = JSON.stringify({
-    title: "클리닉 점검표 안내",
-    body: "지난주 클리닉 숙제·테스트가 아직 완료되지 않았어요. 확인해주세요!",
-    url: "/student/clinic",
-  });
+  const payload = JSON.stringify(
+    weeksOverdue >= 2
+      ? {
+          title: "⚠️ 클리닉 점검표 경고",
+          body: `클리닉 숙제·테스트가 ${weeksOverdue}주째 밀려있어요. 서둘러 확인해주세요!`,
+          url: "/student/clinic",
+        }
+      : {
+          title: "클리닉 점검표 안내",
+          body: "지난주 클리닉 숙제·테스트가 아직 완료되지 않았어요. 확인해주세요!",
+          url: "/student/clinic",
+        }
+  );
 
   const results = await Promise.allSettled(
     subs.map((s) =>

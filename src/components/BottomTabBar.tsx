@@ -68,6 +68,13 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
       <circle cx="12" cy="17.3" r="0.9" fill="currentColor" stroke="none" />
     </svg>
   ),
+  UJC: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-6 w-6">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9.3 14.8c.4.9 1.3 1.5 2.4 1.5 1.5 0 2.6-1 2.6-2.2 0-3-5-1.6-5-4.4 0-1.2 1.1-2.2 2.6-2.2 1.1 0 2 .6 2.4 1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 6.7v1.1M12 16.3v1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 };
 
 export function BottomTabBar({ tabs }: { tabs: { href: string; label: string }[] }) {
@@ -82,6 +89,29 @@ export function BottomTabBar({ tabs }: { tabs: { href: string; label: string }[]
           tab.href === pathname ||
           (tab.href !== "/staff" && tab.href !== "/student" && pathname.startsWith(tab.href));
         const icon = ICONS[tab.label]?.(active);
+
+        if (tab.label === "UJC") {
+          return (
+            <Link key={tab.href} href={tab.href} className="relative flex flex-1 flex-col items-center">
+              <div
+                className={
+                  "absolute -top-6 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white shadow-[0_4px_14px_rgba(0,86,255,0.4)] " +
+                  (active ? "bg-accent" : "bg-accent/85")
+                }
+              >
+                <span className="text-white">{icon}</span>
+              </div>
+              <span
+                className={
+                  "mt-9 text-[11px] font-bold " + (active ? "text-accent" : "text-ink-muted")
+                }
+              >
+                {tab.label}
+              </span>
+            </Link>
+          );
+        }
+
         return (
           <Link
             key={tab.href}
@@ -109,9 +139,9 @@ export const STAFF_TABS = [
 ];
 
 export const STUDENT_TABS = [
-  { href: "/student", label: "홈" },
   { href: "/student/lesson", label: "수업" },
   { href: "/student/clinic", label: "클리닉" },
+  { href: "/student", label: "UJC" },
   { href: "/student/grades", label: "성적" },
   { href: "/student/notices", label: "공지" },
 ];

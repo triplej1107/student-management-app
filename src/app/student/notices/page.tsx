@@ -1,14 +1,27 @@
 import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
-import { getStudentById, listNoticesForClass } from "@/lib/data";
+import { getStudentById, listNoticesForClass, listCalendarNotesForRange } from "@/lib/data";
+import { getToday } from "@/lib/today";
+import { monthStart, monthEnd } from "@/lib/weeks";
 import { ScreenTitle, Tag, EmptyState } from "@/components/ui";
+import { MonthCalendar } from "@/components/MonthCalendar";
 
 export default async function StudentNoticesPage() {
   const session = await requireStudentSession();
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const notices = student.class_key ? await listNoticesForClass(student.class_key) : [];
+  const { today } = getToday();
+  const [notices, allMonthNotes] = await Promise.all([
+    student.class_key ? listNoticesForClass(student.class_key) : [],
+    listCalendarNotesForRange(monthStart(today), monthEnd(today)),
+  ]);
+  const calendarNotes = allMonthNotes.filter(
+    (n) =>
+      !n.class_keys ||
+      n.class_keys.length === 0 ||
+      (student.class_key !== null && n.class_keys.includes(student.class_key))
+  );
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
@@ -30,6 +43,8 @@ export default async function StudentNoticesPage() {
           </div>
         ))}
       </div>
+
+      <MonthCalendar monthDate={today} notes={calendarNotes} />
     </div>
   );
 }

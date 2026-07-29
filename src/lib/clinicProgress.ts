@@ -48,6 +48,21 @@ export function isClinicComplete(
   return slots.every((i) => check?.hw_checks?.[i]);
 }
 
+/** 숙제뿐 아니라 그 주에 배정된 테스트 슬롯까지 전부 채워져야 "완료"로
+ * 본다 — isClinicComplete(숙제만 기준)와 달리 밀림 관리/UJC 적립처럼
+ * "그 주가 정말 끝났는지"를 판단해야 하는 곳에서 쓴다. */
+export function isClinicFullyDone(
+  template: ClinicTemplate | undefined,
+  check: ClinicCheck | undefined
+): boolean {
+  if (!template) return false;
+  const hwSlots = filledHwSlots(template);
+  const testSlots = filledTestSlots(template);
+  const hwDone = hwSlots.every((i) => check?.hw_checks?.[i]);
+  const testDone = testSlots.every((i) => !!check?.test_scores?.[i]?.score);
+  return hwDone && testDone;
+}
+
 export type ApprovalStatus = "no-template" | "unchecked" | "staff-approved" | "zongju-approved";
 
 export function approvalStatus(

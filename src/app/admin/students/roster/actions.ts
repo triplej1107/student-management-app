@@ -9,6 +9,7 @@ import {
   bulkSetEnrolled,
   type BulkImportResult,
 } from "@/lib/data";
+import { resetUjcBalance } from "@/lib/ujc";
 import { parseRosterPaste } from "@/lib/parseRoster";
 import type { ClassKey } from "@/lib/types";
 
@@ -43,6 +44,9 @@ export async function bulkSetClassKeyAction(ids: number[], classKey: ClassKey) {
 export async function bulkSetEnrolledAction(ids: number[], enrolled: boolean) {
   await requireZongjuSession();
   await bulkSetEnrolled(ids, enrolled);
+  if (!enrolled) {
+    await Promise.all(ids.map((id) => resetUjcBalance(id)));
+  }
   revalidatePath("/admin/students/roster");
   revalidatePath("/admin/students/individual");
 }

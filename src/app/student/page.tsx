@@ -1,39 +1,40 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
-import {
-  getStudentById,
-  getClinicTemplate,
-  getClinicCheck,
-  listNoticesForClass,
-  listCalendarNotesForRange,
-} from "@/lib/data";
+import { getStudentById, getClinicTemplate, getClinicCheck, listNoticesForClass } from "@/lib/data";
+import { getUjcBalance, getUjcHistory } from "@/lib/ujc";
+import { getStudentTier } from "@/lib/ujcTier";
 import { getToday } from "@/lib/today";
-import { weekLabel, monthStart, monthEnd } from "@/lib/weeks";
+import { weekLabel } from "@/lib/weeks";
 import { EmptyState } from "@/components/ui";
 import { ClinicChecklistReadOnly } from "@/components/ClinicChecklistReadOnly";
-import { MonthCalendar } from "@/components/MonthCalendar";
 import { PushSubscribeBanner } from "@/components/PushSubscribeBanner";
+import { UjcWalletCard } from "@/components/UjcWalletCard";
 import { logoutAction } from "@/app/login/actions";
+
+const UJC_REASON_LABEL: Record<string, string> = {
+  clinic_complete: "클리닉 완료",
+  manual_grant: "지급",
+  exchange: "교환",
+  reset: "초기화",
+};
 
 export default async function StudentHomePage() {
   const session = await requireStudentSession();
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const { clinicWeekStart, today } = getToday();
-  const [template, check, notices, allMonthNotes] = await Promise.all([
+  const { clinicWeekStart } = getToday();
+  const isStudent = session.role === "student";
+
+  const [template, check, notices, balance, tier, history] = await Promise.all([
     student.class_key ? getClinicTemplate(student.class_key, clinicWeekStart) : null,
     getClinicCheck(student.id, clinicWeekStart),
     student.class_key ? listNoticesForClass(student.class_key, 3) : [],
-    listCalendarNotesForRange(monthStart(today), monthEnd(today)),
+    isStudent ? getUjcBalance(student.id) : Promise.resolve(null),
+    isStudent ? getStudentTier(student.id) : Promise.resolve(null),
+    isStudent ? getUjcHistory(student.id, 5) : Promise.resolve([]),
   ]);
-  const calendarNotes = allMonthNotes.filter(
-    (n) =>
-      !n.class_keys ||
-      n.class_keys.length === 0 ||
-      (student.class_key !== null && n.class_keys.includes(student.class_key))
-  );
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
@@ -51,6 +52,42 @@ export default async function StudentHomePage() {
       </div>
 
       {(session.role === "student" || session.role === "parent") && <PushSubscribeBanner />}
+
+      {isStudent && balance !== null && (
+        <div className="mt-4">
+          <UjcWalletCard balance={balance} grade={tier?.grade ?? null} />
+
+          <Link
+            href="/student/tier-leaderboard"
+            className="mt-2 block text-center text-xs font-bold text-accent"
+          >
+            성실도 리더보드 보기 →
+          </Link>
+
+          {history.length > 0 && (
+            <div className="mt-3">
+              <div className="mb-1.5 text-xs font-bold text-ink-muted">최근 UJC 내역</div>
+              <div className="flex flex-col gap-1.5">
+                {history.map((h) => (
+                  <div
+                    key={h.id}
+                    className="flex items-center justify-between rounded-xl border border-line-soft bg-white px-3 py-2 text-xs"
+                  >
+                    <div className="text-ink-secondary">
+                      {UJC_REASON_LABEL[h.reason_type] ?? h.reason_type}
+                      {h.reason_note && <span className="text-ink-muted"> · {h.reason_note}</span>}
+                    </div>
+                    <div className={"font-bold " + (h.amount >= 0 ? "text-accent" : "text-ink-muted")}>
+                      {h.amount >= 0 ? "+" : ""}
+                      {h.amount}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-5">
         <div className="mb-1 text-sm font-bold text-ink">이번주 클리닉 점검표</div>
@@ -83,8 +120,6 @@ export default async function StudentHomePage() {
           </div>
         ))}
       </div>
-
-      <MonthCalendar monthDate={today} notes={calendarNotes} />
     </div>
   );
 }

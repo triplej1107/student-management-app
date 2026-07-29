@@ -286,6 +286,11 @@ export interface ClinicContactLog {
   updated_at: string;
 }
 
+// 유종코인(UJC) — 교환 단위. 클라이언트 컴포넌트에서도 참조하므로
+// server-only인 ujc.ts가 아니라 여기 둔다.
+export const UJC_EXCHANGE_UNITS = [10, 20, 30] as const;
+export type UjcExchangeAmount = (typeof UJC_EXCHANGE_UNITS)[number];
+
 export interface SessionData {
   role?: Role;
   studentId?: number; // student & parent both resolve to a student row

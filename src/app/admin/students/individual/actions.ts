@@ -17,6 +17,7 @@ import {
   type RosterFieldUpdate,
   type NewStudentInput,
 } from "@/lib/data";
+import { resetUjcBalance } from "@/lib/ujc";
 import { classKeyFor } from "@/lib/classKey";
 import type { ClassKey, MockExam, SchoolExam, Student, StudentOverrides } from "@/lib/types";
 
@@ -70,6 +71,9 @@ export async function updateRosterFieldAction(studentId: number, field: string, 
   const update: RosterFieldUpdate =
     field === "enrolled" ? { enrolled: value === "true" } : { [field]: value || null };
   await updateStudentRosterFields(studentId, update);
+  if (field === "enrolled" && value === "false") {
+    await resetUjcBalance(studentId);
+  }
   revalidatePath("/admin/students/individual");
   revalidatePath("/student");
   revalidatePath("/staff");

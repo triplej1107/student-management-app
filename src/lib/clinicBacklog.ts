@@ -1,9 +1,9 @@
 import "server-only";
 import { supabase } from "./supabase";
 import { listStudents, getClinicTemplatesForWeek, getClinicChecksForStudents } from "./data";
-import { filledHwSlots, filledTestSlots } from "./clinicProgress";
+import { isClinicFullyDone } from "./clinicProgress";
 import { rollingClinicWeeks, toISODate, weekLabel } from "./weeks";
-import type { ClassKey, ClinicCheck, ClinicTemplate } from "./types";
+import type { ClassKey } from "./types";
 
 export interface ClinicBacklogEntry {
   studentId: number;
@@ -12,17 +12,6 @@ export interface ClinicBacklogEntry {
   weeksOverdue: number;
   oldestIncompleteLabel: string;
   oldestIncompleteWeekISO: string;
-}
-
-/** A week only counts as done once every filled hw/test slot for that
- * week's template is checked/scored — 숙제만 다 해도 테스트를 안 봤으면
- * 그 주는 아직 밀린 것으로 본다. */
-function isWeekFullyDone(template: ClinicTemplate, check: ClinicCheck | undefined): boolean {
-  const hwSlots = filledHwSlots(template);
-  const testSlots = filledTestSlots(template);
-  const hwDone = hwSlots.every((i) => check?.hw_checks?.[i]);
-  const testDone = testSlots.every((i) => !!check?.test_scores?.[i]?.score);
-  return hwDone && testDone;
 }
 
 /**
@@ -63,7 +52,7 @@ export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklo
       if (!template) continue; // 그 주에 배정된 클리닉이 없으면 대상에서 제외
       if (clearedSet.has(`${student.id}_${toISODate(week)}`)) continue; // 종주T가 청산 처리함
       const check = checksByWeek[i].get(student.id);
-      if (!isWeekFullyDone(template, check)) {
+      if (!isClinicFullyDone(template, check)) {
         oldestIncompleteIdx = i;
         break;
       }

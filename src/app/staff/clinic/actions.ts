@@ -2,8 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { requireStaffSession } from "@/lib/authz";
-import { getClinicCheck, setClinicHwCheck, setClinicTestScores, setStaffApproval } from "@/lib/data";
-import type { TestScore } from "@/lib/types";
+import {
+  getClinicCheck,
+  setClinicHwCheck,
+  setClinicTestScores,
+  setStaffApproval,
+  setClinicFeedback,
+} from "@/lib/data";
+import type { FeedbackTags, TestScore } from "@/lib/types";
 
 export async function toggleHwCheckAction(
   studentId: number,
@@ -52,5 +58,28 @@ export async function toggleStaffApprovalAction(
   await setStaffApproval(studentId, new Date(weekStartISO), approved, session.staffId);
   revalidatePath(`/staff/clinic/${studentId}`);
   revalidatePath("/staff/clinic");
+  revalidatePath("/admin/students/approvals");
+}
+
+export async function saveFeedbackTagsAction(
+  studentId: number,
+  weekStartISO: string,
+  tags: FeedbackTags
+) {
+  await requireStaffSession();
+  await setClinicFeedback(studentId, new Date(weekStartISO), { feedback_tags: tags });
+  revalidatePath(`/staff/clinic/${studentId}`);
+}
+
+export async function saveFeedbackTextAction(
+  studentId: number,
+  weekStartISO: string,
+  text: string
+) {
+  await requireStaffSession();
+  await setClinicFeedback(studentId, new Date(weekStartISO), { feedback_text: text });
+  revalidatePath(`/staff/clinic/${studentId}`);
+  revalidatePath("/student/clinic");
+  revalidatePath("/student");
   revalidatePath("/admin/students/approvals");
 }

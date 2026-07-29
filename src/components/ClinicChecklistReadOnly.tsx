@@ -4,9 +4,11 @@ import { filledHwSlots, filledTestSlots } from "@/lib/clinicProgress";
 export function ClinicChecklistReadOnly({
   template,
   check,
+  feedbackText,
 }: {
   template: ClinicTemplate;
   check: ClinicCheck | undefined;
+  feedbackText?: string | null;
 }) {
   const hwSlots = filledHwSlots(template);
   const testSlots = filledTestSlots(template);
@@ -85,6 +87,15 @@ export function ClinicChecklistReadOnly({
           <span className="text-[13px] text-ink-muted">종주T 확인</span>
         </div>
       </div>
+
+      {feedbackText && (
+        <div className="mt-[18px]">
+          <div className="mb-2 text-[13px] font-bold text-ink">이번 주 피드백</div>
+          <div className="rounded-[10px] border border-line-soft bg-white p-3 text-[13px] leading-relaxed text-ink-secondary">
+            {feedbackText}
+          </div>
+        </div>
+      )}
     </>
   );
 }

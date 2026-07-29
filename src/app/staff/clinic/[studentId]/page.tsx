@@ -5,6 +5,7 @@ import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from 
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
 import { ClinicChecklistEditor } from "@/components/staff/ClinicChecklistEditor";
+import { FeedbackEditor } from "@/components/staff/FeedbackEditor";
 
 export default async function StaffClinicDetailPage({
   params,
@@ -82,6 +83,14 @@ export default async function StaffClinicDetailPage({
           zongjuApproved={check?.zongju_approved ?? false}
         />
       )}
+
+      <FeedbackEditor
+        key={`fb_${selectedWeekISO}`}
+        studentId={student.id}
+        weekStartISO={selectedWeekISO}
+        initialTags={check?.feedback_tags ?? null}
+        initialText={check?.feedback_text ?? null}
+      />
     </div>
   );
 }

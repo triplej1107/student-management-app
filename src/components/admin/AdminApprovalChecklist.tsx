@@ -120,6 +120,17 @@ export function AdminApprovalChecklist({
           <span className="flex-1 text-[13px] font-bold text-ink">종주T 최종 결재</span>
         </div>
       </div>
+
+      {check?.feedback_text && (
+        <div className="mt-[18px]">
+          <div className="mb-2 text-[13px] font-bold text-ink">
+            주간 피드백 <span className="font-normal text-ink-muted">(학부모 노출)</span>
+          </div>
+          <div className="rounded-[10px] border border-line-soft bg-white p-3 text-[13px] leading-relaxed text-ink-secondary">
+            {check.feedback_text}
+          </div>
+        </div>
+      )}
     </>
   );
 }

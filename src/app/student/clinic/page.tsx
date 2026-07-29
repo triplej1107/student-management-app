@@ -48,7 +48,13 @@ export default async function StudentClinicPage({
       </div>
 
       {!template && <EmptyState>이 주차는 아직 등록된 점검표가 없어요.</EmptyState>}
-      {template && <ClinicChecklistReadOnly template={template} check={check ?? undefined} />}
+      {template && (
+        <ClinicChecklistReadOnly
+          template={template}
+          check={check ?? undefined}
+          feedbackText={session.role === "parent" ? check?.feedback_text : null}
+        />
+      )}
     </div>
   );
 }

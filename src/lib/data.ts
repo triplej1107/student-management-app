@@ -11,6 +11,7 @@ import type {
   ClinicTemplate,
   DutyCheck,
   DutyItem,
+  FeedbackTags,
   MakeupSchedule,
   MockExam,
   Notice,
@@ -527,6 +528,23 @@ export async function setZongjuApproval(studentId: number, weekStart: Date, appr
       week_start: toISODate(weekStart),
       zongju_approved: approved,
       zongju_approved_at: approved ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,week_start" }
+  );
+}
+
+export async function setClinicFeedback(
+  studentId: number,
+  weekStart: Date,
+  fields: Partial<{ feedback_tags: FeedbackTags; feedback_text: string }>
+) {
+  await supabase.from("clinic_checks").upsert(
+    {
+      student_id: studentId,
+      week_start: toISODate(weekStart),
+      ...fields,
+      feedback_updated_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "student_id,week_start" }

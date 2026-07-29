@@ -124,8 +124,43 @@ export interface ClinicCheck {
   staff_approved_at: string | null;
   zongju_approved: boolean;
   zongju_approved_at: string | null;
+  feedback_tags: FeedbackTags | null;
+  feedback_text: string | null;
+  feedback_updated_at: string | null;
   updated_at: string;
 }
+
+// 주간 태도 피드백 — 조교가 태그만 선택하면 서버에서 문장으로 다듬어줌.
+// 학부모만 볼 수 있고 학생에게는 노출하지 않는다.
+export const FEEDBACK_CATEGORIES = [
+  {
+    key: "attendance",
+    label: "출결/시간",
+    options: ["지각 잦음", "결석 잦음", "시간 엄수", "지각 개선됨"],
+  },
+  {
+    key: "participation",
+    label: "수업 참여",
+    options: ["적극적 질문", "소극적 참여", "산만함", "참여도 향상됨"],
+  },
+  {
+    key: "homework",
+    label: "숙제 이행",
+    options: ["기한 준수", "잦은 미제출", "부분 완료", "성실도 향상됨"],
+  },
+  {
+    key: "focus",
+    label: "집중력",
+    options: ["수업 중 집중 유지", "쉽게 산만해짐", "조는 경우 있음", "집중력 개선됨"],
+  },
+  {
+    key: "attitude",
+    label: "태도/매너",
+    options: ["협조적", "지시 따르기 어려워함", "또래관계 양호", "예의바름"],
+  },
+] as const;
+export type FeedbackCategoryKey = (typeof FEEDBACK_CATEGORIES)[number]["key"];
+export type FeedbackTags = Partial<Record<FeedbackCategoryKey, string>>;
 
 // 내신 시험 슬롯 — 고정된 순서/코드. 학생별로 슬롯당 한 행씩 upsert.
 export const SCHOOL_EXAMS = [

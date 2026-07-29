@@ -53,7 +53,13 @@ export default async function StudentHomePage() {
         <div className="mb-1 text-sm font-bold text-ink">이번주 클리닉 점검표</div>
         <div className="mb-2.5 text-xs text-ink-muted">{weekLabel(clinicWeekStart)}</div>
         {!template && <EmptyState>이번 주는 아직 등록된 점검표가 없어요.</EmptyState>}
-        {template && <ClinicChecklistReadOnly template={template} check={check ?? undefined} />}
+        {template && (
+          <ClinicChecklistReadOnly
+            template={template}
+            check={check ?? undefined}
+            feedbackText={session.role === "parent" ? check?.feedback_text : null}
+          />
+        )}
       </div>
 
       <div className="mt-5">

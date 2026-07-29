@@ -1,0 +1,120 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { FEEDBACK_CATEGORIES, type FeedbackTags } from "@/lib/types";
+import { useToast } from "@/components/Toast";
+import { saveFeedbackTagsAction, saveFeedbackTextAction } from "@/app/staff/clinic/actions";
+
+export function FeedbackEditor({
+  studentId,
+  weekStartISO,
+  initialTags,
+  initialText,
+}: {
+  studentId: number;
+  weekStartISO: string;
+  initialTags: FeedbackTags | null;
+  initialText: string | null;
+}) {
+  const { showToast } = useToast();
+  const [, startTransition] = useTransition();
+  const [tags, setTags] = useState<FeedbackTags>(initialTags ?? {});
+  const [text, setText] = useState(initialText ?? "");
+  const [generating, setGenerating] = useState(false);
+
+  function toggleTag(categoryKey: string, option: string) {
+    const next: FeedbackTags = {
+      ...tags,
+      [categoryKey]: tags[categoryKey as keyof FeedbackTags] === option ? undefined : option,
+    };
+    setTags(next);
+    startTransition(async () => {
+      await saveFeedbackTagsAction(studentId, weekStartISO, next);
+      showToast("저장됨");
+    });
+  }
+
+  function commitText(value: string) {
+    startTransition(async () => {
+      await saveFeedbackTextAction(studentId, weekStartISO, value);
+      showToast("저장됨");
+    });
+  }
+
+  async function generate() {
+    if (Object.values(tags).every((v) => !v)) {
+      showToast("태그를 먼저 선택해주세요", "error");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/feedback-generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tags }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error ?? "생성 실패", "error");
+        return;
+      }
+      setText(data.text);
+      commitText(data.text);
+      showToast("피드백 생성됨");
+    } catch {
+      showToast("생성 실패", "error");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  return (
+    <div className="mt-[18px] border-t border-line-soft pt-[18px]">
+      <div className="mb-2 text-[13px] font-bold text-ink">
+        주간 피드백 <span className="font-normal text-ink-muted">(학부모만 볼 수 있어요)</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {FEEDBACK_CATEGORIES.map(({ key, label, options }) => (
+          <div key={key}>
+            <div className="mb-1 text-[11px] font-bold text-ink-muted">{label}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {options.map((opt) => {
+                const selected = tags[key as keyof FeedbackTags] === opt;
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => toggleTag(key, opt)}
+                    className={
+                      "rounded-lg border px-2.5 py-1.5 text-xs font-bold " +
+                      (selected
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-white text-ink-secondary")
+                    }
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={generate}
+        disabled={generating}
+        className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+      >
+        {generating ? "생성 중..." : "AI로 피드백 생성"}
+      </button>
+
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={(e) => commitText(e.target.value)}
+        placeholder="생성된 피드백이 여기 표시돼요. 직접 수정도 가능해요."
+        className="mt-2.5 min-h-[88px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
+      />
+    </div>
+  );
+}

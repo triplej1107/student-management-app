@@ -17,8 +17,8 @@ export default async function DictionaryPage({
         ‹
       </Link>
       <div className="border-b border-line pb-3 pt-1 text-center">
-        <div className="text-[19px] font-extrabold text-ink">국어사전</div>
-        <div className="mt-1 text-xs italic text-ink-muted">표준국어대사전 · 국립국어원</div>
+        <div className="text-[19px] font-extrabold text-ink">표준국어대사전</div>
+        <div className="mt-1 text-xs italic text-ink-muted">국립국어원</div>
       </div>
 
       <form method="get" className="mt-4 flex gap-1.5">

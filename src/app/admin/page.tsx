@@ -11,6 +11,7 @@ import {
   listStaff,
 } from "@/lib/data";
 import { isClinicComplete } from "@/lib/clinicProgress";
+import { getClinicBacklog } from "@/lib/clinicBacklog";
 import { Card } from "@/components/ui";
 import { DAY_ORDER } from "@/lib/types";
 
@@ -54,6 +55,9 @@ export default async function AdminHomePage() {
     return check?.staff_approved && !check.zongju_approved;
   }).length;
 
+  const backlog = await getClinicBacklog();
+  const backlogUrgentCount = backlog.filter((e) => e.weeksOverdue >= 2).length;
+
   const dateLabel = `${today.getMonth() + 1}월 ${today.getDate()}일 ${dayLabel}요일`;
 
   return (
@@ -79,6 +83,25 @@ export default async function AdminHomePage() {
             </Card>
           </Link>
         </div>
+
+        <Link href="/admin/clinic-backlog">
+          <Card className={backlogUrgentCount > 0 ? "border-danger/40 bg-danger-soft" : ""}>
+            <div
+              className={
+                "text-[13px] font-semibold " +
+                (backlogUrgentCount > 0 ? "text-danger" : "text-ink-muted")
+              }
+            >
+              클리닉 밀림 관리
+            </div>
+            <div className="mt-1 text-[22px] font-extrabold text-ink">
+              {backlog.length}명 밀림
+              {backlogUrgentCount > 0 && (
+                <span className="ml-1.5 text-sm font-bold text-danger">· 2주+ {backlogUrgentCount}명</span>
+              )}
+            </div>
+          </Card>
+        </Link>
 
         <div className="mt-2">
           <div className="mb-2.5 text-sm font-bold text-ink">요일별 조교 업무 체크리스트 현황</div>

@@ -21,24 +21,14 @@ export function FeedbackEditor({
   const [tags, setTags] = useState<FeedbackTags>(initialTags ?? {});
   const [text, setText] = useState(initialText ?? "");
   const [generating, setGenerating] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   function toggleTag(categoryKey: string, option: string) {
-    const next: FeedbackTags = {
-      ...tags,
-      [categoryKey]: tags[categoryKey as keyof FeedbackTags] === option ? undefined : option,
-    };
-    setTags(next);
-    startTransition(async () => {
-      await saveFeedbackTagsAction(studentId, weekStartISO, next);
-      showToast("저장됨");
-    });
-  }
-
-  function commitText(value: string) {
-    startTransition(async () => {
-      await saveFeedbackTextAction(studentId, weekStartISO, value);
-      showToast("저장됨");
-    });
+    setTags((prev) => ({
+      ...prev,
+      [categoryKey]: prev[categoryKey as keyof FeedbackTags] === option ? undefined : option,
+    }));
+    setDirty(true);
   }
 
   async function generate() {
@@ -59,13 +49,24 @@ export function FeedbackEditor({
         return;
       }
       setText(data.text);
-      commitText(data.text);
-      showToast("피드백 생성됨");
+      setDirty(true);
+      showToast("피드백 생성됨 — 확인 후 저장해주세요");
     } catch {
       showToast("생성 실패", "error");
     } finally {
       setGenerating(false);
     }
+  }
+
+  function save() {
+    startTransition(async () => {
+      await Promise.all([
+        saveFeedbackTagsAction(studentId, weekStartISO, tags),
+        saveFeedbackTextAction(studentId, weekStartISO, text),
+      ]);
+      setDirty(false);
+      showToast("저장됨");
+    });
   }
 
   return (
@@ -110,11 +111,21 @@ export function FeedbackEditor({
 
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={(e) => commitText(e.target.value)}
+        onChange={(e) => {
+          setText(e.target.value);
+          setDirty(true);
+        }}
         placeholder="생성된 피드백이 여기 표시돼요. 직접 수정도 가능해요."
         className="mt-2.5 min-h-[88px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
       />
+
+      <button
+        onClick={save}
+        disabled={!dirty}
+        className="mt-2 w-full rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-bold text-accent disabled:border-line disabled:text-ink-muted"
+      >
+        저장
+      </button>
     </div>
   );
 }

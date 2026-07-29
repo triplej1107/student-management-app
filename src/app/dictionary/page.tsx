@@ -38,16 +38,41 @@ export default async function DictionaryPage({
         </button>
       </form>
 
-      <div className="mt-4 flex flex-col gap-2.5">
+      <div className="mt-4 flex flex-col gap-3">
         {query && results.length === 0 && <EmptyState>&ldquo;{query}&rdquo;에 대한 검색 결과가 없어요.</EmptyState>}
         {results.map((r, i) => (
           <div key={i} className="rounded-2xl border border-line-soft bg-white p-3.5">
             <div className="flex flex-wrap items-baseline gap-1.5">
               <span className="text-[16px] font-bold text-ink">{r.word}</span>
-              {r.pos && <span className="text-xs font-semibold text-accent">{r.pos}</span>}
               {r.origin && <span className="text-xs text-ink-muted">({r.origin})</span>}
             </div>
-            <div className="mt-1 text-[13px] leading-relaxed text-ink-secondary">{r.definition}</div>
+
+            {r.posGroups.length === 0 && (
+              <div className="mt-1 text-[13px] text-ink-muted/70">뜻풀이를 불러오지 못했어요.</div>
+            )}
+
+            {r.posGroups.map((group, gi) => (
+              <div key={gi} className={gi > 0 ? "mt-3" : "mt-2"}>
+                <div className="text-xs font-bold text-accent">{group.pos}</div>
+                <ol className="mt-1 flex flex-col gap-2">
+                  {group.senses.map((sense, si) => (
+                    <li key={si} className="text-[13px] leading-relaxed text-ink-secondary">
+                      <span className="font-semibold text-ink">{si + 1}. </span>
+                      {sense.definition}
+                      {sense.examples.length > 0 && (
+                        <ul className="mt-1 flex flex-col gap-0.5 pl-4">
+                          {sense.examples.map((ex, ei) => (
+                            <li key={ei} className="text-xs italic text-ink-muted">
+                              · {ex}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
           </div>
         ))}
       </div>

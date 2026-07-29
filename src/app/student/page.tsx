@@ -13,6 +13,7 @@ import { weekLabel, monthStart, monthEnd } from "@/lib/weeks";
 import { EmptyState } from "@/components/ui";
 import { ClinicChecklistReadOnly } from "@/components/ClinicChecklistReadOnly";
 import { MonthCalendar } from "@/components/MonthCalendar";
+import { PushSubscribeBanner } from "@/components/PushSubscribeBanner";
 import { logoutAction } from "@/app/login/actions";
 
 export default async function StudentHomePage() {
@@ -48,6 +49,8 @@ export default async function StudentHomePage() {
           </button>
         </form>
       </div>
+
+      {session.role === "student" && <PushSubscribeBanner />}
 
       <div className="mt-5">
         <div className="mb-1 text-sm font-bold text-ink">이번주 클리닉 점검표</div>

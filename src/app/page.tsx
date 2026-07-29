@@ -4,17 +4,11 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 
 const roles = [
-  { role: "student", label: "학생", style: "white" },
-  { role: "parent", label: "학부모", style: "white" },
-  { role: "staff", label: "조교", style: "staff" },
-  { role: "zongju", label: "종주T", style: "zongju" },
+  { role: "student", label: "학생" },
+  { role: "parent", label: "학부모" },
+  { role: "staff", label: "조교" },
+  { role: "zongju", label: "종주T" },
 ] as const;
-
-const TILE_STYLE: Record<string, string> = {
-  white: "bg-white text-ink",
-  staff: "bg-[#E7EAFA] text-[#3E5FC4]",
-  zongju: "bg-[#EAE6F5] text-[#5B5490]",
-};
 
 // 임시: 여름방학 6주 특강 기간에만 노출. 방학 끝나면 이 상수와 아래 <a> 블록을 삭제.
 const VACATION_SCORE_URL =
@@ -42,17 +36,14 @@ export default async function RoleSelectPage() {
       </div>
 
       <div className="mt-7 flex w-full flex-col gap-[11px]">
-        {roles.map(({ role, label, style }) => (
+        {roles.map(({ role, label }) => (
           <Link
             key={role}
             href={`/login/${role}`}
-            className={
-              "flex w-full items-center justify-between rounded-2xl p-4 text-base font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
-              TILE_STYLE[style]
-            }
+            className="flex w-full items-center justify-between rounded-2xl bg-white p-4 text-base font-bold text-ink shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           >
             {label}
-            <span>›</span>
+            <span className="text-accent">›</span>
           </Link>
         ))}
         <Link

@@ -64,6 +64,13 @@ export default async function RoleSelectPage() {
           방학특강 성적조회
           <span className="text-accent">›</span>
         </a>
+        <Link
+          href="/dictionary"
+          className="flex w-full items-center justify-between rounded-2xl bg-white p-4 text-base font-bold text-ink shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+        >
+          국어사전
+          <span className="text-accent">›</span>
+        </Link>
       </div>
     </div>
   );

@@ -155,7 +155,7 @@ export default async function RoleSelectPage() {
               <span className="flex-1 text-base font-bold text-ink">영상강의 보러가기</span>
               <span className="text-accent">›</span>
             </div>
-            <div className="mt-1.5 pl-12 text-[11px] text-ink-muted">마이페이지 → 동영상강좌</div>
+            <div className="mt-1.5 pl-12 text-[11px] text-ink-muted">☰ (우측 상단 메뉴) → 마이페이지 → 동영상강좌</div>
           </a>
         </div>
       </div>

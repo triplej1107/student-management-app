@@ -3,13 +3,13 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { savePushSubscription } from "@/lib/clinicPush";
 
-/** 클리닉 밀림 알림은 "학생 본인"에게만 보낸다는 요구사항이라 role이
- * 정확히 student인 경우만 받는다 — parent 세션은 같은 studentId를
- * 갖지만 여기서는 거절한다. */
+/** 클리닉 밀림 알림은 학생 본인과 학부모 모두에게 간다 — student/parent
+ * 세션 둘 다 같은 studentId로 구독을 등록할 수 있고, 발송 시엔 그
+ * studentId에 걸린 모든 구독 기기로 동일하게 보낸다. */
 export async function POST(req: Request) {
   const session = await getSession();
-  if (session.role !== "student" || !session.studentId) {
-    return NextResponse.json({ error: "학생 계정만 알림을 받을 수 있어요." }, { status: 403 });
+  if ((session.role !== "student" && session.role !== "parent") || !session.studentId) {
+    return NextResponse.json({ error: "학생/학부모 계정만 알림을 받을 수 있어요." }, { status: 403 });
   }
 
   let body: { endpoint?: string; keys?: { p256dh?: string; auth?: string } };

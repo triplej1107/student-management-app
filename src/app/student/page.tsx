@@ -50,7 +50,7 @@ export default async function StudentHomePage() {
         </form>
       </div>
 
-      {session.role === "student" && <PushSubscribeBanner />}
+      {(session.role === "student" || session.role === "parent") && <PushSubscribeBanner />}
 
       <div className="mt-5">
         <div className="mb-1 text-sm font-bold text-ink">이번주 클리닉 점검표</div>

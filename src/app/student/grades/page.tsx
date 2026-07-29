@@ -36,18 +36,6 @@ export default async function StudentGradesPage() {
       <ScreenTitle>성적</ScreenTitle>
 
       <div className="mt-4 rounded-2xl border border-line-soft bg-white p-3.5">
-        <div className="mb-1 text-sm font-bold text-ink">내신 학교등수 변화</div>
-        <div className="mb-2 text-xs text-ink-muted">등수는 낮을수록(위쪽일수록) 좋아요</div>
-        <TrendChart points={schoolPoints} higherIsBetter={false} unit="등" />
-      </div>
-
-      <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">
-        <div className="mb-1 text-sm font-bold text-ink">모의고사 백분위 변화</div>
-        <div className="mb-2 text-xs text-ink-muted">백분위는 높을수록(위쪽일수록) 좋아요</div>
-        <TrendChart points={mockPoints} higherIsBetter={true} unit="%" />
-      </div>
-
-      <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">
         <div className="mb-1 text-sm font-bold text-ink">클리닉 테스트 백분위 변화</div>
         <div className="mb-2 text-xs text-ink-muted">같은 반 안에서의 상대적 위치예요 (탭하면 정확한 등수를 볼 수 있어요)</div>
         {latestClinicPoint && (
@@ -66,6 +54,18 @@ export default async function StudentGradesPage() {
             { from: 50, to: 75, opacity: 0.05 },
           ]}
         />
+      </div>
+
+      <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">
+        <div className="mb-1 text-sm font-bold text-ink">내신 학교등수 변화</div>
+        <div className="mb-2 text-xs text-ink-muted">등수는 낮을수록(위쪽일수록) 좋아요</div>
+        <TrendChart points={schoolPoints} higherIsBetter={false} unit="등" />
+      </div>
+
+      <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">
+        <div className="mb-1 text-sm font-bold text-ink">모의고사 백분위 변화</div>
+        <div className="mb-2 text-xs text-ink-muted">백분위는 높을수록(위쪽일수록) 좋아요</div>
+        <TrendChart points={mockPoints} higherIsBetter={true} unit="%" />
       </div>
     </div>
   );

@@ -60,6 +60,15 @@ function ReportIcon() {
   );
 }
 
+function VideoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5.5" width="13" height="13" rx="2.5" />
+      <path d="m16 10 5-3v10l-5-3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const roles = [
   { role: "student", label: "학생", Icon: GraduationCapIcon },
   { role: "parent", label: "학부모", Icon: ParentIcon },
@@ -132,6 +141,21 @@ export default async function RoleSelectPage() {
             </span>
             <span className="flex-1">방학특강 성적조회</span>
             <span className="text-accent">›</span>
+          </a>
+          <a
+            href="http://ujong.kr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-2xl bg-white p-4 shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+          >
+            <div className="flex w-full items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent [&>svg]:h-5 [&>svg]:w-5">
+                <VideoIcon />
+              </span>
+              <span className="flex-1 text-base font-bold text-ink">영상강의 보러가기</span>
+              <span className="text-accent">›</span>
+            </div>
+            <div className="mt-1.5 pl-12 text-[11px] text-ink-muted">마이페이지 → 동영상강좌</div>
           </a>
         </div>
       </div>

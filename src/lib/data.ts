@@ -367,7 +367,7 @@ export async function setAttendance(
   studentId: number,
   date: Date,
   status: AttendanceStatus,
-  markedBy: number
+  markedBy: number | null
 ) {
   await supabase.from("attendance_records").upsert(
     {

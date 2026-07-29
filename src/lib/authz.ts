@@ -27,3 +27,11 @@ export async function requireStaffSession() {
 export async function requireZongjuSession() {
   return requireRole("zongju");
 }
+
+/** 클리닉 출결/밀림 관리처럼 조교와 종주T가 함께 쓰는 화면용 — 종주T는
+ * staff 테이블 row가 없어 staffId가 없을 수 있다 (그 경우 "누가 처리
+ * 했는지" 기록이 null로 남는다). */
+export async function requireStaffOrZongjuSession() {
+  const session = await requireRole("staff", "zongju");
+  return session as { role: Role; staffId?: number };
+}

@@ -19,7 +19,7 @@ const STATUS_STYLE: Record<
 > = {
   출석: { border: "border-success", bg: "bg-success-soft", color: "text-success" },
   지각: { border: "border-warn", bg: "bg-warn-soft", color: "text-warn" },
-  연기: { border: "border-accent", bg: "bg-accent-soft", color: "text-accent" },
+  조정: { border: "border-accent", bg: "bg-accent-soft", color: "text-accent" },
   결석: { border: "border-danger", bg: "bg-danger-soft", color: "text-danger" },
 };
 const UNSET_STYLE = { border: "border-line", bg: "bg-white", color: "text-ink-muted" };
@@ -59,7 +59,7 @@ export function AttendanceRow({
     }
     startTransition(async () => {
       await markAttendanceAction(student.id, dateISO, next);
-      if (next === "지각" || next === "연기" || next === "결석") {
+      if (next === "지각" || next === "조정" || next === "결석") {
         setEditingStatus(next);
         setEditingMakeup(true);
       }
@@ -76,7 +76,7 @@ export function AttendanceRow({
         dateISO,
         dayDraft,
         timeDraft.trim(),
-        editingStatus === "연기" ? noteDraft.trim() : undefined
+        editingStatus === "조정" ? noteDraft.trim() : undefined
       );
       setEditingMakeup(false);
       showToast("대체 일정 저장됨");
@@ -116,7 +116,7 @@ export function AttendanceRow({
           )}
         </Link>
         <div className="flex gap-1">
-          {(["출석", "지각", "연기", "결석"] as AttendanceStatus[]).map((s) => {
+          {(["출석", "지각", "조정", "결석"] as AttendanceStatus[]).map((s) => {
             const style = status === s ? STATUS_STYLE[s] : UNSET_STYLE;
             return (
               <button
@@ -159,7 +159,7 @@ export function AttendanceRow({
               className="flex-1 rounded-lg border border-line px-2.5 py-2 text-[13px]"
             />
           </div>
-          {editingStatus === "연기" && (
+          {editingStatus === "조정" && (
             <textarea
               value={noteDraft}
               onChange={(e) => setNoteDraft(e.target.value)}

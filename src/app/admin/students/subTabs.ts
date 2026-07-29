@@ -1,5 +1,6 @@
 export const STUDENT_SUB_TABS = [
   { href: "/admin/students/plans", label: "수업 계획 관리" },
+  { href: "/admin/students/attendance", label: "출결 관리" },
   { href: "/admin/students/templates", label: "점검표 관리" },
   { href: "/admin/students/approvals", label: "결재 관리" },
   { href: "/admin/students/notices", label: "공지사항 관리" },

@@ -1,26 +1,31 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireStaffSession } from "@/lib/authz";
+import { requireStaffOrZongjuSession } from "@/lib/authz";
 import { setAttendance, clearAttendance, setMakeup, clearMakeup } from "@/lib/data";
 import type { AttendanceStatus } from "@/lib/types";
+
+function revalidateAttendancePaths() {
+  revalidatePath("/staff/attendance");
+  revalidatePath("/staff");
+  revalidatePath("/admin/students/attendance");
+  revalidatePath("/admin");
+}
 
 export async function markAttendanceAction(
   studentId: number,
   dateISO: string,
   status: AttendanceStatus
 ) {
-  const session = await requireStaffSession();
-  await setAttendance(studentId, new Date(dateISO), status, session.staffId);
-  revalidatePath("/staff/attendance");
-  revalidatePath("/staff");
+  const session = await requireStaffOrZongjuSession();
+  await setAttendance(studentId, new Date(dateISO), status, session.staffId ?? null);
+  revalidateAttendancePaths();
 }
 
 export async function clearAttendanceAction(studentId: number, dateISO: string) {
-  await requireStaffSession();
+  await requireStaffOrZongjuSession();
   await clearAttendance(studentId, new Date(dateISO));
-  revalidatePath("/staff/attendance");
-  revalidatePath("/staff");
+  revalidateAttendancePaths();
 }
 
 export async function saveMakeupAction(
@@ -30,16 +35,15 @@ export async function saveMakeupAction(
   makeupTime: string,
   note?: string
 ) {
-  await requireStaffSession();
+  await requireStaffOrZongjuSession();
   await setMakeup(studentId, new Date(dateISO), makeupDay, makeupTime, note);
-  revalidatePath("/staff/attendance");
+  revalidateAttendancePaths();
   revalidatePath("/staff/clinic");
-  revalidatePath("/staff");
 }
 
 export async function cancelMakeupAction(studentId: number, dateISO: string) {
-  await requireStaffSession();
+  await requireStaffOrZongjuSession();
   await clearMakeup(studentId, new Date(dateISO));
-  revalidatePath("/staff/attendance");
+  revalidateAttendancePaths();
   revalidatePath("/staff/clinic");
 }

@@ -110,7 +110,7 @@ export default async function StudentHomePage() {
           <ClinicChecklistReadOnly
             template={template}
             check={check ?? undefined}
-            feedbackText={session.role === "parent" ? check?.feedback_text : null}
+            feedbackText={session.role === "parent" && check?.zongju_approved ? check?.feedback_text : null}
           />
         )}
       </div>

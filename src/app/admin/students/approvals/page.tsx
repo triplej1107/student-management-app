@@ -38,7 +38,6 @@ export default async function AdminApprovalsPage({
         : activeDays[0];
 
   const roster = selectedDay ? weeklyRoster.filter((r) => r.effDay === selectedDay) : [];
-  roster.sort((a, b) => a.effTime.localeCompare(b.effTime));
 
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(
@@ -47,6 +46,20 @@ export default async function AdminApprovalsPage({
     ),
     getClinicTemplatesForWeek(clinicWeekStart),
   ]);
+
+  // 조교 확인까지 끝나 종주T 최종 결재만 남은 학생을 최상단으로.
+  const rosterWithStatus = roster.map((r) => ({
+    ...r,
+    status: approvalStatus(
+      r.student.class_key ? templatesMap.get(r.student.class_key) : undefined,
+      checksMap.get(r.student.id)
+    ),
+  }));
+  rosterWithStatus.sort((a, b) => {
+    const rank = (s: string) => (s === "staff-approved" ? 0 : 1);
+    const r = rank(a.status) - rank(b.status);
+    return r !== 0 ? r : a.effTime.localeCompare(b.effTime);
+  });
 
   return (
     <div>
@@ -63,9 +76,7 @@ export default async function AdminApprovalsPage({
 
         <div className="mt-3.5 flex flex-col gap-2.5">
           {roster.length === 0 && <EmptyState>이 요일에는 학생이 없어요.</EmptyState>}
-          {roster.map(({ student, effTime }) => {
-            const template = student.class_key ? templatesMap.get(student.class_key) : undefined;
-            const status = approvalStatus(template, checksMap.get(student.id));
+          {rosterWithStatus.map(({ student, effTime, status }) => {
             return (
               <Link
                 key={student.id}

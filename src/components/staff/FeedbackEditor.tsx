@@ -72,7 +72,8 @@ export function FeedbackEditor({
   return (
     <div className="mt-[18px] border-t border-line-soft pt-[18px]">
       <div className="mb-2 text-[13px] font-bold text-ink">
-        주간 피드백 <span className="font-normal text-ink-muted">(학부모만 볼 수 있어요)</span>
+        주간 피드백{" "}
+        <span className="font-normal text-ink-muted">(저장 후 종주T 최종 결재가 나야 학부모에게 노출돼요)</span>
       </div>
       <div className="flex flex-col gap-2">
         {FEEDBACK_CATEGORIES.map(({ key, label, options }) => (

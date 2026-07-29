@@ -76,7 +76,11 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
   ),
 };
 
-export function BottomTabBar({ tabs }: { tabs: { href: string; label: string }[] }) {
+export function BottomTabBar({
+  tabs,
+}: {
+  tabs: { href: string; label: string; icon?: string; popped?: boolean }[];
+}) {
   const pathname = usePathname();
   return (
     <div
@@ -87,9 +91,9 @@ export function BottomTabBar({ tabs }: { tabs: { href: string; label: string }[]
         const active =
           tab.href === pathname ||
           (tab.href !== "/staff" && tab.href !== "/student" && pathname.startsWith(tab.href));
-        const icon = ICONS[tab.label]?.(active);
+        const icon = ICONS[tab.icon ?? tab.label]?.(active);
 
-        if (tab.label === "UJC") {
+        if (tab.popped) {
           return (
             <Link key={tab.href} href={tab.href} className="relative flex flex-1 flex-col items-center">
               <div
@@ -140,7 +144,7 @@ export const STAFF_TABS = [
 export const STUDENT_TABS = [
   { href: "/student/lesson", label: "수업" },
   { href: "/student/clinic", label: "클리닉" },
-  { href: "/student", label: "UJC" },
+  { href: "/student", label: "UJC", icon: "UJC", popped: true },
   { href: "/student/grades", label: "성적" },
   { href: "/student/notices", label: "공지" },
 ];

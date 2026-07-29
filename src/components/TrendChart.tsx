@@ -9,6 +9,14 @@ export interface TrendPoint {
   note: string | null;
 }
 
+/** A shaded reference band drawn behind the line, in the same value units
+ * as `points[].value` (e.g. percentile 90~100 for "상위 10%"). */
+export interface TrendBand {
+  from: number;
+  to: number;
+  opacity: number;
+}
+
 const W = 320;
 const H = 160;
 const PAD_X = 14;
@@ -16,15 +24,22 @@ const PAD_Y = 20;
 
 /** Simple line chart with no external deps. `higherIsBetter` controls
  * whether a larger raw value plots higher on the chart (백분위) or lower
- * (등수, where 1등이 제일 좋음). Tap a point to see its 상담 기록. */
+ * (등수, where 1등이 제일 좋음). Tap a point to see its 상담 기록.
+ * `yDomain` pins the axis to a fixed range (e.g. [0,100]) instead of
+ * auto-fitting to the data — needed so `bands` line up with fixed
+ * thresholds regardless of how tightly the actual values cluster. */
 export function TrendChart({
   points,
   higherIsBetter,
   unit,
+  yDomain,
+  bands,
 }: {
   points: TrendPoint[];
   higherIsBetter: boolean;
   unit: string;
+  yDomain?: [number, number];
+  bands?: TrendBand[];
 }) {
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -33,12 +48,17 @@ export function TrendChart({
     return <div className="py-6 text-center text-[13px] text-ink-muted/70">기록된 데이터가 없어요.</div>;
   }
 
-  const values = filled.map((p) => p.value);
-  let min = Math.min(...values);
-  let max = Math.max(...values);
-  if (min === max) {
-    min -= 1;
-    max += 1;
+  let min: number, max: number;
+  if (yDomain) {
+    [min, max] = yDomain;
+  } else {
+    const values = filled.map((p) => p.value);
+    min = Math.min(...values);
+    max = Math.max(...values);
+    if (min === max) {
+      min -= 1;
+      max += 1;
+    }
   }
 
   const stepX = points.length > 1 ? (W - PAD_X * 2) / (points.length - 1) : 0;
@@ -63,6 +83,21 @@ export function TrendChart({
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+        {bands?.map((b, i) => {
+          const y1 = yFor(b.from);
+          const y2 = yFor(b.to);
+          return (
+            <rect
+              key={i}
+              x={PAD_X}
+              y={Math.min(y1, y2)}
+              width={W - PAD_X * 2}
+              height={Math.abs(y2 - y1)}
+              fill="var(--color-accent)"
+              opacity={b.opacity}
+            />
+          );
+        })}
         <line x1={PAD_X} y1={H - PAD_Y} x2={W - PAD_X} y2={H - PAD_Y} stroke="var(--color-line)" strokeWidth={1} />
         <path d={pathD} fill="none" stroke="var(--color-accent)" strokeWidth={2} />
         {points.map((p, i) => {

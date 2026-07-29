@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { toISODate } from "./weeks";
+import { toISODate, weekLabel } from "./weeks";
 import { classKeyFor } from "./classKey";
 import type {
   AttendanceStatus,
@@ -8,6 +8,7 @@ import type {
   ClassKey,
   ClassPlan,
   ClinicCheck,
+  ClinicPercentilePoint,
   ClinicTemplate,
   DutyCheck,
   DutyItem,
@@ -852,5 +853,82 @@ export async function upsertMockExam(
       updated_at: new Date().toISOString(),
     },
     { onConflict: "student_id,exam_key" }
+  );
+}
+
+/**
+ * 클리닉 테스트 백분위 추이 — 원점수는 매주 배점/난이도가 달라 비교할 수
+ * 없으므로, 같은 반(class_key) 학생들과 같은 주에 본 시험별로 등수를 낸
+ * 뒤 그 등수들의 평균으로 최종 순위를 재산출한다 (여러 시험을 본 주라도
+ * 하나의 순위로 합산되도록). 그 주에 시험을 하나도 안 본(결석/불참) 학생은
+ * 그 주 모집단에서 제외된다. `weeks`는 화면에 표시할 순서(보통 과거→최근)
+ * 그대로 반환된다.
+ */
+export async function getClinicTestPercentileTrend(
+  studentId: number,
+  weeks: Date[]
+): Promise<ClinicPercentilePoint[]> {
+  const student = await getStudentById(studentId);
+  const classKey = student?.class_key;
+  if (!classKey) {
+    return weeks.map((w) => ({
+      label: weekLabel(w),
+      value: null,
+      grade: null,
+      note: null,
+      topPercent: null,
+      rank: null,
+      cohortSize: null,
+    }));
+  }
+
+  const classmates = await listStudentsByClass(classKey);
+  const classmateIds = classmates.map((s) => s.id);
+
+  return Promise.all(
+    weeks.map(async (weekStart): Promise<ClinicPercentilePoint> => {
+      const label = weekLabel(weekStart);
+      const checks = await getClinicChecksForStudents(classmateIds, weekStart);
+
+      // Per test slot (0~3): rank every student who actually has a
+      // score/total for that slot that week (competition ranking — ties
+      // share the better rank).
+      const ranksByStudent = new Map<number, number[]>();
+      for (let slot = 0; slot < 4; slot++) {
+        const entries: { studentId: number; pct: number }[] = [];
+        for (const [sid, check] of checks) {
+          const ts = check.test_scores?.[slot];
+          const score = ts?.score !== undefined && ts.score !== "" ? Number(ts.score) : NaN;
+          const total = ts?.total !== undefined && ts.total !== "" ? Number(ts.total) : NaN;
+          if (!Number.isNaN(score) && !Number.isNaN(total) && total > 0) {
+            entries.push({ studentId: sid, pct: score / total });
+          }
+        }
+        for (const e of entries) {
+          const rank = 1 + entries.filter((other) => other.pct > e.pct).length;
+          const list = ranksByStudent.get(e.studentId) ?? [];
+          list.push(rank);
+          ranksByStudent.set(e.studentId, list);
+        }
+      }
+
+      const avgRanks = Array.from(ranksByStudent.entries()).map(([sid, ranks]) => ({
+        studentId: sid,
+        avg: ranks.reduce((a, b) => a + b, 0) / ranks.length,
+      }));
+      const cohortSize = avgRanks.length;
+      const mine = avgRanks.find((a) => a.studentId === studentId);
+
+      if (cohortSize === 0 || !mine) {
+        return { label, value: null, grade: null, note: null, topPercent: null, rank: null, cohortSize: null };
+      }
+
+      const rank = 1 + avgRanks.filter((a) => a.avg < mine.avg).length;
+      const topPercent = Math.max(1, Math.round((rank / cohortSize) * 100));
+      const value = cohortSize > 1 ? Math.round(((cohortSize - rank) / (cohortSize - 1)) * 100) : 100;
+      const note = `${cohortSize}명 중 ${rank}등 (같은 주 시험 평균 순위 기준)`;
+
+      return { label, value, grade: null, note, topPercent, rank, cohortSize };
+    })
   );
 }

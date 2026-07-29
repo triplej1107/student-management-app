@@ -214,6 +214,21 @@ export interface MockExam {
   updated_at: string;
 }
 
+/** One week's point on the 클리닉 테스트 백분위 trend — derived on read from
+ * `clinic_checks.test_scores` across the student's class_key cohort, never
+ * persisted. `value` is the percentile (higher = better, for TrendChart);
+ * `topPercent`/`rank`/`cohortSize` back the "상위 O%" summary and the
+ * exact-rank detail shown only when a point is tapped. */
+export interface ClinicPercentilePoint {
+  label: string;
+  value: number | null;
+  grade: null;
+  note: string | null;
+  topPercent: number | null;
+  rank: number | null;
+  cohortSize: number | null;
+}
+
 export interface Notice {
   id: number;
   class_key: ClassKey;

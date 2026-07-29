@@ -1,7 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { getStudentById, getClinicTemplate, getClinicCheck } from "./data";
-import { isClinicFullyDone } from "./clinicProgress";
+import { getClinicCheck } from "./data";
 import { toISODate } from "./weeks";
 import { UJC_EXCHANGE_UNITS, type UjcExchangeAmount } from "./types";
 
@@ -69,19 +68,16 @@ export async function creditClinicCompletion(studentId: number, weekStart: Date,
     .maybeSingle(); // 실패해도 던지지 않음 (unique 위반 = 이미 적립됨)
 }
 
-/** hw check/test score 저장 직후 호출 — 그 주가 방금 완료됐으면 적립. */
-export async function maybeCreditClinicCompletion(
+/** 종주T 최종 결재 토글 직후 호출 — 결재가 켜졌을 때만 적립한다.
+ * (결재를 나중에 취소해도 이미 지급된 UJC는 회수하지 않음 — 결재
+ * 취소는 드물고, 이미 받은 코인을 갑자기 뺏는 경험은 피하는 게 낫다.) */
+export async function maybeCreditZongjuApproval(
   studentId: number,
   weekStart: Date,
   staffId?: number
 ) {
-  const student = await getStudentById(studentId);
-  if (!student?.class_key) return;
-  const [template, check] = await Promise.all([
-    getClinicTemplate(student.class_key, weekStart),
-    getClinicCheck(studentId, weekStart),
-  ]);
-  if (isClinicFullyDone(template ?? undefined, check ?? undefined)) {
+  const check = await getClinicCheck(studentId, weekStart);
+  if (check?.zongju_approved) {
     await creditClinicCompletion(studentId, weekStart, staffId);
   }
 }

@@ -9,7 +9,6 @@ import {
   setStaffApproval,
   setClinicFeedback,
 } from "@/lib/data";
-import { maybeCreditClinicCompletion } from "@/lib/ujc";
 import type { FeedbackTags, TestScore } from "@/lib/types";
 
 export async function toggleHwCheckAction(
@@ -18,12 +17,11 @@ export async function toggleHwCheckAction(
   index: number,
   checked: boolean
 ) {
-  const session = await requireStaffSession();
+  await requireStaffSession();
   const existing = await getClinicCheck(studentId, new Date(weekStartISO));
   const hwChecks = existing?.hw_checks ? [...existing.hw_checks] : [false, false, false, false, false, false, false];
   hwChecks[index] = checked;
   await setClinicHwCheck(studentId, new Date(weekStartISO), hwChecks);
-  await maybeCreditClinicCompletion(studentId, new Date(weekStartISO), session.staffId);
   revalidatePath(`/staff/clinic/${studentId}`);
   revalidatePath("/staff/clinic");
   revalidatePath("/student/clinic");
@@ -37,7 +35,7 @@ export async function updateTestScoreAction(
   field: "score" | "total",
   value: string
 ) {
-  const session = await requireStaffSession();
+  await requireStaffSession();
   const existing = await getClinicCheck(studentId, new Date(weekStartISO));
   const testScores: TestScore[] = existing?.test_scores
     ? [...existing.test_scores]
@@ -45,7 +43,6 @@ export async function updateTestScoreAction(
   while (testScores.length < 4) testScores.push({});
   testScores[index] = { ...testScores[index], [field]: value };
   await setClinicTestScores(studentId, new Date(weekStartISO), testScores);
-  await maybeCreditClinicCompletion(studentId, new Date(weekStartISO), session.staffId);
   revalidatePath(`/staff/clinic/${studentId}`);
   revalidatePath("/staff/clinic");
   revalidatePath("/student/clinic");

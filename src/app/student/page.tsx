@@ -111,6 +111,7 @@ export default async function StudentHomePage() {
             template={template}
             check={check ?? undefined}
             feedbackText={session.role === "parent" && check?.zongju_approved ? check?.feedback_text : null}
+            zongjuFeedbackText={session.role === "parent" ? check?.zongju_feedback_text : null}
           />
         )}
       </div>

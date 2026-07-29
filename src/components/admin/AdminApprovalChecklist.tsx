@@ -124,7 +124,7 @@ export function AdminApprovalChecklist({
       {check?.feedback_text && (
         <div className="mt-[18px]">
           <div className="mb-2 text-[13px] font-bold text-ink">
-            주간 피드백{" "}
+            조교T의 피드백{" "}
             <span className={"font-normal " + (zongjuApproved ? "text-success" : "text-ink-muted")}>
               {zongjuApproved ? "(학부모 노출 중)" : "(최종 결재 후 학부모에게 노출돼요)"}
             </span>

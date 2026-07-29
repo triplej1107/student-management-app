@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireZongjuSession } from "@/lib/authz";
-import { grantManualUjc, approveExchangeRequest, rejectExchangeRequest, getUjcBalance } from "@/lib/ujc";
+import { grantManualUjc, completeExchangeRequest, cancelExchangeRequest, getUjcBalance } from "@/lib/ujc";
 
 export async function grantUjcAction(studentId: number, amount: number, note: string) {
   await requireZongjuSession();
@@ -12,17 +12,20 @@ export async function grantUjcAction(studentId: number, amount: number, note: st
   revalidatePath("/student");
 }
 
-export async function approveExchangeAction(requestId: number) {
+/** 카카오톡 선물 발송 완료 처리. */
+export async function completeExchangeAction(requestId: number) {
   const session = await requireZongjuSession();
-  await approveExchangeRequest(requestId, session.staffId);
+  await completeExchangeRequest(requestId, session.staffId);
   revalidatePath("/admin/ujc");
   revalidatePath("/student");
 }
 
-export async function rejectExchangeAction(requestId: number) {
+/** 신청 취소 — 이미 차감된 코인을 환불한다. */
+export async function cancelExchangeAction(requestId: number) {
   const session = await requireZongjuSession();
-  await rejectExchangeRequest(requestId, session.staffId);
+  await cancelExchangeRequest(requestId, session.staffId);
   revalidatePath("/admin/ujc");
+  revalidatePath("/student");
 }
 
 export async function getStudentUjcBalanceAction(studentId: number) {

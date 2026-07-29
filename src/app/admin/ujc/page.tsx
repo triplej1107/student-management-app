@@ -11,16 +11,18 @@ export default async function AdminUjcPage() {
   return (
     <div>
       <div className="mt-4 text-[19px] font-extrabold text-ink">UJC 관리</div>
-      <div className="mt-1 text-xs text-ink-muted">유종코인 수동 지급과 교환 승인을 여기서 처리해요.</div>
+      <div className="mt-1 text-xs text-ink-muted">
+        유종코인 수동 지급과 UJC마켓 교환 신청(카카오톡 선물 발송 대기)을 여기서 처리해요.
+      </div>
 
       <div className="mt-4">
         <UjcGrantForm />
       </div>
 
       <div className="mt-5">
-        <div className="mb-2.5 text-sm font-bold text-ink">교환 승인 대기 · {pending.length}건</div>
+        <div className="mb-2.5 text-sm font-bold text-ink">발송 대기 · {pending.length}건</div>
         <div className="flex flex-col gap-2.5">
-          {pending.length === 0 && <EmptyState>승인 대기 중인 교환 신청이 없어요.</EmptyState>}
+          {pending.length === 0 && <EmptyState>발송 대기 중인 교환 신청이 없어요.</EmptyState>}
           {pending.map((r) => (
             <UjcExchangeRow
               key={r.id}
@@ -28,6 +30,8 @@ export default async function AdminUjcPage() {
               studentName={r.studentName}
               classKey={r.classKey}
               amount={r.amount}
+              brandName={r.brand_name}
+              priceValue={r.price_value}
               requestedAt={r.requested_at}
             />
           ))}

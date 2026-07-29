@@ -2,11 +2,10 @@ import "server-only";
 import { supabase } from "./supabase";
 import { getClinicCheck } from "./data";
 import { toISODate } from "./weeks";
-import { UJC_EXCHANGE_UNITS, type UjcExchangeAmount } from "./types";
+import type { UjcExchangeAmount } from "./types";
 
 export const UJC_PER_CLINIC_WEEK = 1;
-export { UJC_EXCHANGE_UNITS as EXCHANGE_UNITS };
-export type ExchangeAmount = UjcExchangeAmount;
+type ExchangeAmount = UjcExchangeAmount;
 
 export type UjcReasonType = "clinic_complete" | "manual_grant" | "exchange" | "reset";
 
@@ -21,6 +20,7 @@ export interface UjcTransaction {
   created_at: string;
 }
 
+/** approved = "카카오톡으로 발송 완료", rejected = "취소(환불됨)". */
 export type ExchangeStatus = "pending" | "approved" | "rejected";
 
 export interface UjcExchangeRequest {
@@ -28,6 +28,8 @@ export interface UjcExchangeRequest {
   student_id: number;
   amount: number;
   status: ExchangeStatus;
+  brand_name: string | null;
+  price_value: number | null;
   requested_at: string;
   resolved_by: number | null;
   resolved_at: string | null;
@@ -110,10 +112,42 @@ export async function resetUjcBalance(studentId: number) {
   });
 }
 
-export async function requestExchange(studentId: number, amount: ExchangeAmount) {
-  const balance = await getUjcBalance(studentId);
-  if (balance < amount) throw new Error("보유 UJC가 부족해요.");
-  await supabase.from("ujc_exchange_requests").insert({ student_id: studentId, amount, status: "pending" });
+/**
+ * UJC 마켓 교환 신청 — 신청과 동시에 코인이 차감된다 (기존 "신청만,
+ * 승인 시점에 차감" 방식과 달리 마켓 스펙은 즉시 차감). request_ujc_exchange
+ * Postgres 함수 안에서 "차감 트랜잭션 insert" + "신청 내역 insert"가
+ * 하나의 트랜잭션으로 묶여 실행되므로 잔고 부족 등으로 실패하면 둘 다
+ * 롤백된다.
+ */
+export async function requestMarketExchange(
+  studentId: number,
+  amount: ExchangeAmount,
+  brandName: string,
+  priceValue: number
+): Promise<number> {
+  const { data, error } = await supabase.rpc("request_ujc_exchange", {
+    p_student_id: studentId,
+    p_amount: amount,
+    p_brand_name: brandName,
+    p_price_value: priceValue,
+  });
+  if (error) {
+    if (error.message?.includes("insufficient_balance")) {
+      throw new Error("보유 UJC가 부족해요.");
+    }
+    throw new Error("교환 신청에 실패했어요.");
+  }
+  return data as number;
+}
+
+export async function getMyExchangeRequests(studentId: number, limit = 20): Promise<UjcExchangeRequest[]> {
+  const { data } = await supabase
+    .from("ujc_exchange_requests")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("requested_at", { ascending: false })
+    .limit(limit);
+  return (data as UjcExchangeRequest[]) ?? [];
 }
 
 export async function listPendingExchangeRequests(): Promise<
@@ -138,7 +172,9 @@ export async function listPendingExchangeRequests(): Promise<
   }));
 }
 
-export async function approveExchangeRequest(requestId: number, staffId?: number) {
+/** 카카오톡 선물 발송 완료 처리 — 코인은 신청 시점에 이미 차감됐으므로
+ * 여기서는 상태만 바꾼다. */
+export async function completeExchangeRequest(requestId: number, staffId?: number) {
   const { data: req } = await supabase
     .from("ujc_exchange_requests")
     .select("*")
@@ -146,23 +182,28 @@ export async function approveExchangeRequest(requestId: number, staffId?: number
     .single();
   if (!req || req.status !== "pending") throw new Error("이미 처리된 신청이에요.");
 
-  const balance = await getUjcBalance(req.student_id);
-  if (balance < req.amount) throw new Error("잔고가 부족해 승인할 수 없어요.");
-
-  await supabase.from("ujc_transactions").insert({
-    student_id: req.student_id,
-    amount: -req.amount,
-    reason_type: "exchange",
-    reason_note: `UJC ${req.amount}개 교환 승인`,
-    created_by: staffId ?? null,
-  });
   await supabase
     .from("ujc_exchange_requests")
     .update({ status: "approved", resolved_by: staffId ?? null, resolved_at: new Date().toISOString() })
     .eq("id", requestId);
 }
 
-export async function rejectExchangeRequest(requestId: number, staffId?: number) {
+/** 신청 취소 — 이미 차감된 코인을 환불한다. */
+export async function cancelExchangeRequest(requestId: number, staffId?: number) {
+  const { data: req } = await supabase
+    .from("ujc_exchange_requests")
+    .select("*")
+    .eq("id", requestId)
+    .single();
+  if (!req || req.status !== "pending") throw new Error("이미 처리된 신청이에요.");
+
+  await supabase.from("ujc_transactions").insert({
+    student_id: req.student_id,
+    amount: req.amount,
+    reason_type: "exchange",
+    reason_note: `${req.brand_name ?? ""} 교환 취소 환불`.trim(),
+    created_by: staffId ?? null,
+  });
   await supabase
     .from("ujc_exchange_requests")
     .update({ status: "rejected", resolved_by: staffId ?? null, resolved_at: new Date().toISOString() })

@@ -127,6 +127,7 @@ export interface ClinicCheck {
   feedback_tags: FeedbackTags | null;
   feedback_text: string | null;
   feedback_updated_at: string | null;
+  zongju_feedback_text: string | null;
   updated_at: string;
 }
 
@@ -146,7 +147,7 @@ export const FEEDBACK_CATEGORIES = [
   {
     key: "homework",
     label: "숙제 이행",
-    options: ["기한 준수", "잦은 미제출", "부분 완료", "성실도 향상됨"],
+    options: ["기한 준수", "잦은 미제출", "부분 완료", "성실도 향상됨", "클리닉을 한번에 마치지 않고 미루는 습관이 있음"],
   },
   {
     key: "focus",
@@ -156,7 +157,7 @@ export const FEEDBACK_CATEGORIES = [
   {
     key: "attitude",
     label: "태도/매너",
-    options: ["협조적", "지시 따르기 어려워함", "또래관계 양호", "예의바름"],
+    options: ["협조적", "지시 따르기 어려워함", "또래관계 양호", "예의바름", "연락이 잘 안 됨"],
   },
 ] as const;
 export type FeedbackCategoryKey = (typeof FEEDBACK_CATEGORIES)[number]["key"];
@@ -290,6 +291,29 @@ export interface ClinicContactLog {
 // server-only인 ujc.ts가 아니라 여기 둔다.
 export const UJC_EXCHANGE_UNITS = [10, 20, 30] as const;
 export type UjcExchangeAmount = (typeof UJC_EXCHANGE_UNITS)[number];
+
+// UJC 마켓 카탈로그 — 3개 브랜드 × 3개 티어, 고정 라인업(1 UJC ≈ 750원).
+// 자주 안 바뀌는 작은 목록이라 DB 테이블 대신 코드에 고정해 관리한다.
+export type UjcMarketBrand = "GS25" | "GOOGLE_PLAY" | "OLIVE_YOUNG";
+
+export interface UjcMarketItem {
+  tier: UjcExchangeAmount;
+  brand: UjcMarketBrand;
+  brandLabel: string;
+  priceValue: number;
+}
+
+export const UJC_MARKET_CATALOG: UjcMarketItem[] = [
+  { tier: 10, brand: "GS25", brandLabel: "GS25", priceValue: 5000 },
+  { tier: 10, brand: "GOOGLE_PLAY", brandLabel: "구글플레이", priceValue: 5000 },
+  { tier: 10, brand: "OLIVE_YOUNG", brandLabel: "올리브영", priceValue: 5000 },
+  { tier: 20, brand: "GS25", brandLabel: "GS25", priceValue: 15000 },
+  { tier: 20, brand: "GOOGLE_PLAY", brandLabel: "구글플레이", priceValue: 15000 },
+  { tier: 20, brand: "OLIVE_YOUNG", brandLabel: "올리브영", priceValue: 15000 },
+  { tier: 30, brand: "GS25", brandLabel: "GS25", priceValue: 20000 },
+  { tier: 30, brand: "GOOGLE_PLAY", brandLabel: "구글플레이", priceValue: 20000 },
+  { tier: 30, brand: "OLIVE_YOUNG", brandLabel: "올리브영", priceValue: 20000 },
+];
 
 export interface SessionData {
   role?: Role;

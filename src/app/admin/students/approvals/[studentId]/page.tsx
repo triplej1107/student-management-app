@@ -5,6 +5,7 @@ import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from 
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
 import { AdminApprovalChecklist } from "@/components/admin/AdminApprovalChecklist";
+import { ZongjuFeedbackEditor } from "@/components/admin/ZongjuFeedbackEditor";
 
 export default async function AdminApprovalDetailPage({
   params,
@@ -84,6 +85,13 @@ export default async function AdminApprovalDetailPage({
           staffApprovedByName={approvedByStaff?.name ?? null}
         />
       )}
+
+      <ZongjuFeedbackEditor
+        key={`zfb_${selectedWeekISO}`}
+        studentId={student.id}
+        weekStartISO={selectedWeekISO}
+        initialText={check?.zongju_feedback_text ?? null}
+      />
     </div>
   );
 }

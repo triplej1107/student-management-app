@@ -5,10 +5,12 @@ export function ClinicChecklistReadOnly({
   template,
   check,
   feedbackText,
+  zongjuFeedbackText,
 }: {
   template: ClinicTemplate;
   check: ClinicCheck | undefined;
   feedbackText?: string | null;
+  zongjuFeedbackText?: string | null;
 }) {
   const hwSlots = filledHwSlots(template);
   const testSlots = filledTestSlots(template);
@@ -90,9 +92,23 @@ export function ClinicChecklistReadOnly({
 
       {feedbackText && (
         <div className="mt-[18px]">
-          <div className="mb-2 text-[13px] font-bold text-ink">이번 주 피드백</div>
+          <div className="mb-2 text-[13px] font-bold text-ink">
+            조교T의 피드백{" "}
+            <span className="font-normal text-ink-muted">(클리닉수업 참여태도만 평가합니다)</span>
+          </div>
           <div className="rounded-[10px] border border-line-soft bg-white p-3 text-[13px] leading-relaxed text-ink-secondary">
             {feedbackText}
+          </div>
+        </div>
+      )}
+
+      {zongjuFeedbackText && (
+        <div className="mt-[18px]">
+          <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[#B76E00]">
+            <span>👑</span> 종주T의 피드백
+          </div>
+          <div className="rounded-[10px] border-[1.5px] border-[#F0C766] bg-gradient-to-br from-[#FFF9EC] to-[#FFF3D6] p-3 text-[13px] leading-relaxed text-[#6B4E12] shadow-[0_2px_10px_rgba(230,180,60,0.25)]">
+            {zongjuFeedbackText}
           </div>
         </div>
       )}

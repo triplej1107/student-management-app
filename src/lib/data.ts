@@ -552,6 +552,20 @@ export async function setClinicFeedback(
   );
 }
 
+/** 종주T가 직접 쓰는 별도 피드백 — 조교 AI 피드백과 달리 결재 게이트
+ * 없이 저장 즉시 학부모에게 노출된다. */
+export async function setZongjuFeedback(studentId: number, weekStart: Date, text: string) {
+  await supabase.from("clinic_checks").upsert(
+    {
+      student_id: studentId,
+      week_start: toISODate(weekStart),
+      zongju_feedback_text: text,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,week_start" }
+  );
+}
+
 export async function getStaffNameMap(): Promise<Map<number, string>> {
   const { data } = await supabase.from("staff").select("id, name");
   return new Map((data ?? []).map((s) => [s.id, s.name]));

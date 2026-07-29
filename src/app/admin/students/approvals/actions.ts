@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireZongjuSession } from "@/lib/authz";
-import { setZongjuApproval } from "@/lib/data";
+import { setZongjuApproval, setZongjuFeedback } from "@/lib/data";
 import { maybeCreditZongjuApproval } from "@/lib/ujc";
 
 export async function toggleZongjuApprovalAction(
@@ -20,4 +20,12 @@ export async function toggleZongjuApprovalAction(
   revalidatePath("/admin");
   revalidatePath("/staff/clinic");
   revalidatePath("/student");
+}
+
+export async function saveZongjuFeedbackAction(studentId: number, weekStartISO: string, text: string) {
+  await requireZongjuSession();
+  await setZongjuFeedback(studentId, new Date(weekStartISO), text);
+  revalidatePath(`/admin/students/approvals/${studentId}`);
+  revalidatePath("/student");
+  revalidatePath("/student/clinic");
 }

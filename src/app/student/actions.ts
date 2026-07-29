@@ -2,13 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
-import { requestExchange, type ExchangeAmount } from "@/lib/ujc";
+import { requestMarketExchange } from "@/lib/ujc";
+import type { UjcExchangeAmount } from "@/lib/types";
 
-export async function requestExchangeAction(amount: ExchangeAmount) {
+export async function requestMarketExchangeAction(
+  amount: UjcExchangeAmount,
+  brandName: string,
+  priceValue: number
+) {
   const session = await getSession();
   if (session.role !== "student" || !session.studentId) {
     throw new Error("학생 계정만 교환 신청할 수 있어요.");
   }
-  await requestExchange(session.studentId, amount);
+  await requestMarketExchange(session.studentId, amount, brandName, priceValue);
   revalidatePath("/student");
+  revalidatePath("/student/ujc-market");
 }

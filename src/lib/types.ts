@@ -272,6 +272,20 @@ export interface CalendarNote {
   created_at: string;
 }
 
+// 클리닉 2주+ 밀림 학생에 대한 전화 연락 기록. week_start는 밀림 관리
+// 대시보드가 평가한 "최신 클리닉 주"를 가리킨다 — 밀림이 다음 주까지
+// 이어지면 새 row가 생겨 다시 미확인 상태로 노출된다.
+export interface ClinicContactLog {
+  id: number;
+  student_id: number;
+  week_start: string;
+  contacted: boolean;
+  note: string | null;
+  contacted_by: number | null;
+  contacted_at: string | null;
+  updated_at: string;
+}
+
 export interface SessionData {
   role?: Role;
   studentId?: number; // student & parent both resolve to a student row

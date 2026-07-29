@@ -81,3 +81,12 @@ export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklo
   entries.sort((a, b) => b.weeksOverdue - a.weeksOverdue);
   return entries;
 }
+
+/** The most recent clinic week whose grading period has fully closed —
+ * i.e. the "as of" week this run of the backlog dashboard evaluated
+ * against. Contact-log entries are keyed to this week so that a still-
+ * unresolved 2주+ backlog gets a fresh, unchecked entry each week it
+ * persists, while past weeks' call notes remain as history. */
+export function currentBacklogEvalWeek(): Date {
+  return rollingClinicWeeks(2)[1];
+}

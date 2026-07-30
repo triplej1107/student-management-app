@@ -88,14 +88,16 @@ export default async function RoleSelectPage() {
 
   return (
     <div className="flex h-full flex-1 flex-col items-center justify-center px-7 pb-5 pt-6">
-      <Image
-        src="/icon-192.png"
-        alt="유종의미 국어학원"
-        width={92}
-        height={92}
-        className="mt-2 rounded-[26px] shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
-        priority
-      />
+      <Link href="/profile" className="mt-2 cursor-pointer">
+        <Image
+          src="/icon-192.png"
+          alt="유종의미 국어학원"
+          width={92}
+          height={92}
+          className="rounded-[26px] shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+          priority
+        />
+      </Link>
       <div className="mt-4 text-lg font-extrabold text-ink">유종의미 국어학원</div>
       <div className="mt-1 text-xs italic text-ink-muted">
         &ldquo;배명&amp;가락 국어1타 장종주T&rdquo;

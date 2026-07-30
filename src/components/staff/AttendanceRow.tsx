@@ -110,7 +110,7 @@ export function AttendanceRow({
 
   return (
     <div className="rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <Link href={`/staff/clinic/${student.id}`} className="cursor-pointer">
           <div className="text-[15px] font-bold text-ink">{student.name}</div>
           <div className="mt-0.5 text-xs text-ink-muted">
@@ -127,29 +127,30 @@ export function AttendanceRow({
             <div className="mt-0.5 text-[11px] text-ink-muted">전달사항: {makeup.note}</div>
           )}
         </Link>
-        <div className="flex gap-1">
-          {(["출석", "지각", "조정", "결석"] as AttendanceStatus[]).map((s) => {
-            const style = status === s ? STATUS_STYLE[s] : UNSET_STYLE;
-            return (
-              <button
-                key={s}
-                disabled={pending}
-                onClick={() => mark(s)}
-                className={`h-9 w-9 rounded-[9px] border text-[12px] font-bold ${style.border} ${style.bg} ${style.color}`}
-              >
-                {s}
-              </button>
-            );
-          })}
+        <div className="flex flex-none flex-col items-end gap-1">
+          <div className="flex gap-1">
+            {(["출석", "지각", "조정", "결석"] as AttendanceStatus[]).map((s) => {
+              const style = status === s ? STATUS_STYLE[s] : UNSET_STYLE;
+              return (
+                <button
+                  key={s}
+                  disabled={pending}
+                  onClick={() => mark(s)}
+                  className={`h-9 w-9 rounded-[9px] border text-[12px] font-bold ${style.border} ${style.bg} ${style.color}`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+          {status && (
+            <label className="flex items-center gap-1 text-[10px] leading-none text-ink-muted whitespace-nowrap">
+              <input type="checkbox" checked={texted} onChange={toggleTexted} className="h-2.5 w-2.5" />
+              학부모 문자 전송
+            </label>
+          )}
         </div>
       </div>
-
-      {status && (
-        <label className="mt-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
-          <input type="checkbox" checked={texted} onChange={toggleTexted} className="h-3 w-3" />
-          학부모 문자 전송
-        </label>
-      )}
 
       {editingMakeup && (
         <div className="mt-2.5 border-t border-line-soft pt-2.5">

@@ -6,6 +6,7 @@ import {
   getClinicChecksForStudents,
   getClinicTemplatesForWeek,
   getDutyChecksForDate,
+  getDutySubstitutesForDates,
   getRosterForDay,
   listDutyItems,
   listStaff,
@@ -13,7 +14,10 @@ import {
 import { isClinicComplete } from "@/lib/clinicProgress";
 import { getClinicBacklog } from "@/lib/clinicBacklog";
 import { Card } from "@/components/ui";
+import { DutySubstituteSection } from "@/components/admin/DutySubstituteSection";
+import { addDutySubstituteAction, removeDutySubstituteAction } from "./actions";
 import { DAY_ORDER } from "@/lib/types";
+import { toISODate } from "@/lib/weeks";
 
 const PRIORITY_DAYS = ["수", "목", "금", "토", "일", "월", "화"] as const;
 
@@ -21,20 +25,28 @@ export default async function AdminHomePage() {
   await requireZongjuSession();
   const { today, weekStart, weekEnd, clinicWeekStart, dayLabel } = getToday();
 
-  const [roster, attendanceMap, staff, dutyItems, dutyChecksByDay] = await Promise.all([
+  const priorityDates = PRIORITY_DAYS.map((day) => {
+    const offset = DAY_ORDER.indexOf(day);
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + offset);
+    return date;
+  });
+
+  const [roster, attendanceMap, staff, dutyItems, dutyChecksByDay, substitutesByDate] = await Promise.all([
     getRosterForDay(dayLabel, weekStart, weekEnd),
     getAttendanceMapForDate(today),
     listStaff(),
     listDutyItems(),
     Promise.all(
-      PRIORITY_DAYS.map(async (day) => {
-        const offset = DAY_ORDER.indexOf(day);
-        const date = new Date(weekStart);
-        date.setDate(date.getDate() + offset);
-        return { day, date, checksByStaff: await getDutyChecksForDate(date) };
-      })
+      PRIORITY_DAYS.map(async (day, i) => ({
+        day,
+        date: priorityDates[i],
+        checksByStaff: await getDutyChecksForDate(priorityDates[i]),
+      }))
     ),
+    getDutySubstitutesForDates(priorityDates),
   ]);
+  const staffById = new Map(staff.map((s) => [s.id, s]));
   const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
 
   const [checksMap, templatesMap] = await Promise.all([
@@ -110,8 +122,20 @@ export default async function AdminHomePage() {
           )}
           <div className="flex flex-col gap-3">
             {dutyChecksByDay.map(({ day, date, checksByStaff }) => {
+              const dateISO = toISODate(date);
               const dayStaff = staff.filter((s) => s.work_days.includes(day));
-              if (dayStaff.length === 0) return null;
+              const subIds = substitutesByDate.get(dateISO) ?? [];
+              const substituteRows = subIds
+                .map((id) => staffById.get(id))
+                .filter((s): s is NonNullable<typeof s> => !!s)
+                .map((s) => {
+                  const checks = checksByStaff.get(s.id);
+                  const done = dutyItems.filter((i) => checks?.get(i.id)).length;
+                  return { staffId: s.id, name: s.name, done, total: dutyItems.length };
+                });
+              const excludeIds = new Set([...dayStaff.map((s) => s.id), ...subIds]);
+              const options = staff.filter((s) => !excludeIds.has(s.id)).map((s) => ({ id: s.id, name: s.name }));
+
               return (
                 <div key={day}>
                   <div className="mb-1.5 text-xs font-bold text-ink-muted">
@@ -136,6 +160,13 @@ export default async function AdminHomePage() {
                         </Card>
                       );
                     })}
+                    <DutySubstituteSection
+                      dateISO={dateISO}
+                      substitutes={substituteRows}
+                      options={options}
+                      addAction={addDutySubstituteAction}
+                      removeAction={removeDutySubstituteAction}
+                    />
                   </div>
                 </div>
               );

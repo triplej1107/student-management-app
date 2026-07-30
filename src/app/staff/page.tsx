@@ -12,21 +12,25 @@ import {
   listNoticesForClass,
 } from "@/lib/data";
 import { isClinicComplete } from "@/lib/clinicProgress";
+import { getUnseenStaffFeedback } from "@/lib/staffFeedback";
 import { CLASSES } from "@/lib/types";
 import { Card } from "@/components/ui";
+import { StaffHomeModals } from "@/components/StaffHomeModals";
 import { logoutAction } from "@/app/login/actions";
+import { markStaffFeedbackSeenAction } from "@/app/staff/actions";
 
 export default async function StaffHomePage() {
   const session = await requireStaffSession();
   const { today, weekStart, weekEnd, clinicWeekStart, dayLabel } = getToday();
 
-  const [staff, roster, attendanceMap, dutyItems, dutyChecks, noticeLists] = await Promise.all([
+  const [staff, roster, attendanceMap, dutyItems, dutyChecks, noticeLists, unseenFeedback] = await Promise.all([
     getStaffById(session.staffId),
     getRosterForDay(dayLabel, weekStart, weekEnd),
     getAttendanceMapForDate(today),
     listDutyItems(),
     getDutyChecksForStaffDate(session.staffId, today),
     Promise.all(CLASSES.map((c) => listNoticesForClass(c, 2))),
+    getUnseenStaffFeedback(session.staffId),
   ]);
   const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
   const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
@@ -69,6 +73,8 @@ export default async function StaffHomePage() {
           </button>
         </form>
       </div>
+
+      <StaffHomeModals feedback={unseenFeedback} markSeenAction={markStaffFeedbackSeenAction} />
 
       <div className="mt-[22px] flex flex-col gap-3">
         <Link href="/staff/attendance">

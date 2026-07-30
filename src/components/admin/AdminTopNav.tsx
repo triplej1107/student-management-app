@@ -5,11 +5,14 @@ import { usePathname } from "next/navigation";
 
 const TOP_TABS = [
   { href: "/admin", label: "홈", match: (p: string) => p === "/admin" },
-  { href: "/admin/students/templates", label: "학생 관리", match: (p: string) => p.startsWith("/admin/students") },
+  {
+    href: "/admin/students/templates",
+    label: "학생 관리",
+    match: (p: string) => p.startsWith("/admin/students") || p.startsWith("/admin/reports"),
+  },
   { href: "/admin/staff/profiles", label: "조교 관리", match: (p: string) => p.startsWith("/admin/staff") },
   { href: "/admin/clinic-backlog", label: "밀림 관리", match: (p: string) => p.startsWith("/admin/clinic-backlog") },
   { href: "/admin/ujc", label: "UJC 관리", match: (p: string) => p.startsWith("/admin/ujc") },
-  { href: "/admin/reports", label: "보고서", match: (p: string) => p.startsWith("/admin/reports") },
 ];
 
 export function AdminTopNav() {

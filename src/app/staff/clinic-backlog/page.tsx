@@ -21,7 +21,7 @@ export default async function StaffClinicBacklogPage() {
       <ClinicBacklogView
         entries={entries}
         contactLogs={contactLogs}
-        detailHref={(e) => `/staff/clinic/${e.studentId}?week=${e.oldestIncompleteWeekISO}`}
+        detailHrefBase="/staff/clinic"
         toggleAction={toggleContactAction}
         saveNoteAction={saveContactNoteAction}
       />

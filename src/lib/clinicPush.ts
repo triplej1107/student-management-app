@@ -26,6 +26,25 @@ export async function savePushSubscription(
     .upsert({ student_id: studentId, endpoint, p256dh, auth }, { onConflict: "endpoint" });
 }
 
+export async function savePushSubscriptionForStaff(
+  staffId: number,
+  endpoint: string,
+  p256dh: string,
+  auth: string
+) {
+  await supabase
+    .from("push_subscriptions")
+    .upsert({ staff_id: staffId, endpoint, p256dh, auth }, { onConflict: "endpoint" });
+}
+
+export async function getPushSubscriptionsForStaff(staffId: number): Promise<PushSubscriptionRow[]> {
+  const { data } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint, p256dh, auth")
+    .eq("staff_id", staffId);
+  return (data as PushSubscriptionRow[]) ?? [];
+}
+
 export async function getPushSubscriptionsForStudents(
   studentIds: number[]
 ): Promise<Map<number, PushSubscriptionRow[]>> {
@@ -52,6 +71,36 @@ export async function sendBirthdayPush(subs: PushSubscriptionRow[], studentName:
     title: "🎂 생일 축하해요!",
     body: `종주T가 ${studentName}학생의 생일을 진심으로 축하합니다! UJC 하나를 선물로 줄게요!`,
     url: "/student",
+  });
+
+  const results = await Promise.allSettled(
+    subs.map((s) =>
+      webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload)
+    )
+  );
+
+  const stale = results
+    .map((r, i) => ({ r, endpoint: subs[i].endpoint }))
+    .filter(({ r }) => {
+      if (r.status !== "rejected") return false;
+      const statusCode = (r.reason as { statusCode?: number } | undefined)?.statusCode;
+      return statusCode === 404 || statusCode === 410;
+    })
+    .map(({ endpoint }) => endpoint);
+
+  if (stale.length > 0) {
+    await supabase.from("push_subscriptions").delete().in("endpoint", stale);
+  }
+}
+
+/** 종주T가 남긴 한마디를 조교의 모든 구독 기기에 보낸다. */
+export async function sendStaffFeedbackPush(subs: PushSubscriptionRow[], message: string) {
+  if (!publicKey || !privateKey || subs.length === 0) return;
+
+  const payload = JSON.stringify({
+    title: "종주T의 한마디",
+    body: message,
+    url: "/staff",
   });
 
   const results = await Promise.allSettled(

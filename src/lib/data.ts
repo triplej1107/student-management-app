@@ -834,6 +834,38 @@ export async function toggleDutyCheck(
   );
 }
 
+/** 특정 날짜에 대타로 온 조교 목록(staff_id) — 종주T 홈 화면의 요일별
+ * 현황에 원래 근무 요일과 무관하게 그날만 추가로 표시하기 위해 쓴다. */
+export async function getDutySubstitutesForDates(dates: Date[]): Promise<Map<string, number[]>> {
+  const isoDates = dates.map(toISODate);
+  const map = new Map<string, number[]>();
+  if (isoDates.length === 0) return map;
+  const { data } = await supabase
+    .from("duty_substitutes")
+    .select("check_date, staff_id")
+    .in("check_date", isoDates);
+  for (const row of data ?? []) {
+    const list = map.get(row.check_date) ?? [];
+    list.push(row.staff_id);
+    map.set(row.check_date, list);
+  }
+  return map;
+}
+
+export async function addDutySubstitute(date: Date, staffId: number) {
+  await supabase
+    .from("duty_substitutes")
+    .upsert({ check_date: toISODate(date), staff_id: staffId }, { onConflict: "check_date,staff_id" });
+}
+
+export async function removeDutySubstitute(date: Date, staffId: number) {
+  await supabase
+    .from("duty_substitutes")
+    .delete()
+    .eq("check_date", toISODate(date))
+    .eq("staff_id", staffId);
+}
+
 // ============================================================
 // grades — 내신(school_exams) / 모의고사(mock_exams)
 // ============================================================

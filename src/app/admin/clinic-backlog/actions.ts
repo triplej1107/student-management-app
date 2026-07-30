@@ -29,3 +29,14 @@ export async function clearBacklogAction(studentId: number, weekStartISO: string
   revalidatePath("/admin");
   revalidatePath("/staff/clinic-backlog");
 }
+
+/** 종주T 전용 — 여러 명을 한번에 청산 처리. */
+export async function clearBacklogEntriesAction(entries: { studentId: number; weekStartISO: string }[]) {
+  await requireZongjuSession();
+  await Promise.all(
+    entries.map((e) => clearClinicBacklogEntry(e.studentId, parseISODate(e.weekStartISO)))
+  );
+  revalidatePath("/admin/clinic-backlog");
+  revalidatePath("/admin");
+  revalidatePath("/staff/clinic-backlog");
+}

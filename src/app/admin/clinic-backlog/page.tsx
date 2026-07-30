@@ -2,7 +2,7 @@ import { requireZongjuSession } from "@/lib/authz";
 import { getClinicBacklog, currentBacklogEvalWeek } from "@/lib/clinicBacklog";
 import { getClinicContactLogs } from "@/lib/clinicContactLog";
 import { ClinicBacklogView } from "@/components/ClinicBacklogView";
-import { toggleContactAction, saveContactNoteAction, clearBacklogAction } from "./actions";
+import { toggleContactAction, saveContactNoteAction, clearBacklogAction, clearBacklogEntriesAction } from "./actions";
 
 export default async function ClinicBacklogPage() {
   await requireZongjuSession();
@@ -20,10 +20,11 @@ export default async function ClinicBacklogPage() {
       <ClinicBacklogView
         entries={entries}
         contactLogs={contactLogs}
-        detailHref={(e) => `/admin/students/approvals/${e.studentId}?week=${e.oldestIncompleteWeekISO}`}
+        detailHrefBase="/admin/students/approvals"
         toggleAction={toggleContactAction}
         saveNoteAction={saveContactNoteAction}
         clearAction={clearBacklogAction}
+        bulkClearAction={clearBacklogEntriesAction}
       />
     </div>
   );

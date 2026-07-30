@@ -3,6 +3,7 @@ import { listStaff } from "@/lib/data";
 import { AdminSubNav } from "@/components/admin/AdminTopNav";
 import { StaffProfileCard } from "@/components/admin/StaffProfileCard";
 import { addStaffProfileAction } from "./actions";
+import { STAFF_SUB_TABS } from "../subTabs";
 
 export default async function AdminStaffProfilesPage() {
   await requireZongjuSession();
@@ -10,12 +11,7 @@ export default async function AdminStaffProfilesPage() {
 
   return (
     <div>
-      <AdminSubNav
-        tabs={[
-          { href: "/admin/staff/profiles", label: "조교 프로필" },
-          { href: "/admin/staff/duty", label: "요일별 체크리스트" },
-        ]}
-      />
+      <AdminSubNav tabs={STAFF_SUB_TABS} />
 
       <div className="mt-3.5 flex flex-col gap-3">
         {staff.map((s) => (

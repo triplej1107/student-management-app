@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useToast } from "@/components/Toast";
 import type { ParentQuestionWithStudent } from "@/lib/parentQuestions";
@@ -82,7 +83,12 @@ export function ParentQuestionsSection({
 }) {
   return (
     <div>
-      <div className="mb-2.5 text-sm font-bold text-ink">학부모 질문</div>
+      <div className="mb-2.5 flex items-center justify-between">
+        <div className="text-sm font-bold text-ink">학부모 질문</div>
+        <Link href="/admin/students/questions" className="text-xs font-bold text-accent">
+          지난 내역 보기 →
+        </Link>
+      </div>
       {questions.length === 0 && (
         <div className="text-[13px] text-ink-muted/70">이번 주 남겨진 질문이 없어요.</div>
       )}

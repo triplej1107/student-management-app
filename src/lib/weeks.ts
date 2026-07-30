@@ -104,6 +104,26 @@ export function wednesdayOf(date: Date): Date {
   return d;
 }
 
+/** Rolling window of question-week start dates (Wednesdays), newest first —
+ * 학부모 질문 내역 화면에서 지난 주차를 넘겨보는 데 쓴다. */
+export function rollingQuestionWeeks(count: number, today: Date = new Date()): Date[] {
+  const thisWednesday = wednesdayOf(today);
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(thisWednesday);
+    d.setDate(d.getDate() - 7 * i);
+    return d;
+  });
+}
+
+/** "7/29~8/4" — 질문 주는 요일 그리드가 월요일 기준이 아니라서 weekLabel의
+ * "N주차" 표기 대신 날짜 범위로 보여준다. */
+export function questionWeekLabel(weekStart: Date): string {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 6);
+  const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+  return `${fmt(weekStart)}~${fmt(end)}`;
+}
+
 /** "요일+시" 표기(예: 토09) — 동명이인 학생을 구분하는 짧은 태그로 쓴다.
  * class_time이 "9:00"/"09:00"처럼 들쭉날쭉해도 항상 2자리로 맞춘다. */
 export function classDayTimeTag(day: string | null, time: string | null): string | null {

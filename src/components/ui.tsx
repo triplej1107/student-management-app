@@ -4,16 +4,20 @@ import type { ReactNode } from "react";
 export function Card({
   children,
   onClick,
+  clickable = false,
   className = "",
 }: {
   children: ReactNode;
   onClick?: () => void;
+  /** Link로 감싸는 등 onClick 없이도 클릭 가능한 카드일 때 지정 — 버튼처럼 보이도록 은은한 그림자를 준다. */
+  clickable?: boolean;
   className?: string;
 }) {
+  const isClickable = clickable || !!onClick;
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border border-line-soft bg-white p-3.5 ${onClick ? "cursor-pointer" : ""} ${className}`}
+      className={`rounded-2xl border border-line-soft bg-white p-3.5 ${isClickable ? "cursor-pointer shadow-[0_3px_14px_rgba(20,30,60,0.12)]" : ""} ${className}`}
     >
       {children}
     </div>

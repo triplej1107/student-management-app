@@ -87,7 +87,7 @@ export function IndividualManager() {
             key={r.id}
             onClick={() => setSelected(r)}
             className={
-              "flex cursor-pointer items-center justify-between rounded-[10px] border bg-white p-2.5 " +
+              "flex cursor-pointer items-center justify-between rounded-[10px] border bg-white p-2.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
               (selected?.id === r.id ? "border-accent" : "border-line-soft")
             }
           >

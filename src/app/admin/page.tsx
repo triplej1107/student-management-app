@@ -77,7 +77,7 @@ export default async function AdminHomePage() {
             <div className="mt-1 text-[22px] font-extrabold text-ink">{incompleteCount}명</div>
           </Card>
           <Link href="/admin/students/approvals" className="flex-1">
-            <Card>
+            <Card clickable>
               <div className="text-[13px] font-semibold text-ink-muted">결재 대기</div>
               <div className="mt-1 text-[22px] font-extrabold text-ink">{pendingApprovalCount}명</div>
             </Card>
@@ -85,7 +85,7 @@ export default async function AdminHomePage() {
         </div>
 
         <Link href="/admin/clinic-backlog">
-          <Card className={backlogUrgentCount > 0 ? "border-danger/40 bg-danger-soft" : ""}>
+          <Card clickable className={backlogUrgentCount > 0 ? "border-danger/40 bg-danger-soft" : ""}>
             <div
               className={
                 "text-[13px] font-semibold " +

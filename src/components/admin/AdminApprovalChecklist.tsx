@@ -107,7 +107,7 @@ export function AdminApprovalChecklist({
 
         <div
           onClick={toggle}
-          className="mt-2 flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-line-soft bg-white p-2.5"
+          className="mt-2 flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-line-soft bg-white p-2.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         >
           <span
             className={

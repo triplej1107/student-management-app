@@ -72,7 +72,7 @@ export default async function StaffHomePage() {
 
       <div className="mt-[22px] flex flex-col gap-3">
         <Link href="/staff/attendance">
-          <Card>
+          <Card clickable>
             <div className="text-[13px] font-semibold text-ink-muted">{dayLabel}요일 출결</div>
             <div className="mt-1 text-[22px] font-extrabold text-ink">
               {attendedCount}/{roster.length}명 체크됨
@@ -81,13 +81,13 @@ export default async function StaffHomePage() {
         </Link>
         <div className="flex gap-3">
           <Link href="/staff/clinic" className="flex-1">
-            <Card>
+            <Card clickable>
               <div className="text-[13px] font-semibold text-ink-muted">클리닉 미완료</div>
               <div className="mt-1 text-[22px] font-extrabold text-ink">{incompleteCount}명</div>
             </Card>
           </Link>
           <Link href="/staff/checklist" className="flex-1">
-            <Card>
+            <Card clickable>
               <div className="text-[13px] font-semibold text-ink-muted">업무 체크리스트</div>
               <div className="mt-1 text-[22px] font-extrabold text-ink">
                 {dutyDone}/{dutyItems.length}

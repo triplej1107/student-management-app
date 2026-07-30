@@ -15,7 +15,13 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
  * 지원 안 하거나(unsupported) 이미 거부했으면(denied) 아무것도 안 띄우고
  * 바로 onDone()을 호출해 다음 모달로 넘어간다. 아직 켜지 않았으면(default)
  * 켤 때까지 로그인할 때마다 다시 뜬다 — 세션에 "봤음" 상태를 저장하지 않음. */
-export function PushOptInModal({ onDone }: { onDone: () => void }) {
+export function PushOptInModal({
+  onDone,
+  bodyText = "클리닉 숙제가 밀리면 알림으로 알려드려요.",
+}: {
+  onDone: () => void;
+  bodyText?: string;
+}) {
   const [status, setStatus] = useState<Status>("checking");
 
   useEffect(() => {
@@ -100,7 +106,7 @@ export function PushOptInModal({ onDone }: { onDone: () => void }) {
         <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
           <div className="text-base font-extrabold text-ink">📱 알림을 받으려면 앱 설치가 필요해요</div>
           <div className="mt-1.5 text-sm text-ink-secondary">
-            Safari 공유 버튼 → &ldquo;홈 화면에 추가&rdquo;로 앱을 설치하면 클리닉 밀림 알림을 받을 수 있어요.
+            Safari 공유 버튼 → &ldquo;홈 화면에 추가&rdquo;로 앱을 설치하면 알림을 받을 수 있어요.
           </div>
           <button
             onClick={onDone}
@@ -117,7 +123,7 @@ export function PushOptInModal({ onDone }: { onDone: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
       <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
         <div className="text-base font-extrabold text-ink">🔔 알림을 켜두면 더 편해요</div>
-        <div className="mt-1.5 text-sm text-ink-secondary">클리닉 숙제가 밀리면 알림으로 알려드려요.</div>
+        <div className="mt-1.5 text-sm text-ink-secondary">{bodyText}</div>
         <div className="mt-4 flex gap-2">
           <button
             onClick={onDone}

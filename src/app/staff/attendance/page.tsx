@@ -4,6 +4,7 @@ import { toISODate } from "@/lib/weeks";
 import {
   activeClinicDaysFrom,
   getAttendanceMapForDate,
+  getParentTextedMapForDate,
   getWeeklyRoster,
 } from "@/lib/data";
 import { DAY_ORDER } from "@/lib/types";
@@ -33,6 +34,7 @@ export default async function StaffAttendancePage({
   const dateISO = toISODate(sessionDate);
 
   const attendanceMap = selectedDay ? await getAttendanceMapForDate(sessionDate) : new Map();
+  const parentTextedMap = selectedDay ? await getParentTextedMapForDate(sessionDate) : new Map();
   const checkedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
 
   return (
@@ -66,6 +68,7 @@ export default async function StaffAttendancePage({
               makeup={entry.makeup}
               status={attendanceMap.get(entry.student.id)}
               dateISO={dateISO}
+              parentTexted={parentTextedMap.get(entry.student.id)}
             />
           ),
         }))}

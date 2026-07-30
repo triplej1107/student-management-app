@@ -28,7 +28,12 @@ export function StaffHomeModals({
   }
 
   if (!pushDone) {
-    return <PushOptInModal onDone={() => setPushDone(true)} />;
+    return (
+      <PushOptInModal
+        onDone={() => setPushDone(true)}
+        bodyText="종주T가 한마디를 남기면 알림으로 알려드려요."
+      />
+    );
   }
 
   return null;

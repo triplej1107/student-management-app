@@ -402,6 +402,27 @@ export async function clearAttendance(studentId: number, date: Date) {
     .eq("session_date", toISODate(date));
 }
 
+/** 2학기 전까지만 쓰는 임시 기능 — 학부모에게 문자를 보냈는지 체크. */
+export async function setParentTexted(studentId: number, date: Date, texted: boolean) {
+  await supabase
+    .from("attendance_records")
+    .update({ parent_texted: texted })
+    .eq("student_id", studentId)
+    .eq("session_date", toISODate(date));
+}
+
+export async function getParentTextedMapForDate(date: Date): Promise<Map<number, boolean>> {
+  const { data } = await supabase
+    .from("attendance_records")
+    .select("student_id, parent_texted")
+    .eq("session_date", toISODate(date));
+  const map = new Map<number, boolean>();
+  for (const row of data ?? []) {
+    map.set(row.student_id, !!row.parent_texted);
+  }
+  return map;
+}
+
 // ============================================================
 // clinic templates & checks
 // ============================================================

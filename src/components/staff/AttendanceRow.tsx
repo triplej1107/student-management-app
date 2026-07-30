@@ -11,6 +11,7 @@ import {
   clearAttendanceAction,
   saveMakeupAction,
   cancelMakeupAction,
+  toggleParentTextedAction,
 } from "@/app/staff/attendance/actions";
 
 const STATUS_STYLE: Record<
@@ -31,6 +32,7 @@ export function AttendanceRow({
   makeup,
   status,
   dateISO,
+  parentTexted,
 }: {
   student: Student;
   effTime: string;
@@ -38,6 +40,7 @@ export function AttendanceRow({
   makeup?: MakeupSchedule;
   status?: AttendanceStatus;
   dateISO: string;
+  parentTexted?: boolean;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -47,6 +50,15 @@ export function AttendanceRow({
   const [dayDraft, setDayDraft] = useState(makeup?.makeup_day ?? "");
   const [timeDraft, setTimeDraft] = useState(makeup?.makeup_time ?? "");
   const [noteDraft, setNoteDraft] = useState(makeup?.note ?? "");
+  const [texted, setTexted] = useState(parentTexted ?? false);
+
+  function toggleTexted() {
+    const next = !texted;
+    setTexted(next);
+    startTransition(async () => {
+      await toggleParentTextedAction(student.id, dateISO, next);
+    });
+  }
 
   function mark(next: AttendanceStatus) {
     if (status === next) {
@@ -131,6 +143,13 @@ export function AttendanceRow({
           })}
         </div>
       </div>
+
+      {status && (
+        <label className="mt-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
+          <input type="checkbox" checked={texted} onChange={toggleTexted} className="h-3 w-3" />
+          학부모 문자 전송
+        </label>
+      )}
 
       {editingMakeup && (
         <div className="mt-2.5 border-t border-line-soft pt-2.5">

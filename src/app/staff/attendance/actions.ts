@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireStaffOrZongjuSession } from "@/lib/authz";
-import { setAttendance, clearAttendance, setMakeup, clearMakeup } from "@/lib/data";
+import { setAttendance, clearAttendance, setMakeup, clearMakeup, setParentTexted } from "@/lib/data";
 import type { AttendanceStatus } from "@/lib/types";
 
 function revalidateAttendancePaths() {
@@ -46,4 +46,11 @@ export async function cancelMakeupAction(studentId: number, dateISO: string) {
   await clearMakeup(studentId, new Date(dateISO));
   revalidateAttendancePaths();
   revalidatePath("/staff/clinic");
+}
+
+/** 2학기 전까지만 쓰는 임시 기능 — 학부모 문자 전송 체크. */
+export async function toggleParentTextedAction(studentId: number, dateISO: string, texted: boolean) {
+  await requireStaffOrZongjuSession();
+  await setParentTexted(studentId, new Date(dateISO), texted);
+  revalidateAttendancePaths();
 }

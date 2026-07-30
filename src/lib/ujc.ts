@@ -7,7 +7,7 @@ import type { UjcExchangeAmount } from "./types";
 export const UJC_PER_CLINIC_WEEK = 1;
 type ExchangeAmount = UjcExchangeAmount;
 
-export type UjcReasonType = "clinic_complete" | "manual_grant" | "exchange" | "reset";
+export type UjcReasonType = "clinic_complete" | "manual_grant" | "exchange" | "reset" | "birthday_gift";
 
 export interface UjcTransaction {
   id: number;
@@ -108,6 +108,21 @@ export async function maybeCreditZongjuApproval(
   if (check?.zongju_approved) {
     await creditClinicCompletion(studentId, weekStart, staffId);
   }
+}
+
+/** 생일 축하 선물 — (student_id, related_week_start=그 해 생일 날짜) 부분
+ * unique 인덱스가 매년 중복 지급을 막아준다. 반환값은 "이번 호출로 실제
+ * 새로 지급됐는지"(true) / "이미 올해 지급됨"(false) — 호출부가 이 값으로
+ * 알림 발송 여부를 결정한다. */
+export async function grantBirthdayUjc(studentId: number, birthdayThisYearISO: string): Promise<boolean> {
+  const { error } = await supabase.from("ujc_transactions").insert({
+    student_id: studentId,
+    amount: 1,
+    reason_type: "birthday_gift",
+    reason_note: "생일 축하 선물",
+    related_week_start: birthdayThisYearISO,
+  });
+  return !error;
 }
 
 export async function grantManualUjc(

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 
 export function BacklogWarningModal({
@@ -8,15 +7,14 @@ export function BacklogWarningModal({
   oldestIncompleteLabel,
   missingHwLabels,
   missingTestLabels,
+  onDismiss,
 }: {
   weeksOverdue: number;
   oldestIncompleteLabel: string;
   missingHwLabels: string[];
   missingTestLabels: string[];
+  onDismiss: () => void;
 }) {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
-
   const urgent = weeksOverdue >= 2;
 
   return (
@@ -58,7 +56,7 @@ export function BacklogWarningModal({
 
         <div className="mt-4 flex gap-2">
           <button
-            onClick={() => setDismissed(true)}
+            onClick={onDismiss}
             className="flex-1 rounded-xl border border-line bg-white py-2.5 text-sm font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           >
             나중에

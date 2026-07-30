@@ -2,19 +2,28 @@ import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
 import { getStudentById, listNoticesForClass, listCalendarNotesForRange } from "@/lib/data";
 import { getToday } from "@/lib/today";
-import { monthStart, monthEnd } from "@/lib/weeks";
+import { addMonths, monthStart, monthEnd, parseYearMonth, toYearMonth } from "@/lib/weeks";
 import { ScreenTitle, Tag, EmptyState } from "@/components/ui";
 import { MonthCalendar } from "@/components/MonthCalendar";
 
-export default async function StudentNoticesPage() {
+export default async function StudentNoticesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
   const session = await requireStudentSession();
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
   const { today } = getToday();
+  const { month: monthParam } = await searchParams;
+  const monthDate = monthParam ? parseYearMonth(monthParam) : monthStart(today);
+  const prevMonth = toYearMonth(addMonths(monthDate, -1));
+  const nextMonth = toYearMonth(addMonths(monthDate, 1));
+
   const [notices, allMonthNotes] = await Promise.all([
     student.class_key ? listNoticesForClass(student.class_key) : [],
-    listCalendarNotesForRange(monthStart(today), monthEnd(today)),
+    listCalendarNotesForRange(monthStart(monthDate), monthEnd(monthDate)),
   ]);
   const calendarNotes = allMonthNotes.filter(
     (n) =>
@@ -44,7 +53,12 @@ export default async function StudentNoticesPage() {
         ))}
       </div>
 
-      <MonthCalendar monthDate={today} notes={calendarNotes} />
+      <MonthCalendar
+        monthDate={monthDate}
+        notes={calendarNotes}
+        prevHref={`/student/notices?month=${prevMonth}`}
+        nextHref={`/student/notices?month=${nextMonth}`}
+      />
     </div>
   );
 }

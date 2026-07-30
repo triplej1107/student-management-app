@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
-import { getStudentById, getClinicTemplate, getClinicCheck, listNoticesForClass } from "@/lib/data";
+import { getStudentById, getClinicTemplate, getClinicCheck, listNoticesForClass, isBirthdayToday } from "@/lib/data";
 import { getUjcBalance, getUjcHistory } from "@/lib/ujc";
 import { getStudentTier } from "@/lib/ujcTier";
 import { getStudentBacklogDetail } from "@/lib/clinicBacklog";
 import { getToday } from "@/lib/today";
 import { weekLabel } from "@/lib/weeks";
-import { EmptyState } from "@/components/ui";
-import { ClinicChecklistReadOnly } from "@/components/ClinicChecklistReadOnly";
-import { PushSubscribeBanner } from "@/components/PushSubscribeBanner";
+import { ClinicChecklistSummaryCard } from "@/components/ClinicChecklistSummaryCard";
 import { UjcWalletCard } from "@/components/UjcWalletCard";
-import { BacklogWarningModal } from "@/components/BacklogWarningModal";
+import { HomeModals } from "@/components/HomeModals";
 import { logoutAction } from "@/app/login/actions";
 
 const UJC_REASON_LABEL: Record<string, string> = {
@@ -19,6 +17,7 @@ const UJC_REASON_LABEL: Record<string, string> = {
   manual_grant: "지급",
   exchange: "교환",
   reset: "초기화",
+  birthday_gift: "생일 축하",
 };
 
 export default async function StudentHomePage() {
@@ -26,8 +25,10 @@ export default async function StudentHomePage() {
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const { clinicWeekStart } = getToday();
+  const { today, clinicWeekStart } = getToday();
   const isStudent = session.role === "student";
+  const isStudentOrParent = session.role === "student" || session.role === "parent";
+  const birthdayName = isStudentOrParent && isBirthdayToday(student.birthday, today) ? student.name : null;
 
   const [template, check, notices, balance, tier, history, backlog] = await Promise.all([
     student.class_key ? getClinicTemplate(student.class_key, clinicWeekStart) : null,
@@ -54,17 +55,11 @@ export default async function StudentHomePage() {
         </form>
       </div>
 
-      {isStudent && backlog && (
-        <BacklogWarningModal
-          key={backlog.oldestIncompleteWeekISO}
-          weeksOverdue={backlog.weeksOverdue}
-          oldestIncompleteLabel={backlog.oldestIncompleteLabel}
-          missingHwLabels={backlog.missingHwLabels}
-          missingTestLabels={backlog.missingTestLabels}
-        />
-      )}
-
-      {(session.role === "student" || session.role === "parent") && <PushSubscribeBanner />}
+      <HomeModals
+        birthdayName={birthdayName}
+        backlog={isStudent ? backlog : null}
+        showPushPrompt={isStudentOrParent}
+      />
 
       {isStudent && balance !== null && (
         <div className="mt-4">
@@ -103,17 +98,11 @@ export default async function StudentHomePage() {
       )}
 
       <div className="mt-5">
-        <div className="mb-1 text-sm font-bold text-ink">이번주 클리닉 점검표</div>
-        <div className="mb-2.5 text-xs text-ink-muted">{weekLabel(clinicWeekStart)}</div>
-        {!template && <EmptyState>이번 주는 아직 등록된 점검표가 없어요.</EmptyState>}
-        {template && (
-          <ClinicChecklistReadOnly
-            template={template}
-            check={check ?? undefined}
-            feedbackText={session.role === "parent" && check?.zongju_approved ? check?.feedback_text : null}
-            zongjuFeedbackText={session.role === "parent" ? check?.zongju_feedback_text : null}
-          />
-        )}
+        <ClinicChecklistSummaryCard
+          weekLabelText={weekLabel(clinicWeekStart)}
+          template={template}
+          check={check ?? undefined}
+        />
       </div>
 
       <div className="mt-5">

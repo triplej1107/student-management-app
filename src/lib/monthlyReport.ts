@@ -21,6 +21,7 @@ const UJC_REASON_LABEL: Record<string, string> = {
   manual_grant: "지급",
   exchange: "교환",
   reset: "초기화",
+  birthday_gift: "생일 축하",
 };
 
 interface UjcTransactionRow {

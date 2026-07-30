@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CalendarNote } from "@/lib/types";
 import { DAY_ORDER } from "@/lib/types";
 import { parseISODate, toISODate } from "@/lib/weeks";
@@ -10,9 +11,13 @@ function dateLabel(iso: string) {
 export function MonthCalendar({
   monthDate,
   notes,
+  prevHref,
+  nextHref,
 }: {
   monthDate: Date;
   notes: CalendarNote[];
+  prevHref?: string;
+  nextHref?: string;
 }) {
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth();
@@ -45,8 +50,32 @@ export function MonthCalendar({
 
   return (
     <div className="mt-6">
-      <div className="mb-2.5 text-sm font-bold text-ink">
-        {year}년 {month + 1}월
+      <div className="mb-2.5 flex items-center justify-between">
+        {prevHref ? (
+          <Link
+            href={prevHref}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-sm text-ink-secondary"
+            aria-label="이전 달"
+          >
+            ‹
+          </Link>
+        ) : (
+          <span className="w-7" />
+        )}
+        <div className="text-sm font-bold text-ink">
+          {year}년 {month + 1}월
+        </div>
+        {nextHref ? (
+          <Link
+            href={nextHref}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-sm text-ink-secondary"
+            aria-label="다음 달"
+          >
+            ›
+          </Link>
+        ) : (
+          <span className="w-7" />
+        )}
       </div>
       <div className="rounded-2xl border border-line-soft bg-white p-3">
         <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-ink-muted">

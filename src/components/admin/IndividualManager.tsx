@@ -297,6 +297,7 @@ function IndividualEditForm({
   const [nickname, setNickname] = useState(student.nickname ?? "");
   const [school, setSchool] = useState(student.school ?? "");
   const [grade, setGrade] = useState(student.grade ?? "");
+  const [birthday, setBirthday] = useState(student.birthday ?? "");
   const [level, setLevel] = useState(student.level ?? "고등");
   const [parentPhone, setParentPhone] = useState(student.parent_phone ?? "");
   const [studentPhone, setStudentPhone] = useState(student.student_phone ?? "");
@@ -395,6 +396,16 @@ function IndividualEditForm({
             onChange={(e) => setGrade(e.target.value)}
             onBlur={(e) => commitRoster("grade", e.target.value)}
             placeholder="학년"
+            className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
+          />
+        </div>
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <span className="flex-none text-xs text-ink-muted">생일</span>
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            onBlur={(e) => commitRoster("birthday", e.target.value)}
             className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
           />
         </div>

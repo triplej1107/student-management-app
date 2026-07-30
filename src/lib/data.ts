@@ -39,6 +39,19 @@ export async function listStudents(opts?: { enrolledOnly?: boolean }): Promise<S
   return (data as Student[]) ?? [];
 }
 
+/** 연도 무시, 월/일만 비교해 오늘이 생일인지 판정. */
+export function isBirthdayToday(birthday: string | null, today: Date): boolean {
+  if (!birthday) return false;
+  const [, m, d] = birthday.split("-").map(Number);
+  return m === today.getMonth() + 1 && d === today.getDate();
+}
+
+/** 오늘 생일인 재원생 목록 — 생일 UJC 지급 크론이 쓴다. */
+export async function getStudentsWithBirthdayToday(today: Date): Promise<Student[]> {
+  const students = await listStudents({ enrolledOnly: true });
+  return students.filter((s) => isBirthdayToday(s.birthday, today));
+}
+
 export async function listStudentsByClass(classKey: ClassKey): Promise<Student[]> {
   const { data } = await supabase
     .from("students")
@@ -87,6 +100,7 @@ export type RosterFieldUpdate = Partial<
     | "class_time"
     | "clinic_day"
     | "clinic_time"
+    | "birthday"
   >
 >;
 

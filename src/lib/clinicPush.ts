@@ -43,6 +43,37 @@ export async function getPushSubscriptionsForStudents(
   return map;
 }
 
+/** 생일 축하 알림을 학생의 모든 구독 기기에 보낸다. 더 이상 유효하지
+ * 않은 구독(410 Gone/404)은 조용히 지운다. */
+export async function sendBirthdayPush(subs: PushSubscriptionRow[], studentName: string) {
+  if (!publicKey || !privateKey || subs.length === 0) return;
+
+  const payload = JSON.stringify({
+    title: "🎂 생일 축하해요!",
+    body: `종주T가 ${studentName}학생의 생일을 진심으로 축하합니다! UJC 하나를 선물로 줄게요!`,
+    url: "/student",
+  });
+
+  const results = await Promise.allSettled(
+    subs.map((s) =>
+      webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload)
+    )
+  );
+
+  const stale = results
+    .map((r, i) => ({ r, endpoint: subs[i].endpoint }))
+    .filter(({ r }) => {
+      if (r.status !== "rejected") return false;
+      const statusCode = (r.reason as { statusCode?: number } | undefined)?.statusCode;
+      return statusCode === 404 || statusCode === 410;
+    })
+    .map(({ endpoint }) => endpoint);
+
+  if (stale.length > 0) {
+    await supabase.from("push_subscriptions").delete().in("endpoint", stale);
+  }
+}
+
 /** 밀린 클리닉 알림을 학생의 모든 구독 기기에 보낸다. weeksOverdue가
  * 2 이상이면 더 강한 경고 문구를 쓴다. 더 이상 유효하지 않은 구독
  * (410 Gone/404)은 조용히 지운다. */

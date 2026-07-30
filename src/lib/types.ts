@@ -36,6 +36,7 @@ export interface Student {
   class_time: string | null;
   clinic_day: string | null;
   clinic_time: string | null;
+  birthday: string | null; // "YYYY-MM-DD" (연도는 무시하고 월/일만 비교해 생일 판정)
   final_score_label: string | null;
   mid_mock_score: number | null;
   mid_score: number | null;

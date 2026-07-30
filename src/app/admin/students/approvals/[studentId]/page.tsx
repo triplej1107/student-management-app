@@ -39,7 +39,7 @@ export default async function AdminApprovalDetailPage({
     <div>
       <Link
         href="/admin/students/approvals"
-        className="inline-block px-0 py-1.5 text-[22px] leading-none text-ink"
+        className="block w-full text-right px-0 py-1.5 text-[22px] leading-none text-ink"
       >
         ‹
       </Link>

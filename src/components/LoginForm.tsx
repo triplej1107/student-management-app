@@ -30,7 +30,7 @@ export default function LoginForm({ role, meta }: { role: Role; meta: RoleMeta }
     <div className="box-border flex h-full flex-1 flex-col px-6 pb-5 pt-2">
       <Link
         href="/"
-        className="inline-block self-start px-0 py-1.5 text-[22px] leading-none text-ink"
+        className="inline-block self-end px-0 py-1.5 text-[22px] leading-none text-ink"
         aria-label="뒤로가기"
       >
         ‹

@@ -38,7 +38,7 @@ export default async function StaffClinicDetailPage({
 
   return (
     <div className="box-border px-5 pt-2 pb-7">
-      <Link href="/staff/clinic" className="inline-block px-0 py-1.5 text-[22px] leading-none text-ink">
+      <Link href="/staff/clinic" className="block w-full text-right px-0 py-1.5 text-[22px] leading-none text-ink">
         ‹
       </Link>
       <div className="border-b border-line pb-3 pt-1 text-center">

@@ -30,7 +30,7 @@ export default async function UjcMarketPage() {
   return (
     <div className="box-border pb-7">
       <div className="sticky top-0 z-10 border-b border-line bg-white px-5 pb-3 pt-3">
-        <Link href="/student" className="inline-block px-0 py-1 text-[20px] leading-none text-ink">
+        <Link href="/student" className="block w-full text-right px-0 py-1 text-[20px] leading-none text-ink">
           ‹
         </Link>
         <div className="mt-1 flex items-center justify-between">

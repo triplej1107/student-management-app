@@ -7,6 +7,8 @@ export interface NavTab {
    * 여러 그룹(예: /admin/students/*, /admin/reports, /admin/clinic-backlog)에
    * 걸쳐 있는 탭에 쓴다. */
   matchPrefixes?: string[];
+  /** popped 홈 버튼 아래 라벨 텍스트를 생략 — 원형 아이콘만 보여준다. */
+  hideLabel?: boolean;
 }
 
 export const STAFF_TABS: NavTab[] = [
@@ -26,13 +28,13 @@ export const STUDENT_TABS: NavTab[] = [
 ];
 
 export const ADMIN_TABS: NavTab[] = [
-  { href: "/admin/ujc", label: "UJC 관리" },
-  { href: "/admin/staff/profiles", label: "조교 관리", matchPrefixes: ["/admin/staff"] },
-  { href: "/admin", label: "홈", icon: "홈", popped: true },
+  { href: "/admin/ujc", label: "UJC" },
+  { href: "/admin/staff/profiles", label: "조교", matchPrefixes: ["/admin/staff"] },
+  { href: "/admin", label: "홈", icon: "홈", popped: true, hideLabel: true },
   {
     href: "/admin/students/templates",
-    label: "학생 관리",
+    label: "학생",
     matchPrefixes: ["/admin/students", "/admin/reports", "/admin/clinic-backlog"],
   },
-  { href: "/admin/exams", label: "시험 관리" },
+  { href: "/admin/exams", label: "시험" },
 ];

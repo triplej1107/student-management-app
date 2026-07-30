@@ -125,13 +125,15 @@ export function BottomTabBar({ tabs }: { tabs: NavTab[] }) {
               >
                 <span className="text-white">{icon}</span>
               </div>
-              <span
-                className={
-                  "mt-9 text-[11px] font-bold " + (active ? "text-accent" : "text-ink-muted")
-                }
-              >
-                {tab.label}
-              </span>
+              {!tab.hideLabel && (
+                <span
+                  className={
+                    "mt-9 text-[11px] font-bold " + (active ? "text-accent" : "text-ink-muted")
+                  }
+                >
+                  {tab.label}
+                </span>
+              )}
             </Link>
           );
         }

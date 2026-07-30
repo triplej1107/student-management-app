@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Status = "checking" | "unsupported" | "ios-needs-install" | "default" | "subscribing" | "granted" | "denied";
+type Status = "checking" | "unsupported" | "default" | "subscribing" | "granted" | "denied";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -30,17 +30,16 @@ export function PushOptInModal({
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true;
 
-    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-      if (isIOS && !isStandalone) {
-        setStatus("ios-needs-install");
-      } else {
-        setStatus("unsupported");
-        onDone();
-      }
+    // 아이폰 미설치 상태에서는 웹푸시 자체가 불가능(애플 제약) — InstallPromptModal이
+    // 먼저 설치를 안내하므로 여기서는 조용히 다음 모달로 넘어간다.
+    if (isIOS && !isStandalone) {
+      onDone();
       return;
     }
-    if (isIOS && !isStandalone) {
-      setStatus("ios-needs-install");
+
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+      setStatus("unsupported");
+      onDone();
       return;
     }
 
@@ -98,25 +97,6 @@ export function PushOptInModal({
 
   if (status === "checking" || status === "unsupported" || status === "granted" || status === "denied") {
     return null;
-  }
-
-  if (status === "ios-needs-install") {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-        <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
-          <div className="text-base font-extrabold text-ink">📱 알림을 받으려면 앱 설치가 필요해요</div>
-          <div className="mt-1.5 text-sm text-ink-secondary">
-            Safari 공유 버튼 → &ldquo;홈 화면에 추가&rdquo;로 앱을 설치하면 알림을 받을 수 있어요.
-          </div>
-          <button
-            onClick={onDone}
-            className="mt-4 w-full rounded-xl border border-line bg-white py-2.5 text-sm font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
-          >
-            확인
-          </button>
-        </div>
-      </div>
-    );
   }
 
   return (

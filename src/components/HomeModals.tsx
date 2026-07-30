@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BirthdayModal } from "./BirthdayModal";
 import { BacklogWarningModal } from "./BacklogWarningModal";
+import { InstallPromptModal } from "./InstallPromptModal";
 import { PushOptInModal } from "./PushOptInModal";
 
 interface BacklogData {
@@ -13,7 +14,7 @@ interface BacklogData {
 }
 
 /** 로그인 시 뜰 수 있는 모달들을 우선순위대로 하나씩만 보여준다 —
- * 생일 축하 → 클리닉 밀림 경고 → 알림 켜기 유도 순서. */
+ * 생일 축하 → 클리닉 밀림 경고 → 홈 화면 설치 유도 → 알림 켜기 유도 순서. */
 export function HomeModals({
   birthdayName,
   backlog,
@@ -25,6 +26,7 @@ export function HomeModals({
 }) {
   const [birthdayDone, setBirthdayDone] = useState(false);
   const [backlogDone, setBacklogDone] = useState(false);
+  const [installDone, setInstallDone] = useState(false);
   const [pushDone, setPushDone] = useState(false);
 
   if (birthdayName && !birthdayDone) {
@@ -41,6 +43,10 @@ export function HomeModals({
         onDismiss={() => setBacklogDone(true)}
       />
     );
+  }
+
+  if (!installDone) {
+    return <InstallPromptModal onDone={() => setInstallDone(true)} />;
   }
 
   if (showPushPrompt && !pushDone) {

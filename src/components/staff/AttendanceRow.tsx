@@ -116,7 +116,7 @@ export function AttendanceRow({
           <div className="text-[15px] font-bold text-ink">
             {student.name}
             {student.class_day && student.class_time && (
-              <span className="font-normal text-ink-muted">
+              <span className="text-xs font-normal text-ink-muted">
                 ({student.class_day}
                 {student.class_time.split(":")[0]})
               </span>

@@ -84,17 +84,21 @@ export default async function AdminHomePage() {
       <AdminHomeModals />
 
       <div className="mt-4 flex flex-col gap-3">
-        <Card>
-          <div className="text-[13px] font-semibold text-ink-muted">{dayLabel}요일 출결</div>
-          <div className="mt-1 text-[22px] font-extrabold text-ink">
-            {attendedCount}/{roster.length}명 체크됨
-          </div>
-        </Card>
-        <div className="flex gap-3">
-          <Card className="flex-1">
-            <div className="text-[13px] font-semibold text-ink-muted">클리닉 미완료</div>
-            <div className="mt-1 text-[22px] font-extrabold text-ink">{incompleteCount}명</div>
+        <Link href="/admin/students/attendance">
+          <Card clickable>
+            <div className="text-[13px] font-semibold text-ink-muted">{dayLabel}요일 출결</div>
+            <div className="mt-1 text-[22px] font-extrabold text-ink">
+              {attendedCount}/{roster.length}명 체크됨
+            </div>
           </Card>
+        </Link>
+        <div className="flex gap-3">
+          <Link href="/admin/students/approvals" className="flex-1">
+            <Card clickable>
+              <div className="text-[13px] font-semibold text-ink-muted">클리닉 미완료</div>
+              <div className="mt-1 text-[22px] font-extrabold text-ink">{incompleteCount}명</div>
+            </Card>
+          </Link>
           <Link href="/admin/students/approvals" className="flex-1">
             <Card clickable>
               <div className="text-[13px] font-semibold text-ink-muted">결재 대기</div>

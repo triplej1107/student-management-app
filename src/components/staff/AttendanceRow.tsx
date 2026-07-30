@@ -88,6 +88,7 @@ export function AttendanceRow({
         dateISO,
         dayDraft,
         timeDraft.trim(),
+        editingStatus ?? status ?? "결석",
         editingStatus === "조정" ? noteDraft.trim() : undefined
       );
       setEditingMakeup(false);

@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireZongjuSession } from "@/lib/authz";
-import { setZongjuApproval, setZongjuFeedback } from "@/lib/data";
+import { setZongjuApproval, setZongjuFeedback, getStudentById } from "@/lib/data";
 import { maybeCreditZongjuApproval } from "@/lib/ujc";
+import { getPushSubscriptionsForStudents, sendClinicApprovedPush } from "@/lib/clinicPush";
 
 export async function toggleZongjuApprovalAction(
   studentId: number,
@@ -20,6 +21,17 @@ export async function toggleZongjuApprovalAction(
   revalidatePath("/admin");
   revalidatePath("/staff/clinic");
   revalidatePath("/student");
+
+  if (approved) {
+    const [student, subsMap] = await Promise.all([
+      getStudentById(studentId),
+      getPushSubscriptionsForStudents([studentId]),
+    ]);
+    const subs = subsMap.get(studentId);
+    if (student && subs && subs.length > 0) {
+      await sendClinicApprovedPush(subs, student.name);
+    }
+  }
 }
 
 export async function saveZongjuFeedbackAction(studentId: number, weekStartISO: string, text: string) {

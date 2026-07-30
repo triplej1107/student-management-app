@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireStaffOrZongjuSession } from "@/lib/authz";
-import { setAttendance, clearAttendance, setMakeup, clearMakeup, setParentTexted } from "@/lib/data";
+import { setAttendance, clearAttendance, setMakeup, clearMakeup, setParentTexted, getStudentById } from "@/lib/data";
+import { getPushSubscriptionsForStudents, sendAttendancePush } from "@/lib/clinicPush";
 import type { AttendanceStatus } from "@/lib/types";
 
 function revalidateAttendancePaths() {
@@ -10,6 +11,18 @@ function revalidateAttendancePaths() {
   revalidatePath("/staff");
   revalidatePath("/admin/students/attendance");
   revalidatePath("/admin");
+}
+
+async function notifyAttendance(studentId: number, body: string) {
+  const [student, subsMap] = await Promise.all([
+    getStudentById(studentId),
+    getPushSubscriptionsForStudents([studentId]),
+  ]);
+  if (!student) return;
+  const subs = subsMap.get(studentId);
+  if (subs && subs.length > 0) {
+    await sendAttendancePush(subs, student.name, body);
+  }
 }
 
 export async function markAttendanceAction(
@@ -20,6 +33,9 @@ export async function markAttendanceAction(
   const session = await requireStaffOrZongjuSession();
   await setAttendance(studentId, new Date(dateISO), status, session.staffId ?? null);
   revalidateAttendancePaths();
+  if (status === "출석" || status === "지각" || status === "결석") {
+    await notifyAttendance(studentId, `오늘 ${status} 처리됐어요.`);
+  }
 }
 
 export async function clearAttendanceAction(studentId: number, dateISO: string) {
@@ -33,12 +49,19 @@ export async function saveMakeupAction(
   dateISO: string,
   makeupDay: string,
   makeupTime: string,
+  status: AttendanceStatus,
   note?: string
 ) {
   await requireStaffOrZongjuSession();
   await setMakeup(studentId, new Date(dateISO), makeupDay, makeupTime, note);
   revalidateAttendancePaths();
   revalidatePath("/staff/clinic");
+  if (status === "조정") {
+    await notifyAttendance(
+      studentId,
+      `오늘 수업이 조정됐어요 — 대체: ${makeupDay} ${makeupTime}${note ? ` (${note})` : ""}`
+    );
+  }
 }
 
 export async function cancelMakeupAction(studentId: number, dateISO: string) {

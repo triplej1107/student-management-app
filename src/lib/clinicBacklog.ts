@@ -10,7 +10,13 @@ import {
 } from "./data";
 import { isClinicFullyDone, filledHwSlots, filledTestSlots } from "./clinicProgress";
 import { rollingClinicWeeks, toISODate, weekLabel } from "./weeks";
-import type { ClassKey } from "./types";
+import type { ClassKey, ClinicCheck, ClinicTemplate } from "./types";
+
+/** 밀림 관리 전용 "그 주가 정말 끝났는지" 판정 — 조교결재(staff_approved)만으로는
+ * 밀림에서 빠지지 않고, 종주T 최종결재(zongju_approved)까지 나야 빠진다. */
+function isBacklogResolved(template: ClinicTemplate | undefined, check: ClinicCheck | undefined): boolean {
+  return isClinicFullyDone(template, check) && !!check?.zongju_approved;
+}
 
 export interface ClinicBacklogEntry {
   studentId: number;
@@ -59,7 +65,7 @@ export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklo
       if (!template) continue; // 그 주에 배정된 클리닉이 없으면 대상에서 제외
       if (clearedSet.has(`${student.id}_${toISODate(week)}`)) continue; // 종주T가 청산 처리함
       const check = checksByWeek[i].get(student.id);
-      if (!isClinicFullyDone(template, check)) {
+      if (!isBacklogResolved(template, check)) {
         oldestIncompleteIdx = i;
         break;
       }

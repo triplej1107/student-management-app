@@ -17,6 +17,7 @@ import {
 } from "@/lib/clinicProgress";
 import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
 import { SearchableRoster } from "@/components/SearchableRoster";
+import { classDayTimeTag } from "@/lib/weeks";
 
 const APPROVAL_BADGE_STYLE: Record<string, string> = {
   "no-template": "bg-line-soft text-ink-muted",
@@ -65,6 +66,7 @@ export default async function StaffClinicListPage({
     const schoolGrade = [student.school, student.grade ? `${student.grade}학년` : null]
       .filter(Boolean)
       .join(" ");
+    const classTag = classDayTimeTag(student.class_day, student.class_time);
 
     return {
       key: student.id,
@@ -77,12 +79,7 @@ export default async function StaffClinicListPage({
           <div>
             <div className="text-[15px] font-bold text-ink">
               {student.name}
-              {student.class_day && student.class_time && (
-                <span className="text-xs font-normal text-ink-muted">
-                  ({student.class_day}
-                  {student.class_time.split(":")[0]})
-                </span>
-              )}
+              {classTag && <span className="text-xs font-normal text-ink-muted">({classTag})</span>}
             </div>
             <div className="mt-0.5 text-xs text-ink-muted">
               {effTime}

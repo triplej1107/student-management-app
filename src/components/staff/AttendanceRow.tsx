@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DAY_ORDER } from "@/lib/types";
 import type { AttendanceStatus, MakeupSchedule, Student } from "@/lib/types";
+import { classDayTimeTag } from "@/lib/weeks";
 import { useToast } from "@/components/Toast";
 import {
   markAttendanceAction,
@@ -50,6 +51,7 @@ export function AttendanceRow({
   const [dayDraft, setDayDraft] = useState(makeup?.makeup_day ?? "");
   const [timeDraft, setTimeDraft] = useState(makeup?.makeup_time ?? "");
   const [noteDraft, setNoteDraft] = useState(makeup?.note ?? "");
+  const classTag = classDayTimeTag(student.class_day, student.class_time);
   const [texted, setTexted] = useState(parentTexted ?? false);
 
   function toggleTexted() {
@@ -115,12 +117,7 @@ export function AttendanceRow({
         <Link href={`/staff/clinic/${student.id}`} className="cursor-pointer">
           <div className="text-[15px] font-bold text-ink">
             {student.name}
-            {student.class_day && student.class_time && (
-              <span className="text-xs font-normal text-ink-muted">
-                ({student.class_day}
-                {student.class_time.split(":")[0]})
-              </span>
-            )}
+            {classTag && <span className="text-xs font-normal text-ink-muted">({classTag})</span>}
           </div>
           <div className="mt-0.5 text-xs text-ink-muted">
             {effTime}

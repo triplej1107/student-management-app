@@ -93,3 +93,11 @@ export function monthEnd(date: Date): Date {
 export function addMonths(date: Date, delta: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
 }
+
+/** "요일+시" 표기(예: 토09) — 동명이인 학생을 구분하는 짧은 태그로 쓴다.
+ * class_time이 "9:00"/"09:00"처럼 들쭉날쭉해도 항상 2자리로 맞춘다. */
+export function classDayTimeTag(day: string | null, time: string | null): string | null {
+  if (!day || !time) return null;
+  const hour = time.split(":")[0].trim().padStart(2, "0");
+  return `${day}${hour}`;
+}

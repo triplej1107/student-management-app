@@ -48,6 +48,20 @@ export function isClinicComplete(
   return slots.every((i) => check?.hw_checks?.[i]);
 }
 
+/** testProgressLabel과 같은 기준(score 또는 total 중 하나라도 입력됨)으로
+ * 테스트 슬롯이 전부 채워졌는지 — 뱃지 색을 그 라벨과 일치시키기 위해 씀. */
+export function isTestComplete(
+  template: ClinicTemplate | undefined,
+  check: ClinicCheck | undefined
+): boolean {
+  const slots = filledTestSlots(template);
+  if (slots.length === 0) return false;
+  return slots.every((i) => {
+    const t = check?.test_scores?.[i];
+    return !!(t?.score || t?.total);
+  });
+}
+
 /** 숙제뿐 아니라 그 주에 배정된 테스트 슬롯까지 전부 채워져야 "완료"로
  * 본다 — isClinicComplete(숙제만 기준)와 달리 밀림 관리/UJC 적립처럼
  * "그 주가 정말 끝났는지"를 판단해야 하는 곳에서 쓴다. */

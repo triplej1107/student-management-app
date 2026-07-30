@@ -12,6 +12,7 @@ import {
   approvalStatus,
   clinicProgressLabel,
   isClinicComplete,
+  isTestComplete,
   testProgressLabel,
 } from "@/lib/clinicProgress";
 import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
@@ -59,6 +60,7 @@ export default async function StaffClinicListPage({
     const hwLabel = clinicProgressLabel(template, check);
     const hwComplete = template ? isClinicComplete(template, check) : false;
     const testLabel = testProgressLabel(template, check);
+    const testComplete = template ? isTestComplete(template, check) : false;
     const status = approvalStatus(template, check);
     const schoolGrade = [student.school, student.grade ? `${student.grade}학년` : null]
       .filter(Boolean)
@@ -94,7 +96,12 @@ export default async function StaffClinicListPage({
                 {hwLabel}
               </span>
               {testLabel && (
-                <span className="rounded-full bg-line-soft px-2 py-1 text-[11px] font-bold text-ink-muted">
+                <span
+                  className={
+                    "rounded-full px-2 py-1 text-[11px] font-bold " +
+                    (testComplete ? "bg-success-soft text-success" : "bg-accent-soft text-accent")
+                  }
+                >
                   {testLabel}
                 </span>
               )}

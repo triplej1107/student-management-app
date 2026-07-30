@@ -141,7 +141,7 @@ export function AttendanceRow({
                 key={d}
                 onClick={() => setDayDraft(d)}
                 className={
-                  "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+                  "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
                   (dayDraft === d
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line bg-white text-ink-secondary")

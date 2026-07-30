@@ -90,7 +90,7 @@ export function CalendarNoteEditorRow({ note }: { note: CalendarNote }) {
             });
           }}
           className={
-            "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+            "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
             (classKeys.length === 0
               ? "border-accent bg-accent-soft text-accent"
               : "border-line bg-white text-ink-secondary")
@@ -103,7 +103,7 @@ export function CalendarNoteEditorRow({ note }: { note: CalendarNote }) {
             key={c}
             onClick={() => toggleClass(c)}
             className={
-              "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+              "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
               (classKeys.includes(c)
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

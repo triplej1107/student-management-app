@@ -106,7 +106,7 @@ export function RosterListManager({ students }: { students: Student[] }) {
         <button
           onClick={() => setClassFilter(null)}
           className={
-            "rounded-full border px-3 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+            "rounded-full border px-3 py-1.5 text-xs font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
             (classFilter === null
               ? "border-accent bg-accent-soft text-accent"
               : "border-line bg-white text-ink-secondary")
@@ -119,7 +119,7 @@ export function RosterListManager({ students }: { students: Student[] }) {
             key={c}
             onClick={() => setClassFilter(c)}
             className={
-              "rounded-full border px-3 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+              "rounded-full border px-3 py-1.5 text-xs font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
               (classFilter === c
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

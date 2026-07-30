@@ -52,7 +52,7 @@ export function PillLink({
       href={href}
       scroll={false}
       className={
-        "flex-none rounded-full px-3.5 py-2 text-[13px] font-bold whitespace-nowrap shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+        "flex-none rounded-full px-3.5 py-2 text-[13px] font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
         (active
           ? "border border-accent bg-accent-soft text-accent"
           : "border border-line bg-white text-ink-secondary")

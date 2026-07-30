@@ -68,7 +68,7 @@ export function GradesEditor({
               key={s.key}
               onClick={() => setSelectedKey(s.key)}
               className={
-                "rounded-lg border px-2 py-1.5 text-[11px] font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+                "rounded-lg border px-2 py-1.5 text-[11px] font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
                 (selectedKey === s.key
                   ? "border-accent bg-accent-soft text-accent"
                   : filled

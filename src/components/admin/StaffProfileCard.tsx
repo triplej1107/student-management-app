@@ -81,7 +81,7 @@ export function StaffProfileCard({ staff }: { staff: Staff }) {
             key={d}
             onClick={() => toggleDay(d)}
             className={
-              "rounded-[7px] border px-2.5 py-1.5 text-[11px] font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+              "rounded-[7px] border px-2.5 py-1.5 text-[11px] font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
               (staff.work_days.includes(d)
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

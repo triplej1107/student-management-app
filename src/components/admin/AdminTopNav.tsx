@@ -50,7 +50,7 @@ export function AdminSubNav({
             key={tab.href}
             href={tab.href}
             className={
-              "rounded-full border px-3.5 py-2 text-[13px] font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+              "rounded-full border px-3.5 py-2 text-[13px] font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
               (isCurrent
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

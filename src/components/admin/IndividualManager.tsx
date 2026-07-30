@@ -373,7 +373,7 @@ function IndividualEditForm({
               startTransition(() => updateRosterFieldAction(student.id, "enrolled", String(next)));
             }}
             className={
-              "flex-1 rounded-lg border px-2 py-2 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
+              "flex-1 rounded-lg border px-2 py-2 text-xs font-bold shadow-[0_1px_4px_rgba(20,30,60,0.10)] " +
               (enrolled
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

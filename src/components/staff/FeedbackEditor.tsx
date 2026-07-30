@@ -108,7 +108,7 @@ export function FeedbackEditor({
       <button
         onClick={generate}
         disabled={generating}
-        className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
+        className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50"
       >
         {generating ? "생성 중..." : "AI로 피드백 생성"}
       </button>
@@ -126,7 +126,7 @@ export function FeedbackEditor({
       <button
         onClick={save}
         disabled={!dirty}
-        className="mt-2 w-full rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-bold text-accent shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:border-line disabled:text-ink-muted disabled:shadow-none"
+        className="mt-2 w-full rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-bold text-accent shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:border-line disabled:text-ink-muted"
       >
         저장
       </button>

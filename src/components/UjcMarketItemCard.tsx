@@ -46,7 +46,7 @@ export function UjcMarketItemCard({ item, balance }: { item: UjcMarketItem; bala
         onClick={exchange}
         disabled={pending}
         className={
-          "rounded-full px-3.5 py-2 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none " +
+          "rounded-full px-3.5 py-2 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 " +
           (affordable ? "bg-accent text-white" : "bg-line-soft text-ink-muted")
         }
       >

@@ -87,7 +87,7 @@ export function MonthlyReportSender({ recipientEmail }: { recipientEmail: string
       <button
         onClick={send}
         disabled={pending}
-        className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
+        className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50"
       >
         {pending ? "보고서 만드는 중..." : `${year}년 ${month}월 보고서 지금 받기`}
       </button>

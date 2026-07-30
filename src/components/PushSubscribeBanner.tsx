@@ -101,7 +101,7 @@ export function PushSubscribeBanner() {
       <button
         onClick={subscribe}
         disabled={status === "subscribing"}
-        className="rounded-full bg-accent px-3.5 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
+        className="rounded-full bg-accent px-3.5 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50"
       >
         {status === "subscribing" ? "설정 중..." : "알림 켜기"}
       </button>

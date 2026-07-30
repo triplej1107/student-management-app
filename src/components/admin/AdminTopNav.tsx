@@ -22,7 +22,7 @@ export function AdminTopNav() {
           key={tab.href}
           href={tab.href}
           className={
-            "flex-1 rounded-xl border py-3 text-center text-sm font-bold " +
+            "flex-1 rounded-xl border py-3 text-center text-sm font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
             (tab.match(pathname)
               ? "border-accent bg-accent-soft text-accent"
               : "border-line bg-white text-ink-secondary")
@@ -50,7 +50,7 @@ export function AdminSubNav({
             key={tab.href}
             href={tab.href}
             className={
-              "rounded-full border px-3.5 py-2 text-[13px] font-bold " +
+              "rounded-full border px-3.5 py-2 text-[13px] font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
               (isCurrent
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

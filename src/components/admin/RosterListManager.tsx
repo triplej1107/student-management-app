@@ -106,7 +106,7 @@ export function RosterListManager({ students }: { students: Student[] }) {
         <button
           onClick={() => setClassFilter(null)}
           className={
-            "rounded-full border px-3 py-1.5 text-xs font-bold " +
+            "rounded-full border px-3 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
             (classFilter === null
               ? "border-accent bg-accent-soft text-accent"
               : "border-line bg-white text-ink-secondary")
@@ -119,7 +119,7 @@ export function RosterListManager({ students }: { students: Student[] }) {
             key={c}
             onClick={() => setClassFilter(c)}
             className={
-              "rounded-full border px-3 py-1.5 text-xs font-bold " +
+              "rounded-full border px-3 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
               (classFilter === c
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")
@@ -291,7 +291,7 @@ function BulkImportPanel({ onDone }: { onDone: () => void }) {
         <button
           onClick={submit}
           disabled={pending || !text.trim()}
-          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
+          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50"
         >
           {pending ? "가져오는 중..." : "가져오기"}
         </button>

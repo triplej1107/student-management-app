@@ -268,7 +268,7 @@ function AddStudentForm({ onCreated }: { onCreated: (student: Student) => void }
         <button
           onClick={submit}
           disabled={pending}
-          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
+          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50"
         >
           {pending ? "추가 중..." : "추가"}
         </button>
@@ -339,7 +339,7 @@ function IndividualEditForm({
         <button
           onClick={remove}
           disabled={deleting}
-          className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-1.5 text-xs font-bold text-danger shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
+          className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-1.5 text-xs font-bold text-danger shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50"
         >
           {deleting ? "삭제 중..." : "학생 삭제"}
         </button>

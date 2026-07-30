@@ -13,9 +13,12 @@ import {
 } from "@/lib/data";
 import { isClinicComplete } from "@/lib/clinicProgress";
 import { getClinicBacklog } from "@/lib/clinicBacklog";
+import { getParentQuestionsForWeek } from "@/lib/parentQuestions";
 import { Card } from "@/components/ui";
 import { DutySubstituteSection } from "@/components/admin/DutySubstituteSection";
-import { addDutySubstituteAction, removeDutySubstituteAction } from "./actions";
+import { ParentQuestionsSection } from "@/components/admin/ParentQuestionsSection";
+import { AdminHomeModals } from "@/components/AdminHomeModals";
+import { addDutySubstituteAction, removeDutySubstituteAction, answerParentQuestionAction } from "./actions";
 import { DAY_ORDER } from "@/lib/types";
 import { toISODate } from "@/lib/weeks";
 
@@ -23,7 +26,7 @@ const PRIORITY_DAYS = ["수", "목", "금", "토", "일", "월", "화"] as const
 
 export default async function AdminHomePage() {
   await requireZongjuSession();
-  const { today, weekStart, weekEnd, clinicWeekStart, dayLabel } = getToday();
+  const { today, weekStart, weekEnd, clinicWeekStart, questionWeekStart, dayLabel } = getToday();
 
   const priorityDates = PRIORITY_DAYS.map((day) => {
     const offset = DAY_ORDER.indexOf(day);
@@ -70,11 +73,15 @@ export default async function AdminHomePage() {
   const backlog = await getClinicBacklog();
   const backlogUrgentCount = backlog.filter((e) => e.weeksOverdue >= 2).length;
 
+  const parentQuestions = await getParentQuestionsForWeek(toISODate(questionWeekStart));
+
   const dateLabel = `${today.getMonth() + 1}월 ${today.getDate()}일 ${dayLabel}요일`;
 
   return (
     <div>
       <div className="mt-1 text-[13px] text-ink-muted">{dateLabel}</div>
+
+      <AdminHomeModals />
 
       <div className="mt-4 flex flex-col gap-3">
         <Card>
@@ -114,6 +121,10 @@ export default async function AdminHomePage() {
             </div>
           </Card>
         </Link>
+
+        <div className="mt-2">
+          <ParentQuestionsSection questions={parentQuestions} answerAction={answerParentQuestionAction} />
+        </div>
 
         <div className="mt-2">
           <div className="mb-2.5 text-sm font-bold text-ink">요일별 조교 업무 체크리스트 현황</div>

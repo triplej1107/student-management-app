@@ -5,13 +5,16 @@ import { getStudentById, getClinicTemplate, getClinicCheck, listNoticesForClass,
 import { getUjcBalance, getUjcHistory } from "@/lib/ujc";
 import { getStudentTier } from "@/lib/ujcTier";
 import { getStudentBacklogDetail } from "@/lib/clinicBacklog";
+import { getParentQuestion } from "@/lib/parentQuestions";
 import { getToday } from "@/lib/today";
-import { weekLabel } from "@/lib/weeks";
+import { weekLabel, toISODate } from "@/lib/weeks";
 import { ClinicChecklistSummaryCard } from "@/components/ClinicChecklistSummaryCard";
 import { UjcWalletCard } from "@/components/UjcWalletCard";
+import { ParentQuestionCard } from "@/components/ParentQuestionCard";
 import { HomeModals } from "@/components/HomeModals";
 import { InstallSeenBeacon } from "@/components/InstallSeenBeacon";
 import { logoutAction } from "@/app/login/actions";
+import { submitParentQuestionAction } from "./actions";
 
 const UJC_REASON_LABEL: Record<string, string> = {
   clinic_complete: "클리닉 완료",
@@ -26,12 +29,13 @@ export default async function StudentHomePage() {
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const { today, clinicWeekStart } = getToday();
+  const { today, clinicWeekStart, questionWeekStart } = getToday();
   const isStudent = session.role === "student";
-  const isStudentOrParent = session.role === "student" || session.role === "parent";
+  const isParent = session.role === "parent";
+  const isStudentOrParent = isStudent || isParent;
   const birthdayName = isStudentOrParent && isBirthdayToday(student.birthday, today) ? student.name : null;
 
-  const [template, check, notices, balance, tier, history, backlog] = await Promise.all([
+  const [template, check, notices, balance, tier, history, backlog, parentQuestion] = await Promise.all([
     student.class_key ? getClinicTemplate(student.class_key, clinicWeekStart) : null,
     getClinicCheck(student.id, clinicWeekStart),
     student.class_key ? listNoticesForClass(student.class_key, 3) : [],
@@ -39,6 +43,7 @@ export default async function StudentHomePage() {
     isStudent ? getStudentTier(student.id) : Promise.resolve(null),
     isStudent ? getUjcHistory(student.id, 5) : Promise.resolve([]),
     isStudent ? getStudentBacklogDetail(student.id) : Promise.resolve(null),
+    isParent ? getParentQuestion(student.id, toISODate(questionWeekStart)) : Promise.resolve(null),
   ]);
 
   return (
@@ -62,6 +67,12 @@ export default async function StudentHomePage() {
         backlog={isStudent ? backlog : null}
         showPushPrompt={isStudentOrParent}
       />
+
+      {isParent && (
+        <div className="mt-4">
+          <ParentQuestionCard initialQuestion={parentQuestion} submitAction={submitParentQuestionAction} />
+        </div>
+      )}
 
       {isStudent && balance !== null && (
         <div className="mt-4">

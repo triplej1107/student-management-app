@@ -1,12 +1,17 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { savePushSubscription, savePushSubscriptionForStaff } from "@/lib/clinicPush";
+import {
+  savePushSubscription,
+  savePushSubscriptionForStaff,
+  savePushSubscriptionForZongju,
+} from "@/lib/clinicPush";
 
 /** 클리닉 밀림 알림은 학생 본인과 학부모 모두에게 간다 — student/parent
  * 세션 둘 다 같은 studentId로 구독을 등록할 수 있고, 발송 시엔 그
  * studentId에 걸린 모든 구독 기기로 동일하게 보낸다. 조교는 조교 피드백
- * 알림을 받기 위해 staffId로 구독한다. */
+ * 알림을 받기 위해 staffId로, 종주T는 학부모 질문 알림을 받기 위해
+ * is_zongju로 구독한다. */
 export async function POST(req: Request) {
   const session = await getSession();
 
@@ -29,5 +34,9 @@ export async function POST(req: Request) {
     await savePushSubscriptionForStaff(session.staffId, body.endpoint, body.keys.p256dh, body.keys.auth);
     return NextResponse.json({ ok: true });
   }
-  return NextResponse.json({ error: "학생/학부모/조교 계정만 알림을 받을 수 있어요." }, { status: 403 });
+  if (session.role === "zongju") {
+    await savePushSubscriptionForZongju(body.endpoint, body.keys.p256dh, body.keys.auth);
+    return NextResponse.json({ ok: true });
+  }
+  return NextResponse.json({ error: "학생/학부모/조교/종주T 계정만 알림을 받을 수 있어요." }, { status: 403 });
 }

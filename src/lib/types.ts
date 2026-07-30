@@ -315,6 +315,20 @@ export interface UjcMarketItem {
   priceValue: number;
 }
 
+// 학부모가 종주T에게 남기는 질문 — week_start(수요일 기준)마다 학생당 한
+// row. 새 질문 주가 시작되면 그 주의 row가 없으므로 화면이 자동으로
+// 빈 상태(리셋)로 보인다.
+export interface ParentQuestion {
+  id: number;
+  student_id: number;
+  week_start: string;
+  question_text: string;
+  answer_text: string | null;
+  answered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SessionData {
   role?: Role;
   studentId?: number; // student & parent both resolve to a student row

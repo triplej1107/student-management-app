@@ -94,6 +94,16 @@ export function addMonths(date: Date, delta: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
 }
 
+/** 수요일 00시를 기준으로 나뉘는 "질문 주"의 시작일(수요일) — 학부모 질문
+ * 칸이 매주 수요일마다 자동으로 비워지도록 하는 데 쓰인다. */
+export function wednesdayOf(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const jsDay = d.getDay(); // 0=Sun ... 3=Wed ... 6=Sat
+  const diff = (jsDay - 3 + 7) % 7;
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+
 /** "요일+시" 표기(예: 토09) — 동명이인 학생을 구분하는 짧은 태그로 쓴다.
  * class_time이 "9:00"/"09:00"처럼 들쭉날쭉해도 항상 2자리로 맞춘다. */
 export function classDayTimeTag(day: string | null, time: string | null): string | null {

@@ -45,6 +45,22 @@ export async function getPushSubscriptionsForStaff(staffId: number): Promise<Pus
   return (data as PushSubscriptionRow[]) ?? [];
 }
 
+/** 종주T는 staff/students 테이블에 자기 row가 없는 단일 관리자 로그인이라
+ * is_zongju 플래그로 구독을 표시한다. */
+export async function savePushSubscriptionForZongju(endpoint: string, p256dh: string, auth: string) {
+  await supabase
+    .from("push_subscriptions")
+    .upsert({ is_zongju: true, endpoint, p256dh, auth }, { onConflict: "endpoint" });
+}
+
+export async function getPushSubscriptionsForZongju(): Promise<PushSubscriptionRow[]> {
+  const { data } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint, p256dh, auth")
+    .eq("is_zongju", true);
+  return (data as PushSubscriptionRow[]) ?? [];
+}
+
 export async function getPushSubscriptionsForStudents(
   studentIds: number[]
 ): Promise<Map<number, PushSubscriptionRow[]>> {
@@ -143,5 +159,15 @@ export async function sendClinicApprovedPush(subs: PushSubscriptionRow[], studen
     title: "클리닉 점검표 결재 완료",
     body: `${studentName} 학생의 이번 주 클리닉 점검표가 최종 결재됐어요.`,
     url: "/student/clinic",
+  });
+}
+
+/** 학부모가 질문을 남기면 종주T에게 보낸다. */
+export async function sendParentQuestionPush(subs: PushSubscriptionRow[], studentName: string, questionText: string) {
+  const preview = questionText.length > 40 ? `${questionText.slice(0, 40)}…` : questionText;
+  await sendPushToSubs(subs, {
+    title: "💬 학부모 질문 도착",
+    body: `${studentName} 학생 학부모님: ${preview}`,
+    url: "/admin",
   });
 }

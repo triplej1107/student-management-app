@@ -75,7 +75,15 @@ export default async function StaffClinicListPage({
           className="flex items-center justify-between rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         >
           <div>
-            <div className="text-[15px] font-bold text-ink">{student.name}</div>
+            <div className="text-[15px] font-bold text-ink">
+              {student.name}
+              {student.class_day && student.class_time && (
+                <span className="font-normal text-ink-muted">
+                  ({student.class_day}
+                  {student.class_time.split(":")[0]})
+                </span>
+              )}
+            </div>
             <div className="mt-0.5 text-xs text-ink-muted">
               {effTime}
               {schoolGrade && ` · ${schoolGrade}`}

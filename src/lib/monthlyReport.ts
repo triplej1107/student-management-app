@@ -480,7 +480,7 @@ export async function sendMonthlyReportEmail(year: number, month1to12: number) {
 
   const label = `${year}년 ${month1to12}월`;
   const { error } = await resend.emails.send({
-    from: "유종의미 학생관리 <onboarding@resend.dev>",
+    from: "유종의미 학생관리 <report@kaujm.kr>",
     to,
     subject: `[유종의미] ${label} 학생 기록 보고서`,
     text: `${label} 학생별 기록(출결/클리닉/UJC/성적)을 정리한 엑셀 파일을 첨부합니다. 학생 한 명당 시트 하나로 구성되어 있어요.`,

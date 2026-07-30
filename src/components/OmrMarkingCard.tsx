@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useToast } from "@/components/Toast";
 import { submitOmrAction } from "@/app/student/actions";
+import { OmrStartWarningModal } from "@/components/OmrStartWarningModal";
 import { OMR_CHOICE_COUNT, type ClinicOmrSubmission } from "@/lib/types";
 
 const CIRCLED = ["①", "②", "③", "④", "⑤"];
@@ -24,6 +25,8 @@ export function OmrMarkingCard({
 }) {
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
+  const [started, setStarted] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
   const [answers, setAnswers] = useState<(string | null)[]>(
     Array.from({ length: answerCount }, () => null)
   );
@@ -35,10 +38,10 @@ export function OmrMarkingCard({
     answersRef.current = answers;
   }, [answers]);
 
-  // 마킹 중 화면을 벗어나면(다른 앱 전환·화면 잠금 등) 정답 검색을 막기 위해
-  // 그 시점 답안으로 즉시 자동 제출·잠금시킨다.
+  // 시험을 시작한 뒤 화면을 벗어나면(다른 앱 전환·화면 잠금 등) 정답 검색을
+  // 막기 위해 그 시점 답안으로 즉시 자동 제출·잠금시킨다.
   useEffect(() => {
-    if (result || answerCount === 0) return;
+    if (!started || result) return;
 
     function handleVisibility() {
       if (!document.hidden || lockedRef.current) return;
@@ -67,7 +70,7 @@ export function OmrMarkingCard({
 
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [result, answerCount, testIndex, startTransition]);
+  }, [started, result, testIndex, startTransition]);
 
   if (answerCount === 0) {
     return (
@@ -99,6 +102,35 @@ export function OmrMarkingCard({
           <div className="mt-1.5 text-xs text-danger">
             시험 중 화면을 벗어나 그 시점까지의 답안으로 자동 제출됐어요.
           </div>
+        )}
+      </div>
+    );
+  }
+
+  const totalPoints = weights.reduce((sum, w) => sum + w, 0);
+
+  if (!started) {
+    return (
+      <div className="rounded-2xl border border-line-soft bg-white p-4 shadow-[0_3px_14px_rgba(20,30,60,0.12)]">
+        <div className="text-sm font-bold text-ink">{label}</div>
+        <div className="mt-1 text-xs text-ink-muted">
+          {answerCount}문항{weighted && ` · ${totalPoints}점 만점`}
+        </div>
+        <button
+          onClick={() => setShowWarning(true)}
+          className="mt-3 w-full rounded-xl bg-accent py-2.5 text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+        >
+          응시하기
+        </button>
+        {showWarning && (
+          <OmrStartWarningModal
+            label={label}
+            onCancel={() => setShowWarning(false)}
+            onStart={() => {
+              setShowWarning(false);
+              setStarted(true);
+            }}
+          />
         )}
       </div>
     );
@@ -185,7 +217,7 @@ export function OmrMarkingCard({
       </button>
 
       <div className="mt-2 text-center text-[11px] text-ink-muted/70">
-        ⚠️ 마킹 중 화면을 벗어나면 그 시점 답안으로 자동 제출돼요.
+        ⚠️ 화면을 벗어나면 그 시점 답안으로 자동 제출돼요.
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ function QuestionItem({
   const [, startTransition] = useTransition();
   const [text, setText] = useState(question.answer_text ?? "");
   const [dirty, setDirty] = useState(false);
+  const [softening, setSoftening] = useState(false);
   const answered = !!question.answer_text;
 
   function save() {
@@ -26,6 +27,33 @@ function QuestionItem({
       setDirty(false);
       showToast("답변을 저장했어요");
     });
+  }
+
+  async function soften() {
+    if (!text.trim()) {
+      showToast("다듬을 답변을 먼저 입력해주세요", "error");
+      return;
+    }
+    setSoftening(true);
+    try {
+      const res = await fetch("/api/answer-soften", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text, questionText: question.question_text }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error ?? "첨삭 실패", "error");
+        return;
+      }
+      setText(data.text);
+      setDirty(true);
+      showToast("AI가 다듬었어요 — 확인 후 저장해주세요");
+    } catch {
+      showToast("첨삭 실패", "error");
+    } finally {
+      setSoftening(false);
+    }
   }
 
   return (
@@ -61,6 +89,13 @@ function QuestionItem({
         placeholder="답변을 입력해주세요"
         className="mt-2 min-h-[64px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
       />
+      <button
+        onClick={soften}
+        disabled={softening || text.trim().length === 0}
+        className="mt-2 w-full rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-bold text-ink-secondary shadow-[0_1px_4px_rgba(20,30,60,0.10)] disabled:opacity-50"
+      >
+        {softening ? "다듬는 중..." : "✨ AI로 부드럽게 첨삭"}
+      </button>
       <button
         onClick={save}
         disabled={!dirty || text.trim().length === 0}

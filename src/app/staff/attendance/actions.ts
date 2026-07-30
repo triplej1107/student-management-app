@@ -57,10 +57,8 @@ export async function saveMakeupAction(
   revalidateAttendancePaths();
   revalidatePath("/staff/clinic");
   if (status === "조정") {
-    await notifyAttendance(
-      studentId,
-      `오늘 수업이 조정됐어요 — 대체: ${makeupDay} ${makeupTime}${note ? ` (${note})` : ""}`
-    );
+    // note(전달사항)는 조교들끼리만 보는 내용이라 학생·학부모 알림에는 안 담는다.
+    await notifyAttendance(studentId, `오늘 수업이 조정됐어요 — 대체: ${makeupDay} ${makeupTime}`);
   }
 }
 

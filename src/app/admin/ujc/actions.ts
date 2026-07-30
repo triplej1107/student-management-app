@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireZongjuSession } from "@/lib/authz";
 import { grantManualUjc, completeExchangeRequest, cancelExchangeRequest, getUjcBalance } from "@/lib/ujc";
+import { createUjcMarketItem, updateUjcMarketItem, deleteUjcMarketItem } from "@/lib/ujcMarket";
+import type { UjcExchangeAmount, UjcMarketBrand } from "@/lib/types";
 
 export async function grantUjcAction(studentId: number, amount: number, note: string) {
   await requireZongjuSession();
@@ -31,4 +33,34 @@ export async function cancelExchangeAction(requestId: number) {
 export async function getStudentUjcBalanceAction(studentId: number) {
   await requireZongjuSession();
   return getUjcBalance(studentId);
+}
+
+export async function createUjcMarketItemAction(
+  tier: UjcExchangeAmount,
+  brand: UjcMarketBrand,
+  brandLabel: string,
+  priceValue: number
+) {
+  await requireZongjuSession();
+  if (!Number.isFinite(priceValue) || priceValue <= 0) throw new Error("올바른 금액을 입력해주세요.");
+  await createUjcMarketItem(tier, brand, brandLabel, Math.trunc(priceValue));
+  revalidatePath("/admin/ujc");
+  revalidatePath("/student/ujc-market");
+}
+
+export async function updateUjcMarketItemAction(
+  id: number,
+  fields: Partial<{ tier: UjcExchangeAmount; brand: UjcMarketBrand; brandLabel: string; priceValue: number; active: boolean }>
+) {
+  await requireZongjuSession();
+  await updateUjcMarketItem(id, fields);
+  revalidatePath("/admin/ujc");
+  revalidatePath("/student/ujc-market");
+}
+
+export async function deleteUjcMarketItemAction(id: number) {
+  await requireZongjuSession();
+  await deleteUjcMarketItem(id);
+  revalidatePath("/admin/ujc");
+  revalidatePath("/student/ujc-market");
 }

@@ -295,28 +295,25 @@ export interface ClinicContactLog {
 export const UJC_EXCHANGE_UNITS = [10, 20, 30] as const;
 export type UjcExchangeAmount = (typeof UJC_EXCHANGE_UNITS)[number];
 
-// UJC 마켓 카탈로그 — 3개 브랜드 × 3개 티어, 고정 라인업(1 UJC ≈ 750원).
-// 자주 안 바뀌는 작은 목록이라 DB 테이블 대신 코드에 고정해 관리한다.
+// UJC 마켓 품목 — DB(ujc_market_items)에서 관리, 종주T가 /admin/ujc에서
+// 품목·가격을 직접 수정할 수 있다. brand는 실제 로고 이미지가 있는
+// 것만 허용(UjcBrandBadge 참고) — 새 브랜드를 추가하려면 로고 이미지와
+// 코드(BRAND_ICON, 이 union, DB check 제약)를 함께 늘려야 한다.
 export type UjcMarketBrand = "GS25" | "GOOGLE_PLAY" | "OLIVE_YOUNG";
 
+export const UJC_MARKET_BRANDS: { value: UjcMarketBrand; label: string }[] = [
+  { value: "GS25", label: "GS25" },
+  { value: "GOOGLE_PLAY", label: "구글플레이" },
+  { value: "OLIVE_YOUNG", label: "올리브영" },
+];
+
 export interface UjcMarketItem {
+  id: number;
   tier: UjcExchangeAmount;
   brand: UjcMarketBrand;
   brandLabel: string;
   priceValue: number;
 }
-
-export const UJC_MARKET_CATALOG: UjcMarketItem[] = [
-  { tier: 10, brand: "GS25", brandLabel: "GS25", priceValue: 5000 },
-  { tier: 10, brand: "GOOGLE_PLAY", brandLabel: "구글플레이", priceValue: 5000 },
-  { tier: 10, brand: "OLIVE_YOUNG", brandLabel: "올리브영", priceValue: 5000 },
-  { tier: 20, brand: "GS25", brandLabel: "GS25", priceValue: 15000 },
-  { tier: 20, brand: "GOOGLE_PLAY", brandLabel: "구글플레이", priceValue: 15000 },
-  { tier: 20, brand: "OLIVE_YOUNG", brandLabel: "올리브영", priceValue: 15000 },
-  { tier: 30, brand: "GS25", brandLabel: "GS25", priceValue: 20000 },
-  { tier: 30, brand: "GOOGLE_PLAY", brandLabel: "구글플레이", priceValue: 20000 },
-  { tier: 30, brand: "OLIVE_YOUNG", brandLabel: "올리브영", priceValue: 20000 },
-];
 
 export interface SessionData {
   role?: Role;

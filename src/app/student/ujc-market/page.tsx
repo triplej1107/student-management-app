@@ -3,7 +3,8 @@ import Link from "next/link";
 import { requireStudentSession } from "@/lib/authz";
 import { getStudentById } from "@/lib/data";
 import { getUjcBalance, getMyExchangeRequests } from "@/lib/ujc";
-import { UJC_MARKET_CATALOG, UJC_EXCHANGE_UNITS } from "@/lib/types";
+import { listActiveUjcMarketItems } from "@/lib/ujcMarket";
+import { UJC_EXCHANGE_UNITS } from "@/lib/types";
 import { EmptyState } from "@/components/ui";
 import { UjcMarketItemCard } from "@/components/UjcMarketItemCard";
 
@@ -20,9 +21,10 @@ export default async function UjcMarketPage() {
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const [balance, myRequests] = await Promise.all([
+  const [balance, myRequests, marketItems] = await Promise.all([
     getUjcBalance(student.id),
     getMyExchangeRequests(student.id, 10),
+    listActiveUjcMarketItems(),
   ]);
 
   return (
@@ -44,8 +46,8 @@ export default async function UjcMarketPage() {
           <div key={tier} className="mt-2 mb-5">
             <div className="mb-2 text-sm font-bold text-ink">{tier} UJC 교환 상품</div>
             <div className="flex flex-col gap-2">
-              {UJC_MARKET_CATALOG.filter((item) => item.tier === tier).map((item) => (
-                <UjcMarketItemCard key={`${item.tier}_${item.brand}`} item={item} balance={balance} />
+              {marketItems.filter((item) => item.tier === tier).map((item) => (
+                <UjcMarketItemCard key={item.id} item={item} balance={balance} />
               ))}
             </div>
           </div>

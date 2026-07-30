@@ -38,6 +38,7 @@ export function AnswerKeyEditor({
             testIndex={i}
             label={testLabels[i]}
             initialAnswers={answerKeys[i]?.answers ?? []}
+            initialPoints={answerKeys[i]?.points ?? []}
           />
         ))}
       </div>
@@ -51,22 +52,25 @@ function AnswerKeyRow({
   testIndex,
   label,
   initialAnswers,
+  initialPoints,
 }: {
   classKey: ClassKey;
   weekStartISO: string;
   testIndex: number;
   label: string;
   initialAnswers: string[];
+  initialPoints: number[];
 }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
-  const [value, setValue] = useState(initialAnswers.join(""));
+  const [answers, setAnswers] = useState(initialAnswers.join(""));
+  const [points, setPoints] = useState(initialPoints.join(""));
 
   function save() {
     startTransition(async () => {
       try {
-        await saveAnswerKeyAction(classKey, weekStartISO, testIndex, value);
+        await saveAnswerKeyAction(classKey, weekStartISO, testIndex, answers, points);
         showToast("저장됨");
         router.refresh();
       } catch (e) {
@@ -75,7 +79,12 @@ function AnswerKeyRow({
     });
   }
 
-  const questionCount = value.replace(/[^0-9]/g, "").length;
+  const questionCount = answers.replace(/[^0-9]/g, "").length;
+  const pointCount = points.replace(/[^0-9]/g, "").length;
+  const totalPoints = points
+    .replace(/[^0-9]/g, "")
+    .split("")
+    .reduce((sum, d) => sum + Number(d), 0);
 
   return (
     <div className="rounded-[10px] border border-line-soft bg-white p-2.5">
@@ -84,11 +93,24 @@ function AnswerKeyRow({
         <span className="text-xs text-ink-muted">문항 수: {questionCount}</span>
       </div>
       <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+        value={answers}
+        onChange={(e) => setAnswers(e.target.value)}
         onBlur={save}
         placeholder="정답을 순서대로 이어붙여 입력 (예: 13245)"
         className="min-h-[52px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
+      />
+      <div className="mt-1.5 mb-1 flex items-center justify-between">
+        <span className="text-xs font-semibold text-ink-muted">
+          배점 (선택 — 모의고사처럼 문항마다 다르면 입력, 비워두면 문항당 1점)
+        </span>
+        {pointCount > 0 && <span className="text-xs text-ink-muted">총점: {totalPoints}</span>}
+      </div>
+      <textarea
+        value={points}
+        onChange={(e) => setPoints(e.target.value)}
+        onBlur={save}
+        placeholder="문항별 배점을 순서대로 이어붙여 입력 (예: 22323232232323233332)"
+        className="min-h-[44px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
       />
     </div>
   );

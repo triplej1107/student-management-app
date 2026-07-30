@@ -127,6 +127,9 @@ export interface ClinicAnswerKey {
   test_index: number;
   round: number;
   answers: string[];
+  // 문항별 배점(모의고사처럼 2점/3점 등으로 다를 때) — 비어있거나 answers와
+  // 길이가 다르면 문항당 1점(=맞힌 문항 수 채점, 내신 클리닉테스트 방식)으로 본다.
+  points: number[];
   updated_at: string;
 }
 

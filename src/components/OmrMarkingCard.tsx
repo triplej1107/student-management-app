@@ -11,11 +11,15 @@ export function OmrMarkingCard({
   testIndex,
   label,
   answerCount,
+  weights,
+  weighted,
   submission,
 }: {
   testIndex: number;
   label: string;
   answerCount: number;
+  weights: number[];
+  weighted: boolean;
   submission: ClinicOmrSubmission | null;
 }) {
   const { showToast } = useToast();
@@ -44,7 +48,7 @@ export function OmrMarkingCard({
           </span>
         </div>
         <div className="mt-2 text-[22px] font-extrabold text-ink">
-          {result.score}/{result.total}개 정답
+          {weighted ? `${result.score}점/${result.total}점` : `${result.score}/${result.total}개 정답`}
         </div>
       </div>
     );
@@ -68,7 +72,7 @@ export function OmrMarkingCard({
           total,
           submitted_at: new Date().toISOString(),
         });
-        showToast(`채점 완료: ${score}/${total}개 정답!`);
+        showToast(weighted ? `채점 완료: ${score}점/${total}점!` : `채점 완료: ${score}/${total}개 정답!`);
       } catch (e) {
         showToast(e instanceof Error ? e.message : "제출 중 오류가 발생했어요.", "error");
       }
@@ -87,7 +91,10 @@ export function OmrMarkingCard({
       <div className="mt-3 flex flex-col gap-1.5">
         {Array.from({ length: answerCount }, (_, qi) => (
           <div key={qi} className="flex items-center gap-1.5">
-            <span className="w-6 text-xs font-semibold text-ink-muted">{qi + 1}</span>
+            <span className="w-11 text-xs font-semibold text-ink-muted">
+              {qi + 1}
+              {weighted && <span className="text-ink-muted/70"> ({weights[qi]}점)</span>}
+            </span>
             <div className="flex flex-1 gap-1">
               {Array.from({ length: OMR_CHOICE_COUNT }, (_, ci) => {
                 const choice = String(ci + 1);

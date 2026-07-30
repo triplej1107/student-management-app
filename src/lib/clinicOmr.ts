@@ -42,7 +42,8 @@ export async function upsertAnswerKey(
   classKey: ClassKey,
   weekStartISO: string,
   testIndex: number,
-  answers: string[]
+  answers: string[],
+  points: number[]
 ) {
   await supabase.from("clinic_answer_keys").upsert(
     {
@@ -51,10 +52,23 @@ export async function upsertAnswerKey(
       test_index: testIndex,
       round: 1,
       answers,
+      points,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "class_key,week_start,test_index,round" }
   );
+}
+
+/** points가 비어있거나 answers와 길이가 다르면(=모의고사식 배점을 안 썼으면)
+ * 문항당 1점으로 취급 — 내신 클리닉테스트의 "맞힌 문항 수" 채점과 동일해진다. */
+export function questionWeights(key: Pick<ClinicAnswerKey, "answers" | "points">): number[] {
+  if (key.points.length === key.answers.length) return key.points;
+  return key.answers.map(() => 1);
+}
+
+/** 문항별 배점이 전부 1점이면(=모의고사식 배점을 안 쓴 내신 방식이면) true. */
+export function isWeightedKey(key: Pick<ClinicAnswerKey, "answers" | "points">): boolean {
+  return questionWeights(key).some((w) => w !== 1);
 }
 
 export async function getOmrSubmission(
@@ -89,8 +103,9 @@ export async function submitOmr(
     throw new Error("답안 문항 수가 일치하지 않아요.");
   }
 
-  const score = answers.filter((a, i) => a === key.answers[i]).length;
-  const total = key.answers.length;
+  const weights = questionWeights(key);
+  const score = answers.reduce((sum, a, i) => sum + (a === key.answers[i] ? weights[i] : 0), 0);
+  const total = weights.reduce((sum, w) => sum + w, 0);
 
   await supabase.from("clinic_omr_submissions").upsert(
     {

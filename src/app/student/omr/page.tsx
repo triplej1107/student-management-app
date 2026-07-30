@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getStudentById, getClinicTemplate } from "@/lib/data";
-import { getAnswerKey, getOmrSubmission } from "@/lib/clinicOmr";
+import { getAnswerKey, getOmrSubmission, questionWeights, isWeightedKey } from "@/lib/clinicOmr";
 import { filledTestSlots } from "@/lib/clinicProgress";
 import { getToday } from "@/lib/today";
 import { toISODate } from "@/lib/weeks";
@@ -47,6 +47,8 @@ export default async function StudentOmrPage() {
             testIndex={testIndex}
             label={label}
             answerCount={key && key.answers.length > 0 ? key.answers.length : 0}
+            weights={key && key.answers.length > 0 ? questionWeights(key) : []}
+            weighted={key ? isWeightedKey(key) : false}
             submission={submission}
           />
         ))}

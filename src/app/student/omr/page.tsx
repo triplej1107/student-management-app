@@ -39,6 +39,10 @@ export default async function StudentOmrPage() {
         <div className="mt-1 text-xs italic text-ink-muted">이번주 클리닉테스트를 채점받아요</div>
       </div>
 
+      <div className="mt-3 rounded-xl bg-bg-page px-3 py-2.5 text-[11px] leading-relaxed text-ink-muted">
+        잘못 마킹했다면 같은 번호를 한 번 더 누르면 지워져요.
+      </div>
+
       <div className="mt-4 flex flex-col gap-3">
         {slotData.length === 0 && <EmptyState>이번 주엔 등록된 클리닉테스트가 없어요.</EmptyState>}
         {slotData.map(({ testIndex, label, key, submission }) => (

@@ -95,7 +95,8 @@ export async function submitOmr(
   classKey: ClassKey,
   weekStartISO: string,
   testIndex: number,
-  answers: string[]
+  answers: string[],
+  leftApp = false
 ): Promise<{ score: number; total: number }> {
   const key = await getAnswerKey(classKey, weekStartISO, testIndex);
   if (!key) throw new Error("아직 정답이 등록되지 않았어요.");
@@ -116,6 +117,7 @@ export async function submitOmr(
       answers,
       score,
       total,
+      left_app: leftApp,
       submitted_at: new Date().toISOString(),
     },
     { onConflict: "student_id,week_start,test_index,round" }

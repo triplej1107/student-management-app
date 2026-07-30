@@ -46,7 +46,7 @@ export async function submitParentQuestionAction(text: string) {
   revalidatePath("/admin");
 }
 
-export async function submitOmrAction(testIndex: number, answers: string[]) {
+export async function submitOmrAction(testIndex: number, answers: string[], leftApp = false) {
   const session = await getSession();
   if (session.role !== "student" || !session.studentId) {
     throw new Error("학생 계정만 OMR을 제출할 수 있어요.");
@@ -57,7 +57,7 @@ export async function submitOmrAction(testIndex: number, answers: string[]) {
   }
 
   const weekStartISO = toISODate(getToday().clinicWeekStart);
-  const result = await submitOmr(session.studentId, student.class_key, weekStartISO, testIndex, answers);
+  const result = await submitOmr(session.studentId, student.class_key, weekStartISO, testIndex, answers, leftApp);
 
   revalidatePath("/student/omr");
   revalidatePath("/student/clinic");

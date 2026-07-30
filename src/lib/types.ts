@@ -142,6 +142,8 @@ export interface ClinicOmrSubmission {
   answers: string[];
   score: number;
   total: number;
+  // 마킹 중 화면을 벗어나(다른 앱 전환 등) 그 시점 답안으로 강제 자동 제출됐는지.
+  left_app: boolean;
   submitted_at: string;
 }
 

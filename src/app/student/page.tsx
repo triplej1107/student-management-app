@@ -10,6 +10,7 @@ import { weekLabel } from "@/lib/weeks";
 import { ClinicChecklistSummaryCard } from "@/components/ClinicChecklistSummaryCard";
 import { UjcWalletCard } from "@/components/UjcWalletCard";
 import { HomeModals } from "@/components/HomeModals";
+import { InstallSeenBeacon } from "@/components/InstallSeenBeacon";
 import { logoutAction } from "@/app/login/actions";
 
 const UJC_REASON_LABEL: Record<string, string> = {
@@ -55,6 +56,7 @@ export default async function StudentHomePage() {
         </form>
       </div>
 
+      {isStudentOrParent && <InstallSeenBeacon />}
       <HomeModals
         birthdayName={birthdayName}
         backlog={isStudent ? backlog : null}

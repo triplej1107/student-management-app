@@ -32,6 +32,16 @@ export async function getStudentById(id: number): Promise<Student | null> {
   return (data as Student) ?? null;
 }
 
+/** 학생/학부모 계정이 설치된(standalone) 상태로 홈 화면을 연 시각을 기록 —
+ * 실시간 설치 여부를 아는 API가 없어서 쓰는 근사치. */
+export async function markAppSeenInstalled(studentId: number, role: "student" | "parent") {
+  const column = role === "student" ? "student_app_seen_at" : "parent_app_seen_at";
+  await supabase
+    .from("students")
+    .update({ [column]: new Date().toISOString() })
+    .eq("id", studentId);
+}
+
 export async function listStudents(opts?: { enrolledOnly?: boolean }): Promise<Student[]> {
   let query = supabase.from("students").select("*").order("name");
   if (opts?.enrolledOnly) query = query.eq("enrolled", true);

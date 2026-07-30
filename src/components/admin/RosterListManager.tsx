@@ -13,6 +13,25 @@ import {
   bulkSetEnrolledAction,
 } from "@/app/admin/students/roster/actions";
 
+function InstallBadge({ label, seenAt }: { label: string; seenAt: string | null }) {
+  const seen = !!seenAt;
+  return (
+    <span
+      title={
+        seen
+          ? `${label} 설치 확인됨 (${new Date(seenAt!).toLocaleDateString("ko-KR")})`
+          : `${label} 설치 미확인`
+      }
+      className={
+        "rounded-full px-1.5 py-0.5 text-[9px] font-bold " +
+        (seen ? "bg-success-soft text-success" : "bg-line-soft text-ink-muted/50")
+      }
+    >
+      {label}
+    </span>
+  );
+}
+
 export function RosterListManager({ students }: { students: Student[] }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -212,6 +231,10 @@ export function RosterListManager({ students }: { students: Student[] }) {
                 {s.school ?? "-"} {s.grade ? `${s.grade}학년` : ""} · {s.class_key ?? "미배정"}
                 {!s.enrolled && " · 퇴원"}
               </div>
+            </div>
+            <div className="flex flex-none gap-1">
+              <InstallBadge label="학생" seenAt={s.student_app_seen_at} />
+              <InstallBadge label="학부모" seenAt={s.parent_app_seen_at} />
             </div>
           </label>
         ))}

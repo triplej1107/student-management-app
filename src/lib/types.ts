@@ -37,6 +37,8 @@ export interface Student {
   clinic_day: string | null;
   clinic_time: string | null;
   birthday: string | null; // "YYYY-MM-DD" (연도는 무시하고 월/일만 비교해 생일 판정)
+  student_app_seen_at: string | null; // 학생 계정이 standalone(설치) 상태로 접속한 마지막 시각
+  parent_app_seen_at: string | null; // 학부모 계정이 standalone(설치) 상태로 접속한 마지막 시각
   final_score_label: string | null;
   mid_mock_score: number | null;
   mid_score: number | null;

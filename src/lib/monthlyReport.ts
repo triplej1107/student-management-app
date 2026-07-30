@@ -32,6 +32,47 @@ interface UjcTransactionRow {
   created_at: string;
 }
 
+// ── 학생 시트를 'ㄱㄴㄷ'순으로 정렬 + 초성별로 묶어보기 위한 헬퍼들 ──────
+const koreanCollator = new Intl.Collator("ko");
+const CHOSEONG_LIST = [
+  "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ",
+  "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ",
+];
+const CHOSEONG_GROUP: Record<string, string> = { "ㄲ": "ㄱ", "ㄸ": "ㄷ", "ㅃ": "ㅂ", "ㅆ": "ㅅ", "ㅉ": "ㅈ" };
+const GROUP_ORDER = ["ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ", "기타"];
+const TAB_COLOR_PALETTE = ["FF4472C4", "FFED7D31", "FFA5A5A5", "FF70AD47", "FF264478", "FF9E480E", "FF636363"];
+
+/** 이름 첫 글자의 초성 그룹(쌍자음은 기본자음으로 묶음). 한글이 아니면 "기타". */
+function nameGroup(name: string): string {
+  const code = name.trim().charCodeAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) {
+    const choseong = CHOSEONG_LIST[Math.floor((code - 0xac00) / (21 * 28))];
+    return CHOSEONG_GROUP[choseong] ?? choseong;
+  }
+  return "기타";
+}
+
+function tabColorForGroup(group: string): string {
+  const idx = GROUP_ORDER.indexOf(group);
+  return TAB_COLOR_PALETTE[(idx < 0 ? GROUP_ORDER.length - 1 : idx) % TAB_COLOR_PALETTE.length];
+}
+
+// ── 상담 시 눈에 띄어야 할 항목(결석/조정/60%이하 성적) 강조 스타일 ──────
+const FILL_BAD: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC7CE" } };
+const FONT_BAD = { color: { argb: "FF9C0006" } };
+const FILL_WARN: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFEB9C" } };
+const FONT_WARN = { color: { argb: "FF9C6500" } };
+
+function isLowScore(scoreStr?: string, totalStr?: string): boolean {
+  if (!scoreStr || !totalStr) return false;
+  const score = Number(scoreStr);
+  const total = Number(totalStr);
+  return Number.isFinite(score) && Number.isFinite(total) && total > 0 && score / total <= 0.6;
+}
+function clinicHasLowScore(c: ClinicCheck): boolean {
+  return (c.test_scores ?? []).some((t) => isLowScore(t.score, t.total));
+}
+
 async function fetchAttendance(startISO: string, endISO: string): Promise<AttendanceRecord[]> {
   const { data } = await supabase
     .from("attendance_records")
@@ -187,18 +228,30 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
       (ujcThisMonthByStudent.get(s.id)?.length ?? 0) > 0
   );
 
+  // 재원생 200명을 향해가는 규모라 탭을 무작정 나열하면 찾기 힘들다 —
+  // 'ㄱㄴㄷ'순 정렬 + 초성 그룹으로 묶어 탭 색상을 준다.
+  const sortedStudents = includedStudents.slice().sort((a, b) => koreanCollator.compare(a.name, b.name));
+
   const wb = new ExcelJS.Workbook();
   wb.creator = "유종의미 국어학원 학생관리 앱";
   wb.created = new Date();
+
+  // 학생별 시트 이름을 먼저 확정해둔다 — 전체 요약의 하이퍼링크와 실제
+  // 상세 시트 생성이 같은 이름을 가리켜야 하기 때문.
+  const usedNames = new Set<string>(["전체 요약"]);
+  const sheetNameByStudent = new Map<number, string>();
+  for (const s of sortedStudents) {
+    sheetNameByStudent.set(s.id, makeSheetName(`${s.name}_${s.student_code}`, usedNames));
+  }
 
   // ── 1. 전체 요약: 한눈에 훑어보는 학생별 요약표 ──────────────────────
   const wsSummary = wb.addWorksheet("전체 요약");
   sheetHeader(
     wsSummary,
-    ["이름", "학번", "반", "재원상태", "출석", "지각", "조정", "결석", "클리닉완료", "클리닉대상", "UJC적립", "UJC사용", "UJC월말잔액"],
-    [10, 10, 10, 8, 6, 6, 6, 6, 10, 10, 8, 8, 10]
+    ["이름", "학번", "반", "재원상태", "출석", "지각", "조정", "결석", "클리닉완료", "클리닉대상", "UJC적립", "UJC사용", "UJC월말잔액", "성적경고"],
+    [10, 10, 10, 8, 6, 6, 6, 6, 10, 10, 8, 8, 10, 8]
   );
-  for (const s of includedStudents) {
+  for (const s of sortedStudents) {
     const att = attByStudent.get(s.id) ?? [];
     const countBy = (status: string) => att.filter((a) => a.status === status).length;
     const clinics = clinicByStudent.get(s.id) ?? [];
@@ -206,30 +259,54 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
     const ujc = ujcThisMonthByStudent.get(s.id) ?? [];
     const earned = ujc.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
     const spent = ujc.filter((t) => t.amount < 0).reduce((sum, t) => sum + -t.amount, 0);
-    wsSummary.addRow([
-      s.name,
+    const absentCount = countBy("결석");
+    const adjustedCount = countBy("조정");
+    const hasLowGrade =
+      clinics.some(clinicHasLowScore) ||
+      (schoolExamsByStudent.get(s.id) ?? []).some((e) => e.score !== null && e.score <= 60) ||
+      (mockExamsByStudent.get(s.id) ?? []).some((e) => e.score !== null && e.score <= 60);
+    const sheetName = sheetNameByStudent.get(s.id)!;
+    const row = wsSummary.addRow([
+      { text: s.name, hyperlink: `#'${sheetName}'!A1` },
       s.student_code,
       s.class_key ?? "",
       s.enrolled ? "재원" : "퇴원",
       countBy("출석"),
       countBy("지각"),
-      countBy("조정"),
-      countBy("결석"),
+      adjustedCount,
+      absentCount,
       doneCount,
       clinics.length,
       earned,
       spent,
       ujcBalanceAtEndByStudent.get(s.id) ?? 0,
+      hasLowGrade ? "⚠" : "",
     ]);
+    row.getCell(1).font = { color: { argb: "FF1155CC" }, underline: true };
+    if (absentCount > 0) {
+      row.getCell(8).fill = FILL_BAD;
+      row.getCell(8).font = FONT_BAD;
+    }
+    if (adjustedCount > 0) {
+      row.getCell(7).fill = FILL_WARN;
+      row.getCell(7).font = FONT_WARN;
+    }
+    if (hasLowGrade) {
+      row.getCell(14).fill = FILL_BAD;
+      row.getCell(14).font = { ...FONT_BAD, bold: true };
+    }
   }
   wsSummary.views = [{ state: "frozen", ySplit: 1 }];
 
   // ── 2. 학생별 상세 시트 ──────────────────────────────────────────────
-  const usedNames = new Set<string>(["전체 요약"]);
-  for (const s of includedStudents) {
-    const ws = wb.addWorksheet(makeSheetName(`${s.name}_${s.student_code}`, usedNames));
+  for (const s of sortedStudents) {
+    const ws = wb.addWorksheet(sheetNameByStudent.get(s.id)!);
+    ws.properties.tabColor = { argb: tabColorForGroup(nameGroup(s.name)) };
     ws.getColumn(1).width = 14;
     for (let c = 2; c <= 8; c++) ws.getColumn(c).width = 18;
+
+    const backRow = ws.addRow([{ text: "◀ 전체 요약으로", hyperlink: "#'전체 요약'!A1" }]);
+    backRow.getCell(1).font = { color: { argb: "FF1155CC" }, underline: true, bold: true };
 
     const titleRow = ws.addRow([
       `${s.name} (${s.student_code}) · ${s.class_key ?? "반 미배정"} · ${s.enrolled ? "재원" : "퇴원"}`,
@@ -260,12 +337,23 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
         a.status === "조정" && makeup
           ? `→ 보강: ${makeup.makeup_day} ${makeup.makeup_time}${makeup.note ? ` (${makeup.note})` : ""}`
           : "";
-      ws.addRow([
+      const attRow = ws.addRow([
         a.session_date,
         a.status,
         a.marked_by ? (staffNames.get(a.marked_by) ?? "") : "",
         note,
       ]);
+      if (a.status === "결석") {
+        attRow.eachCell((cell) => {
+          cell.fill = FILL_BAD;
+          cell.font = FONT_BAD;
+        });
+      } else if (a.status === "조정") {
+        attRow.eachCell((cell) => {
+          cell.fill = FILL_WARN;
+          cell.font = FONT_WARN;
+        });
+      }
     }
     ws.addRow([]);
 
@@ -301,7 +389,7 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
         })
         .filter(Boolean)
         .join(" / ");
-      ws.addRow([
+      const clinicRow = ws.addRow([
         c.week_start,
         hwDone || "-",
         testResult || "-",
@@ -311,6 +399,10 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
         c.feedback_text ?? "",
         c.zongju_feedback_text ?? "",
       ]);
+      if (clinicHasLowScore(c)) {
+        clinicRow.getCell(3).fill = FILL_BAD;
+        clinicRow.getCell(3).font = FONT_BAD;
+      }
     }
     ws.addRow([]);
 
@@ -364,7 +456,11 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
       const gradeHeaderRow = ws.addRow(["구분", "시험명", "점수", "등수/백분위", "등급", "비고", "수정일"]);
       gradeHeaderRow.font = { bold: true };
       for (const g of grades) {
-        ws.addRow([g.구분, g.시험명, g.점수 ?? "", g.등수백분위 ?? "", g.등급 ?? "", g.비고 ?? "", g.수정일 ?? ""]);
+        const gradeRow = ws.addRow([g.구분, g.시험명, g.점수 ?? "", g.등수백분위 ?? "", g.등급 ?? "", g.비고 ?? "", g.수정일 ?? ""]);
+        if (g.점수 !== null && g.점수 <= 60) {
+          gradeRow.getCell(3).fill = FILL_BAD;
+          gradeRow.getCell(3).font = { ...FONT_BAD, bold: true };
+        }
       }
     }
   }

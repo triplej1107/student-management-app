@@ -30,7 +30,7 @@ export const STUDENT_TABS: NavTab[] = [
 export const ADMIN_TABS: NavTab[] = [
   { href: "/admin/ujc", label: "UJC" },
   { href: "/admin/staff/profiles", label: "조교", matchPrefixes: ["/admin/staff"] },
-  { href: "/admin", label: "홈", icon: "홈", popped: true, hideLabel: true },
+  { href: "/admin", label: "홈", icon: "왕관", popped: true, hideLabel: true },
   {
     href: "/admin/students/templates",
     label: "학생",

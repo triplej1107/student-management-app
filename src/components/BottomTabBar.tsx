@@ -83,10 +83,18 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
   ),
   조교: (active) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
-      <circle cx="9" cy="8" r="2.8" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="16.5" cy="9" r="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4 20v-1.2A4.8 4.8 0 0 1 8.8 14h.4a4.8 4.8 0 0 1 4.8 4.8V20" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M14.7 14.4a4.3 4.3 0 0 1 5.3 4.1V20" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="3" y="3" width="18" height="18" rx="6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12 7.5 13.3 10.2 16.2 10.6 14.1 12.6 14.6 15.5 12 14.1 9.4 15.5 9.9 12.6 7.8 10.6 10.7 10.2 12 7.5Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  왕관: (active) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
+      <path d="M4 18h16" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 18 3 9l5 4 4-6 4 6 5-4-1 9Z" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   시험: (active) => (

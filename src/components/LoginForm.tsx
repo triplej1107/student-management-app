@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
 import { loginAction, type LoginFormState } from "@/app/login/actions";
+import { BackButton } from "@/components/BackButton";
 import type { Role } from "@/lib/types";
 
 interface RoleMeta {
@@ -28,13 +28,7 @@ export default function LoginForm({ role, meta }: { role: Role; meta: RoleMeta }
 
   return (
     <div className="box-border flex h-full flex-1 flex-col px-6 pb-5 pt-2">
-      <Link
-        href="/"
-        className="inline-block self-end px-0 py-1.5 text-[22px] leading-none text-ink"
-        aria-label="뒤로가기"
-      >
-        ‹
-      </Link>
+      <BackButton href="/" />
 
       <div className="flex flex-1 flex-col justify-center">
         <div className="text-2xl font-extrabold text-ink">로그인</div>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackButton } from "@/components/BackButton";
 import { searchDictionary } from "@/lib/dictionary";
 import { EmptyState } from "@/components/ui";
 
@@ -13,9 +13,7 @@ export default async function DictionaryPage({
 
   return (
     <div className="box-border px-5 pt-2 pb-7">
-      <Link href="/" className="block w-full text-right px-0 py-1.5 text-[22px] leading-none text-ink">
-        ‹
-      </Link>
+      <BackButton href="/" />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">표준국어대사전</div>
         <div className="mt-1 text-xs italic text-ink-muted">국립국어원</div>

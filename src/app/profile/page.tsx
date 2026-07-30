@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackButton } from "@/components/BackButton";
 
 function CrownIcon() {
   return (
@@ -81,9 +81,7 @@ const RESULTS: ResultGroup[] = [
 export default function ProfilePage() {
   return (
     <div className="box-border px-5 pt-2 pb-7">
-      <Link href="/" className="block w-full text-right px-0 py-1.5 text-[22px] leading-none text-ink">
-        ‹
-      </Link>
+      <BackButton href="/" />
 
       <div className="mt-2 rounded-2xl bg-gradient-to-br from-accent to-accent-hover px-5 py-7 text-center text-white shadow-[0_3px_14px_rgba(20,30,60,0.15)]">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/15 [&>svg]:h-8 [&>svg]:w-8">

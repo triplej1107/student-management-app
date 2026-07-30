@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { BackButton } from "@/components/BackButton";
 import { requireStudentSession } from "@/lib/authz";
 import { getStudentById } from "@/lib/data";
 import { getUjcBalance, getMyExchangeRequests } from "@/lib/ujc";
@@ -30,9 +30,7 @@ export default async function UjcMarketPage() {
   return (
     <div className="box-border pb-7">
       <div className="sticky top-0 z-10 border-b border-line bg-white px-5 pb-3 pt-3">
-        <Link href="/student" className="block w-full text-right px-0 py-1 text-[20px] leading-none text-ink">
-          ‹
-        </Link>
+        <BackButton href="/student" />
         <div className="mt-1 flex items-center justify-between">
           <div className="text-lg font-extrabold text-ink">UJC 마켓</div>
           <div className="rounded-full bg-accent-soft px-3 py-1.5 text-sm font-extrabold text-accent">

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackButton } from "@/components/BackButton";
 import { requireZongjuSession } from "@/lib/authz";
 import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from "@/lib/data";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
@@ -37,12 +37,7 @@ export default async function AdminApprovalDetailPage({
 
   return (
     <div>
-      <Link
-        href="/admin/students/approvals"
-        className="block w-full text-right px-0 py-1.5 text-[22px] leading-none text-ink"
-      >
-        ‹
-      </Link>
+      <BackButton href="/admin/students/approvals" />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">클리닉 점검표</div>
         <div className="mt-1 text-xs italic text-ink-muted">{classKey ?? "미배정"}</div>

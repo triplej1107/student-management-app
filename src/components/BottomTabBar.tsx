@@ -75,7 +75,30 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
       <path d="M8.7 8.2v5a3.3 3.3 0 0 0 6.6 0v-5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  학생: (active) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
+      <circle cx="12" cy="8" r="3.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5.5 20v-1.5A5.5 5.5 0 0 1 11 13h2a5.5 5.5 0 0 1 5.5 5.5V20" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  조교: (active) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
+      <circle cx="9" cy="8" r="2.8" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="16.5" cy="9" r="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 20v-1.2A4.8 4.8 0 0 1 8.8 14h.4a4.8 4.8 0 0 1 4.8 4.8V20" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14.7 14.4a4.3 4.3 0 0 1 5.3 4.1V20" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  시험: (active) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
+      <rect x="5" y="3.5" width="12" height="17" rx="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 8h6M8 11.5h6M8 15h3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m15.5 16.5 3-3 1.5 1.5-3 3-2 .5.5-2Z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 };
+
+const ROOT_HREFS = ["/staff", "/student", "/admin"];
 
 export function BottomTabBar({ tabs }: { tabs: NavTab[] }) {
   const pathname = usePathname();
@@ -87,7 +110,8 @@ export function BottomTabBar({ tabs }: { tabs: NavTab[] }) {
       {tabs.map((tab) => {
         const active =
           tab.href === pathname ||
-          (tab.href !== "/staff" && tab.href !== "/student" && pathname.startsWith(tab.href));
+          (!ROOT_HREFS.includes(tab.href) &&
+            (tab.matchPrefixes ?? [tab.href]).some((p) => pathname.startsWith(p)));
         const icon = ICONS[tab.icon ?? tab.label]?.(active);
 
         if (tab.popped) {

@@ -50,15 +50,25 @@ export default async function StudentHomePage() {
     <div className="box-border px-5 pt-2 pb-6">
       <div className="flex items-center justify-between">
         <div className="text-xl font-extrabold text-ink">안녕하세요, {student.name}님</div>
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-sm text-ink-secondary"
-            aria-label="로그아웃"
-          >
-            ↩
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          {isStudent && (
+            <Link
+              href="/student/omr"
+              className="flex h-9 items-center rounded-full bg-accent px-3.5 text-xs font-bold text-white shadow-[0_1px_4px_rgba(20,30,60,0.10)]"
+            >
+              OMR마킹
+            </Link>
+          )}
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-sm text-ink-secondary"
+              aria-label="로그아웃"
+            >
+              ↩
+            </button>
+          </form>
+        </div>
       </div>
 
       {isStudentOrParent && <InstallSeenBeacon />}

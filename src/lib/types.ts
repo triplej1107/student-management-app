@@ -116,6 +116,32 @@ export interface TestScore {
   total?: string;
 }
 
+// 클리닉 테스트 자동채점(OMR) — 문항당 선택지 수는 국어 내신 표준인
+// 오지선다(5지선다)로 고정한다.
+export const OMR_CHOICE_COUNT = 5;
+
+export interface ClinicAnswerKey {
+  id: number;
+  class_key: ClassKey;
+  week_start: string;
+  test_index: number;
+  round: number;
+  answers: string[];
+  updated_at: string;
+}
+
+export interface ClinicOmrSubmission {
+  id: number;
+  student_id: number;
+  week_start: string;
+  test_index: number;
+  round: number;
+  answers: string[];
+  score: number;
+  total: number;
+  submitted_at: string;
+}
+
 export interface ClinicCheck {
   id: number;
   student_id: number;

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
 import { requestMarketExchange } from "@/lib/ujc";
 import { upsertParentQuestion } from "@/lib/parentQuestions";
+import { submitOmr } from "@/lib/clinicOmr";
 import { getStudentById } from "@/lib/data";
 import { getPushSubscriptionsForZongju, sendParentQuestionPush } from "@/lib/clinicPush";
 import { getToday } from "@/lib/today";
@@ -43,4 +44,26 @@ export async function submitParentQuestionAction(text: string) {
 
   revalidatePath("/student");
   revalidatePath("/admin");
+}
+
+export async function submitOmrAction(testIndex: number, answers: string[]) {
+  const session = await getSession();
+  if (session.role !== "student" || !session.studentId) {
+    throw new Error("학생 계정만 OMR을 제출할 수 있어요.");
+  }
+  const student = await getStudentById(session.studentId);
+  if (!student?.class_key) {
+    throw new Error("반 배정 정보가 없어요.");
+  }
+
+  const weekStartISO = toISODate(getToday().clinicWeekStart);
+  const result = await submitOmr(session.studentId, student.class_key, weekStartISO, testIndex, answers);
+
+  revalidatePath("/student/omr");
+  revalidatePath("/student/clinic");
+  revalidatePath("/student");
+  revalidatePath("/staff/clinic");
+  revalidatePath("/admin/students/approvals");
+
+  return result;
 }

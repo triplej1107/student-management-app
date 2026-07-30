@@ -59,13 +59,13 @@ export function BacklogWarningModal({
         <div className="mt-4 flex gap-2">
           <button
             onClick={() => setDismissed(true)}
-            className="flex-1 rounded-xl border border-line bg-white py-2.5 text-sm font-bold text-ink-secondary"
+            className="flex-1 rounded-xl border border-line bg-white py-2.5 text-sm font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           >
             나중에
           </button>
           <Link
             href="/student/clinic"
-            className="flex-1 rounded-xl bg-accent py-2.5 text-center text-sm font-bold text-white"
+            className="flex-1 rounded-xl bg-accent py-2.5 text-center text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           >
             지금 확인하기
           </Link>

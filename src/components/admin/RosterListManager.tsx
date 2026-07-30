@@ -156,25 +156,25 @@ export function RosterListManager({ students }: { students: Student[] }) {
             </select>
             <button
               onClick={runBulkClassKey}
-              className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold text-ink-secondary"
+              className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
             >
               반 배정 적용
             </button>
             <button
               onClick={() => runBulkEnrolled(true)}
-              className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold text-ink-secondary"
+              className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
             >
               재원으로 변경
             </button>
             <button
               onClick={() => runBulkEnrolled(false)}
-              className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold text-ink-secondary"
+              className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
             >
               퇴원으로 변경
             </button>
             <button
               onClick={runBulkDelete}
-              className="rounded-lg border border-danger-soft bg-danger-soft px-2.5 py-1.5 text-xs font-bold text-danger"
+              className="rounded-lg border border-danger-soft bg-danger-soft px-2.5 py-1.5 text-xs font-bold text-danger shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
             >
               선택 삭제
             </button>
@@ -245,7 +245,7 @@ function BulkImportPanel({ onDone }: { onDone: () => void }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary"
+        className="w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
       >
         + 학생 일괄 등록 (엑셀/시트에서 붙여넣기)
       </button>
@@ -291,13 +291,13 @@ function BulkImportPanel({ onDone }: { onDone: () => void }) {
         <button
           onClick={submit}
           disabled={pending || !text.trim()}
-          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
         >
           {pending ? "가져오는 중..." : "가져오기"}
         </button>
         <button
           onClick={() => setOpen(false)}
-          className="flex-1 rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-ink-secondary"
+          className="flex-1 rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         >
           닫기
         </button>

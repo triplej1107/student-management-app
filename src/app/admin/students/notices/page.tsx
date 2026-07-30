@@ -39,7 +39,7 @@ export default async function AdminNoticesPage({
         <form action={addNoticeAction.bind(null, classKey)}>
           <button
             type="submit"
-            className="w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary"
+            className="w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           >
             + 공지 추가
           </button>

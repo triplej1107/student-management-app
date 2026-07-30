@@ -76,14 +76,14 @@ export function UjcExchangeRow({
         <button
           onClick={cancel}
           disabled={pending}
-          className="rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-ink-secondary disabled:opacity-50"
+          className="rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
         >
           취소(환불)
         </button>
         <button
           onClick={complete}
           disabled={pending}
-          className="rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          className="rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
         >
           발송 완료
         </button>

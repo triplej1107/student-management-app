@@ -32,7 +32,7 @@ export default async function DictionaryPage({
         />
         <button
           type="submit"
-          className="rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white"
+          className="rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         >
           검색
         </button>

@@ -97,7 +97,7 @@ export function AttendanceRow({
   }
 
   return (
-    <div className="rounded-2xl border border-line-soft bg-white p-3.5">
+    <div className="rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]">
       <div className="flex items-center justify-between">
         <Link href={`/staff/clinic/${student.id}`} className="cursor-pointer">
           <div className="text-[15px] font-bold text-ink">{student.name}</div>
@@ -141,7 +141,7 @@ export function AttendanceRow({
                 key={d}
                 onClick={() => setDayDraft(d)}
                 className={
-                  "rounded-lg border px-2.5 py-1.5 text-xs font-bold " +
+                  "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
                   (dayDraft === d
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line bg-white text-ink-secondary")
@@ -170,13 +170,13 @@ export function AttendanceRow({
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={saveMakeup}
-              className="rounded-lg bg-accent px-3.5 py-2 text-xs font-bold text-white"
+              className="rounded-lg bg-accent px-3.5 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
             >
               저장
             </button>
             <button
               onClick={() => setEditingMakeup(false)}
-              className="rounded-lg border border-line bg-white px-3.5 py-2 text-xs font-bold text-ink-secondary"
+              className="rounded-lg border border-line bg-white px-3.5 py-2 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
             >
               취소
             </button>

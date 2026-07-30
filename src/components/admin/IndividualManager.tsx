@@ -152,7 +152,7 @@ function AddStudentForm({ onCreated }: { onCreated: (student: Student) => void }
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-4 w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary"
+        className="mt-4 w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
       >
         + 학생 추가
       </button>
@@ -268,13 +268,13 @@ function AddStudentForm({ onCreated }: { onCreated: (student: Student) => void }
         <button
           onClick={submit}
           disabled={pending}
-          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
         >
           {pending ? "추가 중..." : "추가"}
         </button>
         <button
           onClick={() => setOpen(false)}
-          className="flex-1 rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-ink-secondary"
+          className="flex-1 rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         >
           취소
         </button>
@@ -339,7 +339,7 @@ function IndividualEditForm({
         <button
           onClick={remove}
           disabled={deleting}
-          className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-1.5 text-xs font-bold text-danger disabled:opacity-50"
+          className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-1.5 text-xs font-bold text-danger shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
         >
           {deleting ? "삭제 중..." : "학생 삭제"}
         </button>
@@ -373,7 +373,7 @@ function IndividualEditForm({
               startTransition(() => updateRosterFieldAction(student.id, "enrolled", String(next)));
             }}
             className={
-              "flex-1 rounded-lg border px-2 py-2 text-xs font-bold " +
+              "flex-1 rounded-lg border px-2 py-2 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
               (enrolled
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

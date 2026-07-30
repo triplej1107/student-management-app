@@ -80,7 +80,7 @@ export default function LoginForm({ role, meta }: { role: Role; meta: RoleMeta }
           <button
             type="submit"
             disabled={disabled}
-            className="mt-1 w-full box-border rounded-2xl bg-accent px-4 py-4 text-base font-bold text-white disabled:opacity-50"
+            className="mt-1 w-full box-border rounded-2xl bg-accent px-4 py-4 text-base font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
           >
             {pending ? "확인 중..." : "로그인"}
           </button>

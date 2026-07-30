@@ -44,7 +44,7 @@ export function ZongjuFeedbackEditor({
       <button
         onClick={save}
         disabled={!dirty}
-        className="mt-2 w-full rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-bold text-accent disabled:border-line disabled:text-ink-muted"
+        className="mt-2 w-full rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-bold text-accent shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:border-line disabled:text-ink-muted disabled:shadow-none"
       >
         저장
       </button>

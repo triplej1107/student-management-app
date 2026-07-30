@@ -68,7 +68,7 @@ export function StaffProfileCard({ staff }: { staff: Staff }) {
         />
         <button
           onClick={remove}
-          className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-2 text-xs font-bold text-danger"
+          className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-2 text-xs font-bold text-danger shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
         >
           삭제
         </button>
@@ -81,7 +81,7 @@ export function StaffProfileCard({ staff }: { staff: Staff }) {
             key={d}
             onClick={() => toggleDay(d)}
             className={
-              "rounded-[7px] border px-2.5 py-1.5 text-[11px] font-bold " +
+              "rounded-[7px] border px-2.5 py-1.5 text-[11px] font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
               (staff.work_days.includes(d)
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-white text-ink-secondary")

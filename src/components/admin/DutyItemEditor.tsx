@@ -38,7 +38,7 @@ export function DutyItemEditor({ item }: { item: DutyItem }) {
       />
       <button
         onClick={remove}
-        className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-2 text-xs font-bold text-danger"
+        className="rounded-lg border border-danger-soft bg-danger-soft px-3 py-2 text-xs font-bold text-danger shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
       >
         삭제
       </button>

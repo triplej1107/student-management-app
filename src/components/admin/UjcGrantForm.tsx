@@ -110,7 +110,7 @@ export function UjcGrantForm() {
                 key={r}
                 onClick={() => setReason(r)}
                 className={
-                  "rounded-lg border px-2.5 py-1.5 text-xs font-bold " +
+                  "rounded-lg border px-2.5 py-1.5 text-xs font-bold shadow-[0_3px_14px_rgba(20,30,60,0.12)] " +
                   (reason === r
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line bg-white text-ink-secondary")
@@ -140,7 +140,7 @@ export function UjcGrantForm() {
             <button
               onClick={submit}
               disabled={pending}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50 disabled:shadow-none"
             >
               지급
             </button>

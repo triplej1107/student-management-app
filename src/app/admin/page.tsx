@@ -73,7 +73,10 @@ export default async function AdminHomePage() {
   const backlog = await getClinicBacklog();
   const backlogUrgentCount = backlog.filter((e) => e.weeksOverdue >= 2).length;
 
-  const parentQuestions = await getParentQuestionsForWeek(toISODate(questionWeekStart));
+  // 홈 화면은 아직 답변이 필요한 질문만 — 답변 완료된 건 "지난 내역 보기"에서 확인.
+  const parentQuestions = (await getParentQuestionsForWeek(toISODate(questionWeekStart))).filter(
+    (q) => !q.answer_text
+  );
 
   const dateLabel = `${today.getMonth() + 1}월 ${today.getDate()}일 ${dayLabel}요일`;
 

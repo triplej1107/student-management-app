@@ -125,7 +125,7 @@ export function ParentQuestionsSection({
         </Link>
       </div>
       {questions.length === 0 && (
-        <div className="text-[13px] text-ink-muted/70">이번 주 남겨진 질문이 없어요.</div>
+        <div className="text-[13px] text-ink-muted/70">답변할 질문이 없어요.</div>
       )}
       <div className="flex flex-col gap-2">
         {questions.map((q) => (

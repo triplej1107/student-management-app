@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { toISODate, weekLabel, dayLabelOf } from "./weeks";
+import { toISODate, weekLabel, dayLabelOf, mondayOf } from "./weeks";
 import { classKeyFor } from "./classKey";
 import { SCHOOL_EXAMS } from "./types";
 import type {
@@ -370,36 +370,20 @@ export async function getActiveClinicDays(weekStart: Date, weekEnd: Date): Promi
   return activeClinicDaysFrom(await getWeeklyRoster(weekStart, weekEnd));
 }
 
-/** 특정 하루치 대체 일정만 조회 — getMakeupMapForWeek의 단일 날짜 버전. */
-export async function getMakeupMapForDate(date: Date): Promise<Map<number, MakeupSchedule>> {
-  const { data } = await supabase
-    .from("makeup_schedules")
-    .select("*")
-    .eq("session_date", toISODate(date));
-  const map = new Map<number, MakeupSchedule>();
-  for (const row of (data as MakeupSchedule[]) ?? []) {
-    map.set(row.student_id, row);
-  }
-  return map;
-}
-
 /** 특정 날짜에 실제로 클리닉이 있는(대체 일정 반영) 학생 명단 — 주 단위가
  * 아니라 임의의 하루(예: 자동 결석 크론의 "오늘", 전날 자동 결석 이월 목록의
- * "어제")를 조회할 때 쓴다. */
+ * "어제")를 조회할 때 쓴다.
+ *
+ * makeup_schedules 행은 "옮겨간 날짜"가 아니라 **원래 수업일**(session_date)에
+ * 달려 있고 목적지는 makeup_day에 들어있다 — 그래서 "그 날짜의 makeup 행"을
+ * 찾는 방식으로는 조정된 학생을 절대 잡을 수 없다(수요일에서 금요일로 옮긴
+ * 학생의 행은 session_date가 수요일이다). 출결 화면과 똑같이 주 단위로 조회한
+ * 뒤 effDay로 거르는 getRosterForDay에 위임해야 결과가 일치한다. */
 export async function getRosterForDate(date: Date): Promise<RosterEntry[]> {
-  const [students, makeupMap] = await Promise.all([
-    listStudents({ enrolledOnly: true }),
-    getMakeupMapForDate(date),
-  ]);
-  const dayLabel = dayLabelOf(date);
-  return students
-    .map((student) => {
-      const makeup = makeupMap.get(student.id);
-      const effDay = makeup?.makeup_day ?? student.clinic_day ?? "";
-      const effTime = makeup?.makeup_time ?? student.clinic_time ?? "";
-      return { student, effDay, effTime, hasMakeup: !!makeup, makeup };
-    })
-    .filter((r) => r.effDay === dayLabel);
+  const weekStart = mondayOf(date);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  return getRosterForDay(dayLabelOf(date), weekStart, weekEnd);
 }
 
 /** 그 날짜에 시스템이 자동으로 결석 처리한(auto_marked) 학생만 골라

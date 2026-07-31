@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
-    "seed:students": "node --env-file=.env.local scripts/seed-students.mjs"
+    "seed:students": "node --env-file=.env.local scripts/seed-students.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
@@ -36,6 +37,7 @@
     "eslint-config-next": "16.2.11",
     "sharp": "^0.35.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

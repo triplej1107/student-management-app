@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getRosterForDate, getAttendanceMapForDate } from "@/lib/data";
 import { getAutoMarkedSetForDate } from "@/lib/attendanceAuto";
+import { buildAutoAbsentMessage } from "@/lib/attendanceMessages";
 import { getPushSubscriptionsForStudents, sendAttendancePush } from "@/lib/clinicPush";
 import { kstToday, toISODate } from "@/lib/weeks";
+import { isDeployedEnvironment } from "@/lib/env";
 
 /** Vercel Cron이 매일 22:00 KST(vercel.json, "0 13 * * *")에 호출 — 오늘
  * 클리닉이 있었는데 (1) 출결이 아예 안 눌렸거나 (2) 클리닉 시각이 지나
@@ -36,6 +38,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, autoMarked: 0 });
   }
 
+  if (!isDeployedEnvironment()) {
+    console.warn(
+      `[dry-run] 로컬 환경이라 실제 기록/알림 없이 미리보기만 함. 자동 결석 대상 ${toConvert.length}명: ${toConvert
+        .map((r) => r.student.name)
+        .join(", ")}`
+    );
+    return NextResponse.json({ ok: true, dryRun: true, wouldMark: toConvert.length });
+  }
+
   await supabase.from("attendance_records").upsert(
     toConvert.map((r) => ({
       student_id: r.student.id,
@@ -52,11 +63,7 @@ export async function GET(req: Request) {
   for (const r of toConvert) {
     const subs = subsByStudent.get(r.student.id);
     if (subs && subs.length > 0) {
-      await sendAttendancePush(
-        subs,
-        r.student.name,
-        `${r.effDay}요일 ${r.effTime} 클리닉, 시간 조정 없이 결석으로 처리됐어요.`
-      );
+      await sendAttendancePush(subs, r.student.name, buildAutoAbsentMessage(r.effDay, r.effTime));
       pushedTo++;
     }
   }

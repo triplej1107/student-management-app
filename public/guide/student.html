@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>유종의미 앱 학생 안내서</title>
+<link rel="icon" href="/icon-192.png" />
+<style>
+  :root {
+    --paper: #f5f7fb;
+    --card: #ffffff;
+    --ink: #1a2030;
+    --ink-soft: #525d75;
+    --ink-faint: #8590a8;
+    --line: #e0e5ee;
+    --blue: #2954e8;
+    --blue-deep: #1f41b8;
+    --blue-soft: #e8edfd;
+    --hl: #fff3c2;
+    --hl-ink: #4a3b00;
+    --warn: #c2554a;
+    --warn-soft: #fbeae8;
+    --gold: #b07b1e;
+    --gold-soft: #fdf3dd;
+    --shadow: 0 3px 16px rgba(26, 32, 48, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #13161f;
+      --card: #1b2030;
+      --ink: #e8ecf7;
+      --ink-soft: #a3adc5;
+      --ink-faint: #6f7a96;
+      --line: #2a3145;
+      --blue: #6d8bff;
+      --blue-deep: #8ba3ff;
+      --blue-soft: #202848;
+      --hl: #4a3f10;
+      --hl-ink: #ffe89a;
+      --warn: #e57a6f;
+      --warn-soft: #3a221f;
+      --gold: #e3b45c;
+      --gold-soft: #3a2f15;
+      --shadow: 0 3px 20px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .wrap { max-width: 700px; margin: 0 auto; padding: 36px 20px 72px; }
+
+  mark {
+    background: var(--hl);
+    color: var(--hl-ink);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  header.top { text-align: center; margin-bottom: 8px; }
+  header.top .badge {
+    display: inline-block;
+    background: var(--blue-soft);
+    color: var(--blue-deep);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 5px 14px;
+    border-radius: 999px;
+  }
+  header.top h1 {
+    font-size: 27px;
+    font-weight: 800;
+    margin: 14px 0 6px;
+    letter-spacing: -0.02em;
+  }
+  header.top .sub { color: var(--ink-soft); font-size: 14px; margin: 0 auto; max-width: 460px; }
+
+  .lead {
+    margin: 26px 0 34px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--blue);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    font-size: 15px;
+  }
+  .lead b { color: var(--blue-deep); }
+
+  .section { margin-top: 40px; }
+  .section > .s-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .s-head .no {
+    flex: none;
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--blue);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px;
+  }
+  .s-head h2 { font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+  .s-head .star { font-size: 12px; font-weight: 800; color: var(--blue-deep); background: var(--blue-soft); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .card + .card { margin-top: 12px; }
+  .card h3 { font-size: 15px; font-weight: 800; margin: 0 0 8px; }
+  .card p { margin: 0 0 10px; color: var(--ink-soft); }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 6px 0 0; padding-left: 20px; color: var(--ink-soft); }
+  .card li { margin-bottom: 7px; }
+  .card li:last-child { margin-bottom: 0; }
+  .card li::marker { color: var(--blue); }
+
+  .step { display: flex; gap: 12px; margin-bottom: 12px; }
+  .step:last-child { margin-bottom: 0; }
+  .step .dot {
+    flex: none;
+    width: 24px; height: 24px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--blue-soft);
+    color: var(--blue-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+  }
+  .step .txt { color: var(--ink-soft); }
+  .step .txt b { color: var(--ink); }
+
+  .notify {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--blue-soft);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--blue-deep);
+    font-weight: 600;
+  }
+  .notify .ico { flex: none; }
+
+  .caution {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--warn-soft);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+
+  .auction {
+    background: var(--gold-soft);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .tiers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .tier {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--blue-soft);
+    color: var(--blue-deep);
+  }
+  .tier.top { background: var(--gold-soft); color: var(--gold); }
+
+  table.simple {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 8px;
+  }
+  table.simple th, table.simple td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.simple th { color: var(--ink-faint); font-size: 12px; font-weight: 700; white-space: nowrap; }
+  table.simple td:first-child { font-weight: 700; white-space: nowrap; }
+  table.simple td { color: var(--ink-soft); }
+  table.simple tr:last-child th, table.simple tr:last-child td { border-bottom: none; }
+  .tbl-scroll { overflow-x: auto; }
+
+  footer.note {
+    margin-top: 48px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="badge">학생 안내서</div>
+    <h1>유종의미 학생관리 앱<br />제대로 쓰는 법</h1>
+    <p class="sub">클리닉을 열심히 할수록 코인이 쌓이고, 등급이 오르고, 연말 경매에서 유리해집니다. 이 앱은 여러분의 성실함을 기록하는 앱이에요.</p>
+  </header>
+
+  <div class="lead">
+    꼭 기억할 세 가지.
+    첫째, <mark>클리닉 점검표를 완료할 때마다 유종코인(UJC)이 쌓입니다.</mark>
+    둘째, <mark>클리닉 테스트는 OMR마킹으로 제출하는 즉시 채점 — 점수와 재시 여부를 그 자리에서 확인</mark>합니다.
+    셋째, <mark>리더보드에서 전교생과 무한 경쟁</mark> — 여기서의 위치가 <b>연말 경매</b>에서의 위치입니다.
+  </div>
+
+  <!-- 1. 시작하기 -->
+  <div class="section">
+    <div class="s-head"><span class="no">1</span><h2>시작하기</h2></div>
+    <div class="card">
+      <div class="step"><span class="dot">①</span><div class="txt"><b>kaujm.vercel.app</b> 접속 → 첫 화면에서 <b>[학생]</b> 선택.</div></div>
+      <div class="step"><span class="dot">②</span><div class="txt"><b>학번(등원번호 다섯 자리)</b>만 입력하면 로그인 끝. 비밀번호 없어요.</div></div>
+      <div class="step"><span class="dot">③</span><div class="txt">안내에 따라 <b>홈 화면에 추가(설치)</b>하고 <mark>알림을 꼭 켜세요</mark> — 출결, 결재 완료, 클리닉 밀림 경고가 전부 알림으로 옵니다.</div></div>
+      <div class="caution"><span class="ico">📱</span><span>아이폰은 사파리에서 [공유 → 홈 화면에 추가]로 설치해야 알림을 받을 수 있어요. 카카오톡 안에서 열었다면 안내에 따라 다른 브라우저로 다시 열어주세요.</span></div>
+    </div>
+  </div>
+
+  <!-- 2. 점검표 = 유종코인 -->
+  <div class="section">
+    <div class="s-head"><span class="no">2</span><h2>클리닉 점검표 = 유종코인</h2><span class="star">핵심</span></div>
+    <div class="card">
+      <p><mark>매주 클리닉 점검표(숙제 전부 + 테스트 전부)를 완료하고 종주T 최종 결재까지 받으면 유종코인(UJC) 1개가 적립</mark>됩니다. 점검표가 곧 코인이에요 — 밀리면 코인도 없습니다.</p>
+      <p>홈 화면 맨 위 파란 지갑 카드에서 <b>보유 코인과 최근 적립·사용 내역</b>을 바로 확인할 수 있어요.</p>
+    </div>
+    <div class="card">
+      <h3>모은 코인은 UJC마켓에서 진짜 상품으로</h3>
+      <div class="tbl-scroll">
+      <table class="simple">
+        <tr><th>필요 코인</th><th>교환 상품</th></tr>
+        <tr><td>10 UJC</td><td>GS25·올리브영·구글플레이 상품권 (소액권)</td></tr>
+        <tr><td>20 UJC</td><td>같은 브랜드의 더 큰 금액권</td></tr>
+        <tr><td>30 UJC</td><td>최고 금액권</td></tr>
+      </table>
+      </div>
+      <p>홈의 <b>[UJC마켓 →]</b> 버튼에서 신청하면 확인 후 카카오톡으로 상품권을 보내드려요. 생일에는 종주T가 코인 1개를 선물로 줍니다. 🎂</p>
+      <div class="caution"><span class="ico">⚠️</span><span>클리닉이 밀리면 매주 자동으로 경고 알림이 가고(2주 이상은 강한 경고 + 학부모님께도 발송), 그 주 코인은 당연히 못 받아요.</span></div>
+    </div>
+  </div>
+
+  <!-- 3. OMR마킹 -->
+  <div class="section">
+    <div class="s-head"><span class="no">3</span><h2>OMR마킹 — 제출 즉시 채점</h2><span class="star">핵심</span></div>
+    <div class="card">
+      <p>클리닉 테스트를 종이로 풀고, 답은 폰으로 마킹합니다. 홈 화면 오른쪽 위 <b>[OMR마킹]</b> 버튼을 누르세요.</p>
+      <div class="step"><span class="dot">①</span><div class="txt">이번 주 테스트 목록에서 <b>[응시하기]</b>를 누르고 안내를 확인하세요.</div></div>
+      <div class="step"><span class="dot">②</span><div class="txt">①~⑤ 중 답을 눌러 마킹하세요. <b>잘못 눌렀으면 같은 번호를 한 번 더 누르면 지워져요.</b></div></div>
+      <div class="step"><span class="dot">③</span><div class="txt">전부 마킹하고 <b>[제출하기]</b>를 누르면 <mark>그 자리에서 즉시 채점 — 점수가 바로 떠서 재시(재시험) 대상인지 그 자리에서 알 수 있어요.</mark> 내신 기간엔 80% 미만이면 재시입니다.</div></div>
+      <div class="caution"><span class="ico">🚨</span><span><b>시험을 시작하면 제출 전까지 이 화면을 벗어날 수 없어요.</b> 다른 앱으로 나가거나 화면을 끄면 그 순간까지 마킹한 답으로 즉시 자동 제출됩니다. 실수로 나갔다면 조교쌤이나 종주T에게 말하면 재응시를 열어줄 수 있어요.</span></div>
+      <div class="notify"><span class="ico">✅</span><span>채점된 점수는 클리닉 점검표에 자동으로 기록돼요 — 조교쌤이 따로 채점할 때까지 기다릴 필요가 없습니다.</span></div>
+    </div>
+  </div>
+
+  <!-- 4. 리더보드 -->
+  <div class="section">
+    <div class="s-head"><span class="no">4</span><h2>리더보드 — 무한 경쟁</h2><span class="star">핵심</span></div>
+    <div class="card">
+      <p>홈의 <b>[리더보드 확인하기 →]</b>에서 전체 학생이 <b>닉네임으로 무한 경쟁</b>합니다. 등급은 성실함이 만들어요:</p>
+      <p style="text-align:center; font-weight:800; color:var(--ink);">티어점수 = 클리닉 완료율 × 70% + 테스트 백분위 × 30%</p>
+      <div class="tiers">
+        <span class="tier top">그랜드마스터</span>
+        <span class="tier top">마스터</span>
+        <span class="tier">다이아</span>
+        <span class="tier">플래티넘</span>
+        <span class="tier">골드</span>
+        <span class="tier">실버</span>
+        <span class="tier">브론즈</span>
+      </div>
+      <p style="margin-top:10px;"><mark>시험을 잘 보는 것(30%)보다 매주 빠짐없이 완료하는 것(70%)이 더 크게 반영</mark>됩니다. 꾸준함이 재능을 이기는 구조예요.</p>
+      <div class="auction">🏆 그리고 연말에는 <u>경매</u>가 열립니다. 지금 리더보드에서의 내 위치가 곧 연말 경매에서 내가 설 위치예요 — 지금 쌓는 코인과 등급이 연말에 무엇을 가져갈 수 있는지를 결정합니다.</div>
+    </div>
+  </div>
+
+  <!-- 5. 클리닉 탭 -->
+  <div class="section">
+    <div class="s-head"><span class="no">5</span><h2>클리닉 탭 — 내 점검표 확인</h2></div>
+    <div class="card">
+      <p>아래 <b>[클리닉]</b> 탭에서 최근 8주치 점검표를 주차별로 볼 수 있어요. 숙제 체크 현황, 테스트 점수, 조교 확인 → 종주T 최종 결재까지 어디까지 진행됐는지 확인하세요. <mark>결재가 완료되면 알림이 오고, 그 주의 코인이 들어옵니다.</mark></p>
+    </div>
+  </div>
+
+  <!-- 6. 나머지 탭 -->
+  <div class="section">
+    <div class="s-head"><span class="no">6</span><h2>수업 · 성적 · 공지 탭</h2></div>
+    <div class="card">
+      <ul>
+        <li><b>수업</b> — 우리 반의 주차별 진도·클리닉·과제 내용. 뭘 해야 하는지 여기서 확인.</li>
+        <li><b>성적</b> — 클리닉 테스트 백분위("현재 상위 O%"), 내신 학교등수, 모의고사 백분위를 그래프로. 점을 탭하면 정확한 등수도 보여요.</li>
+        <li><b>공지</b> — 반 공지사항과 월별 학원 일정 달력.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer class="note">
+    유종의미 국어학원 · "국어는 오직 유종의미"<br />
+    이 안내서는 앱 업데이트에 따라 내용이 추가될 수 있습니다.
+  </footer>
+</div>
+</body>
+</html>

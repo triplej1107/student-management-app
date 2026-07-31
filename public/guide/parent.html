@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>유종의미 앱 학부모 안내서</title>
+<link rel="icon" href="/icon-192.png" />
+<style>
+  :root {
+    --paper: #f5f8f7;
+    --card: #ffffff;
+    --ink: #1a2420;
+    --ink-soft: #52645d;
+    --ink-faint: #85958f;
+    --line: #e0e8e5;
+    --green: #0f9d72;
+    --green-deep: #0b7c5a;
+    --green-soft: #e2f5ee;
+    --hl: #fff3c2;
+    --hl-ink: #4a3b00;
+    --warn: #c2554a;
+    --warn-soft: #fbeae8;
+    --shadow: 0 3px 16px rgba(26, 36, 32, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #131917;
+      --card: #1b2320;
+      --ink: #e8f0ed;
+      --ink-soft: #a3b5ae;
+      --ink-faint: #6f8079;
+      --line: #2a3531;
+      --green: #35c397;
+      --green-deep: #4fd3a9;
+      --green-soft: #16322a;
+      --hl: #4a3f10;
+      --hl-ink: #ffe89a;
+      --warn: #e57a6f;
+      --warn-soft: #3a221f;
+      --shadow: 0 3px 20px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .wrap { max-width: 700px; margin: 0 auto; padding: 36px 20px 72px; }
+
+  mark {
+    background: var(--hl);
+    color: var(--hl-ink);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  header.top { text-align: center; margin-bottom: 8px; }
+  header.top .badge {
+    display: inline-block;
+    background: var(--green-soft);
+    color: var(--green-deep);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 5px 14px;
+    border-radius: 999px;
+  }
+  header.top h1 {
+    font-size: 27px;
+    font-weight: 800;
+    margin: 14px 0 6px;
+    letter-spacing: -0.02em;
+  }
+  header.top .sub { color: var(--ink-soft); font-size: 14px; margin: 0 auto; max-width: 460px; }
+
+  .lead {
+    margin: 26px 0 34px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--green);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    font-size: 15px;
+  }
+  .lead b { color: var(--green-deep); }
+
+  .section { margin-top: 40px; }
+  .section > .s-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .s-head .no {
+    flex: none;
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--green);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px;
+  }
+  .s-head h2 { font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+  .s-head .star { font-size: 12px; font-weight: 800; color: var(--green-deep); background: var(--green-soft); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .card + .card { margin-top: 12px; }
+  .card h3 { font-size: 15px; font-weight: 800; margin: 0 0 8px; }
+  .card p { margin: 0 0 10px; color: var(--ink-soft); }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 6px 0 0; padding-left: 20px; color: var(--ink-soft); }
+  .card li { margin-bottom: 7px; }
+  .card li:last-child { margin-bottom: 0; }
+  .card li::marker { color: var(--green); }
+
+  .step { display: flex; gap: 12px; margin-bottom: 12px; }
+  .step:last-child { margin-bottom: 0; }
+  .step .dot {
+    flex: none;
+    width: 24px; height: 24px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--green-soft);
+    color: var(--green-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+  }
+  .step .txt { color: var(--ink-soft); }
+  .step .txt b { color: var(--ink); }
+
+  .notify {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--green-soft);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--green-deep);
+    font-weight: 600;
+  }
+  .notify .ico { flex: none; }
+
+  .caution {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--warn-soft);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+
+  table.simple {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 8px;
+  }
+  table.simple th, table.simple td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.simple th { color: var(--ink-faint); font-size: 12px; font-weight: 700; white-space: nowrap; }
+  table.simple td:first-child { font-weight: 700; white-space: nowrap; }
+  table.simple td { color: var(--ink-soft); }
+  table.simple tr:last-child th, table.simple tr:last-child td { border-bottom: none; }
+  .tbl-scroll { overflow-x: auto; }
+
+  footer.note {
+    margin-top: 48px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="badge">학부모 안내서</div>
+    <h1>유종의미 학생관리 앱<br />이렇게 사용하세요</h1>
+    <p class="sub">종주T가 직접 만든 앱입니다. 자녀의 학원 생활을 실시간으로, 투명하게 보여드리기 위해 만들었어요.</p>
+  </header>
+
+  <div class="lead">
+    이 앱에서 학부모님이 얻으실 수 있는 가장 큰 가치는 두 가지입니다.
+    첫째, <mark>자녀의 출석·결석·일정 조정과 클리닉 시험 결과를 실시간으로 확인</mark>하실 수 있습니다.
+    둘째, <mark>원장 종주T에게 직접 질문하고 답변받는 소통 창구</mark>가 생겼습니다.
+    문자로 단편적으로만 전달받던 정보를, 이제 앱 하나에서 전부 보실 수 있어요.
+  </div>
+
+  <!-- 1. 시작하기 -->
+  <div class="section">
+    <div class="s-head"><span class="no">1</span><h2>시작하기 — 로그인과 알림 켜기</h2></div>
+    <div class="card">
+      <div class="step"><span class="dot">①</span><div class="txt"><b>kaujm.vercel.app</b> 에 접속한 뒤 첫 화면에서 <b>[학부모]</b>를 누르세요.</div></div>
+      <div class="step"><span class="dot">②</span><div class="txt">학원에 등록하신 <b>학부모님 휴대전화 번호</b>만 입력하면 로그인됩니다. 비밀번호는 없어요.</div></div>
+      <div class="step"><span class="dot">③</span><div class="txt">처음 접속하면 <b>홈 화면에 추가(설치)</b> 안내가 떠요. 안내를 따라 설치하면 일반 앱처럼 아이콘으로 바로 열 수 있습니다.</div></div>
+      <div class="step"><span class="dot">④</span><div class="txt">이어서 <b>알림 켜기</b> 창이 뜹니다. <mark>알림을 꼭 켜주세요 — 출결·시험 결과·결재 소식이 전부 알림으로 도착합니다.</mark> 알림을 켜기 전까지는 로그인할 때마다 다시 안내해 드려요.</div></div>
+      <div class="caution"><span class="ico">📱</span><span>아이폰은 사파리에서 [공유 → 홈 화면에 추가]로 설치를 먼저 마쳐야 알림을 받을 수 있어요(애플 정책). 카카오톡 등 앱 안에서 링크를 열었다면, 안내에 따라 사파리/크롬으로 다시 열어주세요.</span></div>
+    </div>
+  </div>
+
+  <!-- 2. 출결 실시간 -->
+  <div class="section">
+    <div class="s-head"><span class="no">2</span><h2>출결을 실시간으로 받아보세요</h2><span class="star">핵심 기능</span></div>
+    <div class="card">
+      <p><mark>조교 선생님이 출결을 입력하는 그 순간, 학부모님 휴대폰으로 바로 알림이 갑니다.</mark> 자녀가 학원에 잘 도착했는지 따로 확인 전화를 하실 필요가 없어요.</p>
+      <div class="tbl-scroll">
+      <table class="simple">
+        <tr><th>상태</th><th>받으시는 알림</th></tr>
+        <tr><td>출석</td><td>"오늘 출석 처리됐어요."</td></tr>
+        <tr><td>지각</td><td>"오늘 지각 처리됐어요."</td></tr>
+        <tr><td>결석</td><td>"오늘 결석 처리됐어요."</td></tr>
+        <tr><td>조정(보강)</td><td><mark>대체 수업 요일·시간까지 함께</mark> 알려드려요. 예) "오늘 수업이 조정됐어요 — 대체: 금 15:00"</td></tr>
+      </table>
+      </div>
+      <div class="notify"><span class="ico">🔔</span><span>같은 알림이 자녀 휴대폰에도 함께 도착해요 — 부모님과 학생이 같은 정보를 같은 시점에 받습니다.</span></div>
+    </div>
+  </div>
+
+  <!-- 3. 클리닉 점검표 & 시험 결과 -->
+  <div class="section">
+    <div class="s-head"><span class="no">3</span><h2>클리닉 숙제·시험 결과 확인</h2><span class="star">핵심 기능</span></div>
+    <div class="card">
+      <h3>홈 화면 — 이번 주 한눈에</h3>
+      <p>로그인하면 홈에 <b>"이번주 클리닉 점검표"</b> 요약 카드가 보여요. 숙제를 몇 개 했는지(예: 2/2 체크), 시험을 몇 개 봤는지(예: 1/2 테스트), 결재가 어디까지 진행됐는지 한눈에 확인됩니다.</p>
+    </div>
+    <div class="card">
+      <h3>클리닉 탭 — 주차별 상세 내역</h3>
+      <p>아래 <b>[클리닉]</b> 탭에서 최근 8주치 점검표를 주차별로 볼 수 있어요.</p>
+      <ul>
+        <li><b>숙제검사</b> — 이번 주 숙제 항목별로 완료 여부가 체크 표시됩니다.</li>
+        <li><b>클리닉테스트</b> — <mark>시험별 점수가 "점수/총점"으로 실시간 기록</mark>됩니다. 학생이 앱의 OMR마킹으로 제출한 시험은 제출 즉시 자동 채점되어 바로 반영돼요.</li>
+        <li><b>2단계 확인 절차</b> — 조교 확인 후 종주T가 직접 최종 결재합니다. <mark>종주T 최종 결재가 완료되면 알림으로 알려드려요.</mark></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>학부모님만 보시는 주간 피드백</h3>
+      <p>종주T 최종 결재가 끝나면, 그 주 자녀의 <mark>수업 태도·집중력·숙제 성실도에 대한 피드백이 학부모님께만 공개</mark>됩니다(학생 화면에는 보이지 않아요). 종주T가 특별히 남기는 개별 피드백이 있는 주에는 그 내용도 함께 보입니다.</p>
+    </div>
+    <div class="card">
+      <h3>클리닉이 밀리면 먼저 알려드려요</h3>
+      <p>숙제나 시험이 완료되지 않은 채 주가 넘어가면, <mark>매주 자동으로 밀림 알림</mark>이 학부모님과 학생 모두에게 발송됩니다. 2주 이상 밀리면 더 강한 경고와 함께 학원에서 직접 전화도 드려요.</p>
+    </div>
+  </div>
+
+  <!-- 4. 종주T와 소통하기 -->
+  <div class="section">
+    <div class="s-head"><span class="no">4</span><h2>종주T와 소통하기</h2><span class="star">핵심 기능</span></div>
+    <div class="card">
+      <p>홈 화면 <b>맨 위</b>에 <b>"종주T와 소통하기"</b> 칸이 있습니다. <mark>중간 전달자 없이, 원장 종주T에게 직접 질문하고 직접 답변받는 창구</mark>예요.</p>
+      <div class="step"><span class="dot">①</span><div class="txt">궁금한 점을 적고 <b>[질문 남기기]</b>를 누르세요. <mark>그 즉시 종주T에게 알림이 갑니다.</mark></div></div>
+      <div class="step"><span class="dot">②</span><div class="txt">종주T가 답변을 남기면 <b>질문 바로 아래에 답변이 표시</b>됩니다. 답변이 달리기 전까지는 질문 내용을 수정하실 수 있어요.</div></div>
+      <div class="step"><span class="dot">③</span><div class="txt">질문 칸은 <b>매주 수요일 0시에 새로 초기화</b>됩니다. 주당 한 가지 질문을 남기실 수 있어요 — 그 주에 가장 궁금한 것을 남겨주세요.</div></div>
+      <div class="notify"><span class="ico">💬</span><span>수·목·금·토·일은 수업으로 바쁜 기간이라, 답변은 주로 월·화요일에 정성껏 드립니다.</span></div>
+    </div>
+  </div>
+
+  <!-- 5. 수업 탭 -->
+  <div class="section">
+    <div class="s-head"><span class="no">5</span><h2>수업 탭 — 이번 주 무엇을 배우나</h2></div>
+    <div class="card">
+      <p>아래 <b>[수업]</b> 탭에서 자녀 반의 주차별 수업 계획을 볼 수 있어요.</p>
+      <ul>
+        <li><b>진도내용</b> — 이번 주 수업에서 나간 진도</li>
+        <li><b>클리닉내용</b> — 이번 주 클리닉에서 다루는 내용</li>
+        <li><b>과제내용</b> — 이번 주 부여된 과제</li>
+      </ul>
+      <p>최근 8주치를 주차 버튼으로 넘겨보며 지난 진도도 확인하실 수 있습니다.</p>
+    </div>
+  </div>
+
+  <!-- 6. 성적 탭 -->
+  <div class="section">
+    <div class="s-head"><span class="no">6</span><h2>성적 탭 — 변화 추이를 그래프로</h2></div>
+    <div class="card">
+      <ul>
+        <li><b>클리닉 테스트 백분위</b> — 같은 반 안에서 자녀의 상대적 위치를 "현재 상위 O%"로 보여드리고, 주차별 변화를 그래프로 확인할 수 있어요. 점을 탭하면 정확한 등수도 보입니다.</li>
+        <li><b>내신 학교등수 변화</b> — 학기별 중간·기말고사 학교 등수 추이</li>
+        <li><b>모의고사 백분위 변화</b> — 모의고사 백분위 추이</li>
+      </ul>
+      <p>점수 하나하나가 아니라 <mark>변화의 방향</mark>을 보실 수 있게 만든 화면입니다.</p>
+    </div>
+  </div>
+
+  <!-- 7. 공지 탭 -->
+  <div class="section">
+    <div class="s-head"><span class="no">7</span><h2>공지 탭 — 공지사항과 학원 달력</h2></div>
+    <div class="card">
+      <p>아래 <b>[공지]</b> 탭에서 자녀 반의 공지사항 전체와 <b>월별 학원 일정 달력</b>을 볼 수 있어요. 달력은 ‹ › 버튼으로 다른 달도 넘겨볼 수 있습니다.</p>
+    </div>
+  </div>
+
+  <!-- 8. 그 외 -->
+  <div class="section">
+    <div class="s-head"><span class="no">8</span><h2>이런 것도 있어요</h2></div>
+    <div class="card">
+      <ul>
+        <li><b>생일 축하</b> — 자녀 생일에는 종주T의 축하 인사와 함께 학생에게 작은 선물(유종코인)이 지급돼요.</li>
+        <li><b>학생 전용 기능</b> — 유종코인(UJC) 적립·교환, 리더보드, OMR마킹(디지털 시험 채점)은 학생 계정 전용 기능이라 학부모 화면에는 보이지 않아요. 자녀가 클리닉을 성실히 완료할수록 코인이 쌓이고 편의점·올리브영 상품권 등으로 교환할 수 있는 동기부여 장치입니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer class="note">
+    유종의미 국어학원 · 문의는 앱의 "종주T와 소통하기" 또는 학원으로 연락주세요.<br />
+    이 안내서는 앱 업데이트에 따라 내용이 추가될 수 있습니다.
+  </footer>
+</div>
+</body>
+</html>

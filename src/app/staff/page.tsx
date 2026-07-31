@@ -14,11 +14,13 @@ import {
 import { isClinicComplete } from "@/lib/clinicProgress";
 import { getUnseenStaffFeedback } from "@/lib/staffFeedback";
 import { getTodayActiveReminders } from "@/lib/reminders";
+import { listOpenOnboardings } from "@/lib/newStudents";
 import { toISODate } from "@/lib/weeks";
 import { CLASSES } from "@/lib/types";
 import { Card } from "@/components/ui";
 import { StaffHomeModals } from "@/components/StaffHomeModals";
 import { ReminderBadges } from "@/components/ReminderBadges";
+import { NewStudentChecklist } from "@/components/NewStudentChecklist";
 import { logoutAction } from "@/app/login/actions";
 import { markStaffFeedbackSeenAction } from "@/app/staff/actions";
 
@@ -37,6 +39,7 @@ export default async function StaffHomePage() {
       getUnseenStaffFeedback(session.staffId),
       getTodayActiveReminders(toISODate(today)),
     ]);
+  const onboardings = await listOpenOnboardings();
   const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
   const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
   const notices = noticeLists
@@ -82,6 +85,8 @@ export default async function StaffHomePage() {
       </div>
 
       <StaffHomeModals feedback={unseenFeedback} markSeenAction={markStaffFeedbackSeenAction} />
+
+      <NewStudentChecklist onboardings={onboardings} />
 
       <div className="mt-[22px] flex flex-col gap-3">
         <Link href="/staff/attendance">

@@ -112,6 +112,28 @@ export interface ClinicTemplate {
   updated_at: string;
 }
 
+/** "아싸신규" 체크리스트 항목 — 순서가 곧 checks 배열의 인덱스라서
+ * 중간에 끼워넣거나 순서를 바꾸면 기존 기록의 의미가 어긋난다. 새 항목은
+ * 반드시 뒤에 추가할 것. */
+export const NEW_STUDENT_CHECKLIST = [
+  "입학원서 작성",
+  "앱에 정보 등록",
+  "닉네임 결정",
+  "학부모 밴드 초대",
+  "학생·학부모 앱 설치 확인",
+  "앞선 교재들 챙겨주기",
+] as const;
+
+export interface NewStudentOnboarding {
+  id: number;
+  name: string;
+  school: string | null;
+  grade: string | null;
+  checks: boolean[];
+  created_at: string;
+  completed_at: string | null;
+}
+
 /** "잊지마" — 조교/종주T가 입력하는 돌발 일정(보강, 교재 픽업, 학부모 방문
  * 상담 등). event_date 당일 홈 화면 상단에 배지로 계속 뜨고, 하루 전·1시간
  * 전에 조교·종주T 전원에게 푸시 알림이 간다. */

@@ -15,11 +15,13 @@ import { isClinicComplete } from "@/lib/clinicProgress";
 import { getClinicBacklog } from "@/lib/clinicBacklog";
 import { getParentQuestionsForWeek } from "@/lib/parentQuestions";
 import { getTodayActiveReminders } from "@/lib/reminders";
+import { listOpenOnboardings } from "@/lib/newStudents";
 import { Card } from "@/components/ui";
 import { DutySubstituteSection } from "@/components/admin/DutySubstituteSection";
 import { ParentQuestionsSection } from "@/components/admin/ParentQuestionsSection";
 import { AdminHomeModals } from "@/components/AdminHomeModals";
 import { ReminderBadges } from "@/components/ReminderBadges";
+import { NewStudentChecklist } from "@/components/NewStudentChecklist";
 import { addDutySubstituteAction, removeDutySubstituteAction, answerParentQuestionAction } from "./actions";
 import { DAY_ORDER } from "@/lib/types";
 import { toISODate } from "@/lib/weeks";
@@ -76,6 +78,7 @@ export default async function AdminHomePage() {
   const backlogUrgentCount = backlog.filter((e) => e.weeksOverdue >= 2).length;
 
   const reminders = await getTodayActiveReminders(toISODate(today));
+  const onboardings = await listOpenOnboardings();
 
   // 홈 화면은 아직 답변이 필요한 질문만 — 답변 완료된 건 "지난 내역 보기"에서 확인.
   const parentQuestions = (await getParentQuestionsForWeek(toISODate(questionWeekStart))).filter(
@@ -91,6 +94,8 @@ export default async function AdminHomePage() {
       <div className="mt-1 text-[13px] text-ink-muted">{dateLabel}</div>
 
       <AdminHomeModals />
+
+      <NewStudentChecklist onboardings={onboardings} />
 
       <div className="mt-4 flex flex-col gap-3">
         <Link href="/admin/students/attendance">

@@ -1,12 +1,14 @@
 import { requireStaffSession } from "@/lib/authz";
 import { getToday } from "@/lib/today";
-import { toISODate } from "@/lib/weeks";
+import { toISODate, kstToday } from "@/lib/weeks";
 import {
   activeClinicDaysFrom,
   getAttendanceMapForDate,
   getParentTextedMapForDate,
   getWeeklyRoster,
+  getAutoAbsentRosterForDate,
 } from "@/lib/data";
+import { autoMarkLateStudents } from "@/lib/attendanceAuto";
 import { DAY_ORDER } from "@/lib/types";
 import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
 import { AttendanceRow } from "@/components/staff/AttendanceRow";
@@ -33,9 +35,26 @@ export default async function StaffAttendancePage({
   sessionDate.setDate(sessionDate.getDate() + dayOffset);
   const dateISO = toISODate(sessionDate);
 
-  const attendanceMap = selectedDay ? await getAttendanceMapForDate(sessionDate) : new Map();
+  let attendanceMap = selectedDay ? await getAttendanceMapForDate(sessionDate) : new Map();
   const parentTextedMap = selectedDay ? await getParentTextedMapForDate(sessionDate) : new Map();
+
+  // 오늘 탭을 보고 있을 때만: 클리닉 시각이 지났는데 미출석인 학생을 자동
+  // 지각 처리하고, 어제 자동 결석 처리된 학생을 맨 위에 "확인 필요"로 올린다.
+  const isViewingToday = selectedDay === todayLabel;
+  let autoMarkedIds = new Set<number>();
+  if (isViewingToday) {
+    const result = await autoMarkLateStudents(roster, attendanceMap, sessionDate);
+    attendanceMap = result.attendanceMap;
+    autoMarkedIds = result.autoMarkedIds;
+  }
   const checkedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
+
+  const yesterday = new Date(kstToday());
+  yesterday.setDate(yesterday.getDate() - 1);
+  const [autoAbsentRoster, autoAbsentTextedMap] = isViewingToday
+    ? await Promise.all([getAutoAbsentRosterForDate(yesterday), getParentTextedMapForDate(yesterday)])
+    : [[], new Map<number, boolean>()];
+  const yesterdayISO = toISODate(yesterday);
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
@@ -54,6 +73,30 @@ export default async function StaffAttendancePage({
         </div>
       )}
 
+      {autoAbsentRoster.length > 0 && (
+        <div className="mt-3.5">
+          <div className="mb-2 text-[13px] font-bold text-danger">
+            ⚠️ 어제 자동 결석 처리됨 · 확인 필요 ({autoAbsentRoster.length}명)
+          </div>
+          <div className="flex flex-col gap-2">
+            {autoAbsentRoster.map((entry) => (
+              <AttendanceRow
+                key={entry.student.id}
+                student={entry.student}
+                effTime={entry.effTime}
+                hasMakeup={entry.hasMakeup}
+                makeup={entry.makeup}
+                status="결석"
+                dateISO={yesterdayISO}
+                parentTexted={autoAbsentTextedMap.get(entry.student.id)}
+                autoMarked
+              />
+            ))}
+          </div>
+          <div className="mt-3 border-b border-line-soft pb-1" />
+        </div>
+      )}
+
       <SearchableRoster
         placeholder="이름/학교로 검색"
         emptyLabel="이 요일에는 학생이 없어요."
@@ -69,6 +112,7 @@ export default async function StaffAttendancePage({
               status={attendanceMap.get(entry.student.id)}
               dateISO={dateISO}
               parentTexted={parentTextedMap.get(entry.student.id)}
+              autoMarked={autoMarkedIds.has(entry.student.id)}
             />
           ),
         }))}

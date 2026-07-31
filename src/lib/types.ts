@@ -87,6 +87,7 @@ export interface AttendanceRecord {
   session_date: string;
   status: AttendanceStatus;
   marked_by: number | null;
+  auto_marked: boolean;
   created_at: string;
 }
 

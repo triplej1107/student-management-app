@@ -34,6 +34,7 @@ export function AttendanceRow({
   status,
   dateISO,
   parentTexted,
+  autoMarked,
 }: {
   student: Student;
   effTime: string;
@@ -42,6 +43,10 @@ export function AttendanceRow({
   status?: AttendanceStatus;
   dateISO: string;
   parentTexted?: boolean;
+  /** 이 status가 사람이 아니라 시스템이 자동으로 기록한 것 — 클리닉 시각이
+   * 지나도록 미출석이면 자동 "지각"으로, 그 지각이 밤까지 안 고쳐지면
+   * 자동 "결석"으로 표시된다. 출석/지각/결석 버튼을 실제로 누르면 바로 꺼진다. */
+  autoMarked?: boolean;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -131,6 +136,11 @@ export function AttendanceRow({
           )}
           {hasMakeup && makeup?.note && (
             <div className="mt-0.5 text-[11px] text-ink-muted">전달사항: {makeup.note}</div>
+          )}
+          {status && autoMarked && (
+            <div className="mt-0.5 text-[11px] font-bold text-warn">
+              ⏰ 자동 {status} 처리됨 · 확인 필요
+            </div>
           )}
         </Link>
         <div className="flex flex-none flex-col items-end gap-1">

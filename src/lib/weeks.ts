@@ -124,6 +124,36 @@ export function questionWeekLabel(weekStart: Date): string {
   return `${fmt(weekStart)}~${fmt(end)}`;
 }
 
+/** 서버 실행 타임존과 무관하게 KST(UTC+9) 벽시계 값을 안전하게 읽기 위한
+ * Date — .getUTCHours()/.getUTCMinutes()/.getUTCDate() 등 UTC 게터로 읽어야
+ * "한국 시각"이 된다(로컬 게터를 쓰면 서버 타임존이 섞여 틀어진다). */
+export function nowKST(): Date {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000);
+}
+
+/** KST 기준 오늘 00:00(로컬 Date 객체, Y/M/D만 의미 있음) — 서버 타임존과
+ * 무관하게 정확한 자정 크론(예: 22:00 KST 자동 결석 처리)에서 "오늘"을
+ * 계산할 때 쓴다. */
+export function kstToday(): Date {
+  const k = nowKST();
+  return new Date(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate());
+}
+
+/** "HH:MM" 문자열을 자정 기준 분으로 변환. */
+function minutesOf(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map((s) => Number(s.trim()));
+  return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
+}
+
+/** 지금(KST)이 그 학생의 클리닉 시각을 이미 지났는지 — 미출석 학생의
+ * "지각" 버튼을 자동으로 강조 표시하는 데 쓴다. */
+export function isPastClinicTime(effTime: string): boolean {
+  if (!effTime) return false;
+  const k = nowKST();
+  const nowMinutes = k.getUTCHours() * 60 + k.getUTCMinutes();
+  return nowMinutes >= minutesOf(effTime);
+}
+
 /** "요일+시" 표기(예: 토09) — 동명이인 학생을 구분하는 짧은 태그로 쓴다.
  * class_time이 "9:00"/"09:00"처럼 들쭉날쭉해도 항상 2자리로 맞춘다. */
 export function classDayTimeTag(day: string | null, time: string | null): string | null {

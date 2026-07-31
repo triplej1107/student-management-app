@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { toISODate, weekLabel } from "./weeks";
+import { toISODate, weekLabel, dayLabelOf } from "./weeks";
 import { classKeyFor } from "./classKey";
 import type {
   AttendanceStatus,
@@ -369,6 +369,54 @@ export async function getActiveClinicDays(weekStart: Date, weekEnd: Date): Promi
   return activeClinicDaysFrom(await getWeeklyRoster(weekStart, weekEnd));
 }
 
+/** 특정 하루치 대체 일정만 조회 — getMakeupMapForWeek의 단일 날짜 버전. */
+export async function getMakeupMapForDate(date: Date): Promise<Map<number, MakeupSchedule>> {
+  const { data } = await supabase
+    .from("makeup_schedules")
+    .select("*")
+    .eq("session_date", toISODate(date));
+  const map = new Map<number, MakeupSchedule>();
+  for (const row of (data as MakeupSchedule[]) ?? []) {
+    map.set(row.student_id, row);
+  }
+  return map;
+}
+
+/** 특정 날짜에 실제로 클리닉이 있는(대체 일정 반영) 학생 명단 — 주 단위가
+ * 아니라 임의의 하루(예: 자동 결석 크론의 "오늘", 전날 자동 결석 이월 목록의
+ * "어제")를 조회할 때 쓴다. */
+export async function getRosterForDate(date: Date): Promise<RosterEntry[]> {
+  const [students, makeupMap] = await Promise.all([
+    listStudents({ enrolledOnly: true }),
+    getMakeupMapForDate(date),
+  ]);
+  const dayLabel = dayLabelOf(date);
+  return students
+    .map((student) => {
+      const makeup = makeupMap.get(student.id);
+      const effDay = makeup?.makeup_day ?? student.clinic_day ?? "";
+      const effTime = makeup?.makeup_time ?? student.clinic_time ?? "";
+      return { student, effDay, effTime, hasMakeup: !!makeup, makeup };
+    })
+    .filter((r) => r.effDay === dayLabel);
+}
+
+/** 그 날짜에 시스템이 자동으로 결석 처리한(auto_marked) 학생만 골라
+ * 반환 — 다음 날 출결 화면 맨 위 "확인 필요" 목록에 쓴다. */
+export async function getAutoAbsentRosterForDate(date: Date): Promise<RosterEntry[]> {
+  const [roster, { data: records }] = await Promise.all([
+    getRosterForDate(date),
+    supabase
+      .from("attendance_records")
+      .select("student_id")
+      .eq("session_date", toISODate(date))
+      .eq("auto_marked", true)
+      .eq("status", "결석"),
+  ]);
+  const autoIds = new Set((records ?? []).map((r: { student_id: number }) => r.student_id));
+  return roster.filter((r) => autoIds.has(r.student.id));
+}
+
 // ============================================================
 // attendance
 // ============================================================
@@ -399,6 +447,8 @@ export async function setAttendance(
       session_date: toISODate(date),
       status,
       marked_by: markedBy,
+      // 사람이 직접 누른 것이므로 자동 결석 플래그는 항상 해제.
+      auto_marked: false,
     },
     { onConflict: "student_id,session_date" }
   );

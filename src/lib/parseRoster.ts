@@ -11,6 +11,7 @@ export const IMPORT_COLUMNS = [
   "구분",
   "학교",
   "학년",
+  "생일",
   "학부모전화번호",
   "학생전화번호",
   "수업요일",
@@ -18,6 +19,17 @@ export const IMPORT_COLUMNS = [
   "클리닉요일",
   "클리닉시간",
 ] as const;
+
+/** "2010.3.5"/"2010/3/5"/"2010-3-5" 등을 "YYYY-MM-DD"로 정규화. 알아볼 수
+ * 없는 형식이면 null(= 빈 칸과 동일하게 취급, 기존 값 유지) — 잘못 적힌
+ * 생일 한 칸 때문에 그 학생의 나머지 정보 갱신이 막히지 않도록 한다. */
+function normalizeBirthday(raw: string | null): string | null {
+  if (!raw) return null;
+  const m = raw.trim().match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
 
 function splitLine(line: string): string[] {
   const sep = line.includes("\t") ? "\t" : ",";
@@ -49,12 +61,13 @@ export function parseRosterPaste(text: string): BulkImportRow[] {
       level: cellOrNull(cells, 3),
       school: cellOrNull(cells, 4),
       grade: cellOrNull(cells, 5),
-      parent_phone: cellOrNull(cells, 6),
-      student_phone: cellOrNull(cells, 7),
-      class_day: cellOrNull(cells, 8),
-      class_time: cellOrNull(cells, 9),
-      clinic_day: cellOrNull(cells, 10),
-      clinic_time: cellOrNull(cells, 11),
+      birthday: normalizeBirthday(cellOrNull(cells, 6)),
+      parent_phone: cellOrNull(cells, 7),
+      student_phone: cellOrNull(cells, 8),
+      class_day: cellOrNull(cells, 9),
+      class_time: cellOrNull(cells, 10),
+      clinic_day: cellOrNull(cells, 11),
+      clinic_time: cellOrNull(cells, 12),
     };
   });
 }

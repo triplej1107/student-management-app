@@ -289,7 +289,7 @@ function BulkImportPanel({ onDone }: { onDone: () => void }) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={`${IMPORT_COLUMNS.join("\t")}\n95641\t권서율\t차재봉\t고등\t배명고\t2\t010-1234-5678\t010-2222-3333\t일\t13:00\t목\t15:00`}
+        placeholder={`${IMPORT_COLUMNS.join("\t")}\n95641\t권서율\t차재봉\t고등\t배명고\t2\t2010-05-12\t010-1234-5678\t010-2222-3333\t일\t13:00\t목\t15:00`}
         className="min-h-[140px] w-full box-border rounded-lg border border-line px-2.5 py-2 font-mono text-[11px]"
       />
       {result && (

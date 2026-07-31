@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>유종의미 앱 조교 사용설명서</title>
+<link rel="icon" href="/icon-192.png" />
+<style>
+  :root {
+    --paper: #faf7f3;
+    --card: #ffffff;
+    --ink: #2a2118;
+    --ink-soft: #6b5d4d;
+    --ink-faint: #998a77;
+    --line: #ece4d9;
+    --org: #d97a1f;
+    --org-deep: #b05f10;
+    --org-soft: #fbebd8;
+    --hl: #fff3c2;
+    --hl-ink: #4a3b00;
+    --warn: #c2554a;
+    --warn-soft: #fbeae8;
+    --ok: #0f9d72;
+    --ok-soft: #e2f5ee;
+    --shadow: 0 3px 16px rgba(42, 33, 24, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #191512;
+      --card: #221d18;
+      --ink: #f2ece4;
+      --ink-soft: #bdaf9d;
+      --ink-faint: #857767;
+      --line: #37302a;
+      --org: #f0a94e;
+      --org-deep: #f5bc72;
+      --org-soft: #3a2c15;
+      --hl: #4a3f10;
+      --hl-ink: #ffe89a;
+      --warn: #e57a6f;
+      --warn-soft: #3a221f;
+      --ok: #3fcf9c;
+      --ok-soft: #16322a;
+      --shadow: 0 3px 20px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .wrap { max-width: 700px; margin: 0 auto; padding: 36px 20px 72px; }
+
+  mark {
+    background: var(--hl);
+    color: var(--hl-ink);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  header.top { text-align: center; margin-bottom: 8px; }
+  header.top .badge {
+    display: inline-block;
+    background: var(--org-soft);
+    color: var(--org-deep);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 5px 14px;
+    border-radius: 999px;
+  }
+  header.top h1 {
+    font-size: 27px;
+    font-weight: 800;
+    margin: 14px 0 6px;
+    letter-spacing: -0.02em;
+  }
+  header.top .sub { color: var(--ink-soft); font-size: 14px; margin: 0 auto; max-width: 480px; }
+
+  .lead {
+    margin: 26px 0 34px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--org);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    font-size: 15px;
+  }
+
+  .section { margin-top: 40px; }
+  .section > .s-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .s-head .no {
+    flex: none;
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--org);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px;
+  }
+  .s-head h2 { font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .card + .card { margin-top: 12px; }
+  .card h3 { font-size: 15px; font-weight: 800; margin: 0 0 8px; color: var(--org-deep); }
+  .card p { margin: 0 0 10px; color: var(--ink-soft); }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 6px 0 0; padding-left: 20px; color: var(--ink-soft); }
+  .card li { margin-bottom: 7px; }
+  .card li:last-child { margin-bottom: 0; }
+  .card li::marker { color: var(--org); }
+  .card b { color: var(--ink); }
+
+  .step { display: flex; gap: 12px; margin-bottom: 12px; }
+  .step:last-child { margin-bottom: 0; }
+  .step .dot {
+    flex: none;
+    width: 24px; height: 24px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--org-soft);
+    color: var(--org-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+  }
+  .step .txt { color: var(--ink-soft); }
+  .step .txt b { color: var(--ink); }
+
+  .notify {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--ok-soft);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--ok);
+    font-weight: 600;
+  }
+  .notify .ico { flex: none; }
+
+  .caution {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--warn-soft);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+
+  table.simple {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 8px;
+  }
+  table.simple th, table.simple td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.simple th { color: var(--ink-faint); font-size: 12px; font-weight: 700; white-space: nowrap; }
+  table.simple td:first-child { font-weight: 700; white-space: nowrap; }
+  table.simple td { color: var(--ink-soft); }
+  table.simple tr:last-child th, table.simple tr:last-child td { border-bottom: none; }
+  .tbl-scroll { overflow-x: auto; }
+
+  footer.note {
+    margin-top: 48px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="badge">조교 사용설명서</div>
+    <h1>유종의미 학생관리 앱<br />조교 업무 가이드</h1>
+    <p class="sub">출결 입력부터 클리닉 점검, 결재, 밀림 관리까지 — 조교 업무의 모든 것을 이 앱 하나로 처리합니다. 이 문서 하나면 전 기능을 문제없이 쓸 수 있어요.</p>
+  </header>
+
+  <div class="lead">
+    가장 중요한 원칙 하나: <mark>여러분이 앱에 입력하는 순간, 학생과 학부모에게 실시간으로 전달됩니다.</mark>
+    출결 버튼 하나, 점수 하나가 곧 학부모에게 가는 알림이에요. 그만큼 정확하게 눌러주세요.
+    잘못 눌렀을 때 취소하는 방법도 기능마다 함께 적어두었습니다.
+  </div>
+
+  <!-- 1. 로그인 & 첫 설정 -->
+  <div class="section">
+    <div class="s-head"><span class="no">1</span><h2>로그인과 첫 설정</h2></div>
+    <div class="card">
+      <div class="step"><span class="dot">①</span><div class="txt"><b>kaujm.vercel.app</b> 접속 → 첫 화면에서 <b>[조교]</b> 선택 → 발급받은 <b>아이디/비밀번호</b>로 로그인.</div></div>
+      <div class="step"><span class="dot">②</span><div class="txt">로그인하면 <b>알림 켜기</b> 창이 떠요. <mark>꼭 켜주세요 — 종주T가 남기는 한마디가 푸시 알림으로 옵니다.</mark></div></div>
+      <div class="step"><span class="dot">③</span><div class="txt">종주T가 한마디를 남겨두면 로그인할 때 <b>"📣 종주T의 한마디"</b> 창이 먼저 떠요. [확인]을 누르면 읽음 처리되고 다시 뜨지 않습니다.</div></div>
+      <p style="margin-top:12px;">화면 아래 탭은 <b>홈 · 출결 · 클리닉 · 밀림 · 체크리스트</b> 5개입니다. 홈의 카드 3개(오늘 출결 / 클리닉 미완료 / 업무 체크리스트)를 누르면 해당 화면으로 바로 이동해요.</p>
+    </div>
+  </div>
+
+  <!-- 2. 출결 관리 -->
+  <div class="section">
+    <div class="s-head"><span class="no">2</span><h2>출결 관리 — [출결] 탭</h2></div>
+    <div class="card">
+      <h3>화면 읽는 법</h3>
+      <ul>
+        <li>위쪽 <b>요일 버튼</b>으로 날짜를 고릅니다(기본은 오늘). 그 요일에 클리닉이 있는 학생만 나와요.</li>
+        <li>학생 이름 옆 <b>(토09)</b> 같은 태그는 <b>원래 수업 요일+시간</b>이에요. 동명이인 구분용입니다.</li>
+        <li>학생이 많으면 위 <b>검색창</b>에 이름이나 학교를 치세요.</li>
+        <li>학생 <b>이름을 누르면 그 학생의 클리닉 점검표로 바로 이동</b>합니다.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>출결 입력 — 버튼 한 번이면 끝</h3>
+      <p>학생별 오른쪽의 <b>출석 · 지각 · 조정 · 결석</b> 버튼을 누르면 즉시 기록됩니다. <mark>누르는 순간 학생·학부모 휴대폰으로 "오늘 출석 처리됐어요" 같은 알림이 바로 발송</mark>되니 신중하게 눌러주세요.</p>
+      <ul>
+        <li><b>잘못 눌렀다면</b> — <mark>같은 버튼을 한 번 더 누르면 취소</mark>됩니다(다른 상태로 바꾸려면 그냥 다른 버튼을 누르면 돼요).</li>
+        <li><b>지각·조정·결석을 누르면</b> 아래에 <b>대체 요일/시간 입력칸</b>이 자동으로 열려요. 요일 버튼을 고르고 시간(예: 20:00)을 적고 [저장]. 보강이 필요 없으면 [취소]로 닫으면 됩니다.</li>
+        <li><b>조정일 때만</b> "다음 조교에게 전달사항" 메모칸이 추가로 떠요. <mark>이 메모는 조교들끼리만 보이고 학생·학부모에게는 절대 발송되지 않습니다</mark> — 인수인계용으로 편하게 쓰세요.</li>
+        <li>대체 일정을 저장하면 학생·학부모에게 <b>"수업이 조정됐어요 — 대체: 금 20:00"</b> 형식으로 알림이 가요(메모 내용 제외).</li>
+        <li>저장된 대체 일정은 카드 아래 <b>[대체 일정 수정]</b>으로 고치거나 <b>[대체 일정 삭제]</b>로 지울 수 있어요.</li>
+      </ul>
+      <div class="caution"><span class="ico">📱</span><span><b>[학부모 문자 전송] 체크박스</b> — 2학기 전까지 문자를 병행하는 동안만 쓰는 임시 기능이에요. 학부모께 문자를 보냈다면 체크해서 다른 조교가 중복 발송하지 않게 해주세요. 출결을 입력한 학생에게만 체크박스가 나타납니다.</span></div>
+    </div>
+  </div>
+
+  <!-- 3. 클리닉 점검표 -->
+  <div class="section">
+    <div class="s-head"><span class="no">3</span><h2>클리닉 점검표 — [클리닉] 탭</h2></div>
+    <div class="card">
+      <h3>목록에서 배지 읽는 법</h3>
+      <div class="tbl-scroll">
+      <table class="simple">
+        <tr><th>배지</th><th>의미</th></tr>
+        <tr><td>2/2 체크</td><td>숙제 완료 개수 — 전부 완료되면 초록색</td></tr>
+        <tr><td>1/2 테스트</td><td>테스트 점수 입력 개수 — 전부 입력되면 초록색</td></tr>
+        <tr><td>미확인 / 조교 확인·결재 대기 / 결재 완료</td><td>결재 진행 단계 — 결재 완료(초록)가 최종</td></tr>
+        <tr><td>원본 없음</td><td>종주T가 그 주 점검표 원본을 아직 등록 안 함 — 입력 불가</td></tr>
+      </table>
+      </div>
+      <p style="margin-top:10px;">학생 카드를 누르면 상세 화면으로 들어갑니다. 위쪽 <b>주차 버튼</b>으로 최근 8주 어느 주든 열 수 있어요 — <mark>밀린 주를 처리할 때는 반드시 해당 주차를 선택하고 입력하세요.</mark></p>
+    </div>
+    <div class="card">
+      <h3>숙제검사 · 테스트 점수 입력</h3>
+      <ul>
+        <li><b>숙제검사</b> — 항목 줄을 <b>탭하면 체크/해제</b>가 토글되고 즉시 자동 저장됩니다.</li>
+        <li><b>클리닉테스트</b> — 항목별로 <b>점수/총점</b> 두 칸에 숫자를 입력하세요. 칸에서 손을 떼면(다른 곳을 누르면) 자동 저장됩니다.</li>
+        <li>입력한 점수는 학생·학부모의 클리닉 화면, 성적 그래프, 리더보드에 그대로 반영돼요.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>OMR마킹 제출 표시와 [재응시 허용]</h3>
+      <p>학생이 앱의 OMR마킹으로 시험을 제출하면 <mark>점수가 자동 채점되어 이미 입력돼 있어요 — 따로 채점하거나 입력할 필요가 없습니다.</mark> 해당 테스트 칸 아래 "OMR마킹 제출됨" 표시가 붙어요.</p>
+      <ul>
+        <li>"<b>이탈로 자동 제출</b>"이라고 빨간 표시가 있으면 — 학생이 시험 중 화면을 벗어나서 그 시점 답안으로 강제 제출된 거예요.</li>
+        <li>학생이 <b>실수로</b> 나간 거라면(전화가 왔다거나) <b>[재응시 허용]</b> 버튼을 눌러주세요. <mark>제출 기록과 점수가 지워지고 학생이 처음부터 다시 응시할 수 있게 됩니다.</mark> 판단이 애매하면 종주T께 확인 후 눌러주세요.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>조교 결재</h3>
+      <p>숙제·테스트를 전부 확인했으면 아래 <b>[조교 결재]</b>를 체크하세요. <mark>결재에는 조교 이름이 기록됩니다.</mark> 이후 종주T가 최종 결재하면 학생·학부모에게 알림이 가고, 그 주의 유종코인이 학생에게 지급돼요. 종주T 최종 결재 칸은 조교 화면에서는 보기만 가능합니다.</p>
+    </div>
+    <div class="card">
+      <h3>조교T의 피드백 — 학부모에게 가는 주간 리포트</h3>
+      <div class="step"><span class="dot">①</span><div class="txt">5개 카테고리(출결/시간 · 수업 참여 · 숙제 이행 · 집중력 · 태도/매너)에서 <b>그 학생에게 해당하는 태그만 골라주세요.</b> 전부 고를 필요 없이 <b>최소 1개 이상</b>이면 됩니다.</div></div>
+      <div class="step"><span class="dot">②</span><div class="txt"><b>[AI로 피드백 생성]</b>을 누르면 선택한 태그를 바탕으로 학부모께 보낼 문장을 만들어줘요. <mark>지난주와 표현이 겹치지 않게 자동으로 다르게 써줍니다.</mark></div></div>
+      <div class="step"><span class="dot">③</span><div class="txt">생성된 문장을 <b>읽어보고 어색한 부분은 직접 고친 뒤</b> [저장]을 누르세요. 저장만으로는 학부모에게 안 보이고, <mark>종주T 최종 결재가 난 뒤에야 학부모에게(학생에게는 안 보임) 공개됩니다.</mark></div></div>
+    </div>
+  </div>
+
+  <!-- 4. 밀림 관리 -->
+  <div class="section">
+    <div class="s-head"><span class="no">4</span><h2>밀림 관리 — [밀림] 탭</h2></div>
+    <div class="card">
+      <p>지난주까지의 클리닉을 완료하지 못한 학생들이 <b>밀린 주차가 많은 순</b>으로 정렬돼요. 위에 <b>1주 밀림 / 2주 이상 밀림</b> 인원수가 요약됩니다. 밀린 학생·학부모에게는 매주 자동으로 경고 푸시가 나가요(2주 이상은 더 강한 문구).</p>
+      <ul>
+        <li>학생 카드를 누르면 <mark>밀림이 시작된 바로 그 주차의 점검표로 이동</mark>합니다 — 거기서 밀린 숙제·테스트를 처리하면 밀림이 해소돼요.</li>
+        <li><b>2주 이상 밀린 학생</b>에게는 전화 연락이 필요해요. 통화했으면 카드의 <b>연락 체크</b>를 켜고 통화 내용을 메모로 남겨주세요. <mark>연락 여부는 조교들끼리 공유되니, 체크를 봐서 중복 전화를 피할 수 있습니다.</mark></li>
+        <li>"밀림 청산"(기록 자체를 지우는 것)은 종주T 전용 기능이라 조교 화면에는 없어요.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 5. 업무 체크리스트 -->
+  <div class="section">
+    <div class="s-head"><span class="no">5</span><h2>업무 체크리스트 — [체크리스트] 탭</h2></div>
+    <div class="card">
+      <p>출근 후 해야 할 일들이 목록으로 있어요. <b>완료할 때마다 탭해서 체크</b>하면 즉시 저장됩니다. <mark>이 현황은 종주T 홈 화면에 요일별로 그대로 표시</mark>되니, 퇴근 전까지 전부 체크하는 걸 잊지 마세요.</p>
+      <p>원래 근무 요일이 아닌 날 <b>대타</b>로 나왔다면 종주T가 그 날짜에 대타로 등록해줘요 — 등록되면 여러분 체크 현황도 그날 목록에 함께 나타납니다.</p>
+    </div>
+  </div>
+
+  <!-- 6. 자주 묻는 것 -->
+  <div class="section">
+    <div class="s-head"><span class="no">6</span><h2>자주 묻는 것</h2></div>
+    <div class="card">
+      <div class="tbl-scroll">
+      <table class="simple">
+        <tr><th>상황</th><th>이렇게 하세요</th></tr>
+        <tr><td>출결을 잘못 눌렀어요</td><td>같은 버튼을 한 번 더 누르면 취소돼요. (알림은 이미 발송됐으니, 헷갈릴 상황이면 학부모께 문자로 정정 안내)</td></tr>
+        <tr><td>점수를 잘못 입력했어요</td><td>칸의 숫자를 고치면 자동으로 다시 저장돼요.</td></tr>
+        <tr><td>학생이 OMR 중 실수로 나갔대요</td><td>그 학생 점검표에서 해당 테스트의 [재응시 허용]을 누르세요.</td></tr>
+        <tr><td>지난주 것을 입력해야 해요</td><td>점검표 상세에서 위쪽 주차 버튼으로 해당 주를 선택한 뒤 입력하세요.</td></tr>
+        <tr><td>"원본 없음"이라고 떠요</td><td>종주T가 그 주 점검표를 아직 등록 안 한 거예요 — 종주T께 말씀해주세요.</td></tr>
+        <tr><td>알림이 안 와요</td><td>로그아웃 후 다시 로그인하면 알림 켜기 창이 다시 떠요. 아이폰은 홈 화면에 추가(설치)부터 해야 알림을 받을 수 있어요.</td></tr>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">
+    유종의미 국어학원 · 헷갈리는 부분은 종주T에게 바로 물어봐주세요.<br />
+    이 설명서는 앱 업데이트에 따라 내용이 추가될 수 있습니다.
+  </footer>
+</div>
+</body>
+</html>

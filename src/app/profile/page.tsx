@@ -135,11 +135,11 @@ export default function ProfilePage() {
       </div>
 
       <div className="mt-3 flex items-stretch gap-2.5">
-        <div className="flex-none rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]">
+        <div className="min-w-0 flex-1 rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]">
           <div className="mb-2 text-sm font-bold text-ink">약력</div>
           <ul className="flex flex-col gap-1.5">
             {CREDENTIALS.map((c) => (
-              <li key={c} className="whitespace-nowrap text-[12px] leading-relaxed text-ink-secondary">
+              <li key={c} className="text-[12px] leading-relaxed text-ink-secondary">
                 · {c}
               </li>
             ))}
@@ -159,12 +159,16 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-hover px-2 py-4 text-center text-white shadow-[0_3px_14px_rgba(20,30,60,0.15)]">
+        <div className="flex w-[104px] flex-none flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-hover px-2 py-4 text-center text-white shadow-[0_3px_14px_rgba(20,30,60,0.15)]">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 [&>svg]:h-6 [&>svg]:w-6">
             <CrownIcon />
           </div>
-          <div className="mt-2 text-[15px] font-extrabold">장종주T</div>
-          <div className="mt-1 text-[10px] italic leading-snug text-white/80">&ldquo;배명&amp;가락<br />국어1타&rdquo;</div>
+          <div className="mt-2 whitespace-nowrap text-[15px] font-extrabold">장종주T</div>
+          <div className="mt-1 text-[10px] italic leading-snug text-white/80">
+            <span className="whitespace-nowrap">&ldquo;배명&amp;가락</span>
+            <br />
+            <span className="whitespace-nowrap">국어1타&rdquo;</span>
+          </div>
         </div>
       </div>
 

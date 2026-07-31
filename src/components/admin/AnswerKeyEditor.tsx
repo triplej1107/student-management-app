@@ -6,6 +6,14 @@ import type { ClassKey, ClinicAnswerKey } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import { saveAnswerKeyAction } from "@/app/admin/exams/actions";
 
+/** 숫자만 남기고 5자리마다 "/"로 묶어준다 — 20문항 넘게 이어붙여 입력할 때
+ * 몇 번째 문항인지 눈으로 세기 쉽게. 저장 시엔 saveAnswerKeyAction이 숫자
+ * 아닌 문자를 전부 걸러내므로 "/"가 들어가도 안전하다. */
+function groupByFive(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "");
+  return digits.replace(/(.{5})/g, "$1/").replace(/\/$/, "");
+}
+
 export function AnswerKeyEditor({
   classKey,
   weekStartISO,
@@ -64,8 +72,8 @@ function AnswerKeyRow({
   const router = useRouter();
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
-  const [answers, setAnswers] = useState(initialAnswers.join(""));
-  const [points, setPoints] = useState(initialPoints.join(""));
+  const [answers, setAnswers] = useState(groupByFive(initialAnswers.join("")));
+  const [points, setPoints] = useState(groupByFive(initialPoints.join("")));
 
   function save() {
     startTransition(async () => {
@@ -94,9 +102,9 @@ function AnswerKeyRow({
       </div>
       <textarea
         value={answers}
-        onChange={(e) => setAnswers(e.target.value)}
+        onChange={(e) => setAnswers(groupByFive(e.target.value))}
         onBlur={save}
-        placeholder="정답을 순서대로 이어붙여 입력 (예: 13245)"
+        placeholder="정답을 순서대로 이어붙여 입력 (5문제마다 자동으로 / 표시, 예: 13245/21345)"
         className="min-h-[52px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
       />
       <div className="mt-1.5 mb-1 flex items-center justify-between">
@@ -107,9 +115,9 @@ function AnswerKeyRow({
       </div>
       <textarea
         value={points}
-        onChange={(e) => setPoints(e.target.value)}
+        onChange={(e) => setPoints(groupByFive(e.target.value))}
         onBlur={save}
-        placeholder="문항별 배점을 순서대로 이어붙여 입력 (예: 22323232232323233332)"
+        placeholder="문항별 배점을 순서대로 이어붙여 입력 (5문제마다 자동으로 / 표시, 예: 22323/23223/23233/332)"
         className="min-h-[44px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
       />
     </div>

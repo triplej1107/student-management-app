@@ -61,6 +61,8 @@ export default async function AdminExamsPage({
         })}
       </div>
 
+      <OmrAnalysisPanel testLabels={testLabels} analysisBySlot={analysisBySlot} />
+
       <AnswerKeyEditor
         key={`${classKey}_${selectedWeekISO}`}
         classKey={classKey}
@@ -68,8 +70,6 @@ export default async function AdminExamsPage({
         testLabels={testLabels}
         answerKeys={Object.fromEntries(answerKeys)}
       />
-
-      <OmrAnalysisPanel testLabels={testLabels} analysisBySlot={analysisBySlot} />
     </div>
   );
 }

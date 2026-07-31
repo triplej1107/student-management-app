@@ -199,17 +199,23 @@ export type FeedbackCategoryKey = (typeof FEEDBACK_CATEGORIES)[number]["key"];
 export type FeedbackTags = Partial<Record<FeedbackCategoryKey, string>>;
 
 // 내신 시험 슬롯 — 고정된 순서/코드. 학생별로 슬롯당 한 행씩 upsert.
+// "종합" 슬롯은 중간+기말을 합산한 학기 전체 등수/등급만 기록 — 점수는 없음(scoreless).
 export const SCHOOL_EXAMS = [
   { key: "g1s1mid", label: "1학년 1학기 중간" },
   { key: "g1s1fin", label: "1학년 1학기 기말" },
+  { key: "g1s1sum", label: "1학년 1학기 종합", scoreless: true },
   { key: "g1s2mid", label: "1학년 2학기 중간" },
   { key: "g1s2fin", label: "1학년 2학기 기말" },
+  { key: "g1s2sum", label: "1학년 2학기 종합", scoreless: true },
   { key: "g2s1mid", label: "2학년 1학기 중간" },
   { key: "g2s1fin", label: "2학년 1학기 기말" },
+  { key: "g2s1sum", label: "2학년 1학기 종합", scoreless: true },
   { key: "g2s2mid", label: "2학년 2학기 중간" },
   { key: "g2s2fin", label: "2학년 2학기 기말" },
+  { key: "g2s2sum", label: "2학년 2학기 종합", scoreless: true },
   { key: "g3s1mid", label: "3학년 1학기 중간" },
   { key: "g3s1fin", label: "3학년 1학기 기말" },
+  { key: "g3s1sum", label: "3학년 1학기 종합", scoreless: true },
 ] as const;
 export type SchoolExamKey = (typeof SCHOOL_EXAMS)[number]["key"];
 

@@ -1,10 +1,11 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { getClinicTemplate } from "@/lib/data";
-import { getAnswerKeysForClassWeek } from "@/lib/clinicOmr";
+import { getAnswerKeysForClassWeek, getOmrQuestionAnalysis } from "@/lib/clinicOmr";
 import { CLASSES, type ClassKey } from "@/lib/types";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink } from "@/components/ui";
 import { AnswerKeyEditor } from "@/components/admin/AnswerKeyEditor";
+import { OmrAnalysisPanel } from "@/components/admin/OmrAnalysisPanel";
 
 export default async function AdminExamsPage({
   searchParams,
@@ -25,6 +26,15 @@ export default async function AdminExamsPage({
     getClinicTemplate(classKey, selectedWeekStart),
     getAnswerKeysForClassWeek(classKey, selectedWeekISO),
   ]);
+
+  const testLabels = template?.test_labels ?? ["", "", "", ""];
+  const filledSlots = testLabels.map((label, i) => (label.trim() ? i : -1)).filter((i) => i >= 0);
+  const analysisEntries = await Promise.all(
+    filledSlots.map(
+      async (i) => [i, await getOmrQuestionAnalysis(classKey, selectedWeekISO, i)] as const
+    )
+  );
+  const analysisBySlot = Object.fromEntries(analysisEntries);
 
   return (
     <div>
@@ -55,9 +65,11 @@ export default async function AdminExamsPage({
         key={`${classKey}_${selectedWeekISO}`}
         classKey={classKey}
         weekStartISO={selectedWeekISO}
-        testLabels={template?.test_labels ?? ["", "", "", ""]}
+        testLabels={testLabels}
         answerKeys={Object.fromEntries(answerKeys)}
       />
+
+      <OmrAnalysisPanel testLabels={testLabels} analysisBySlot={analysisBySlot} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { getClinicCheck, setClinicTestScores } from "./data";
+import { getClinicCheck, setClinicTestScores, listStudentsByClass } from "./data";
 import { parseISODate } from "./weeks";
 import type { ClassKey, ClinicAnswerKey, ClinicOmrSubmission, TestScore } from "./types";
 
@@ -168,4 +168,73 @@ export async function submitOmr(
   await setClinicTestScores(studentId, weekStart, testScores);
 
   return { score, total };
+}
+
+export interface QuestionAnalysis {
+  questionIndex: number; // 0-based
+  correctAnswer: string;
+  submissionCount: number;
+  wrongCount: number;
+  wrongRate: number; // 0~100, 소수 1자리
+  topWrongAnswer: string | null; // "매력적인 오답" — 오답 중 가장 많이 고른 선택지(없으면 null)
+  topWrongCount: number;
+}
+
+/** 이 반·주차·테스트를 제출한 학생들의 마킹을 문항별로 집계해 "오답률"과
+ * "매력적인 오답"(오답 중 가장 많이 고른 선택지)을 계산하고, 오답률이 높은
+ * 순으로 5문항만 반환한다. 정답키가 없거나 제출자가 없으면 빈 배열. */
+export async function getOmrQuestionAnalysis(
+  classKey: ClassKey,
+  weekStartISO: string,
+  testIndex: number
+): Promise<QuestionAnalysis[]> {
+  const key = await getAnswerKey(classKey, weekStartISO, testIndex);
+  if (!key || key.answers.length === 0) return [];
+
+  const students = await listStudentsByClass(classKey);
+  if (students.length === 0) return [];
+
+  const { data } = await supabase
+    .from("clinic_omr_submissions")
+    .select("answers")
+    .in(
+      "student_id",
+      students.map((s) => s.id)
+    )
+    .eq("week_start", weekStartISO)
+    .eq("test_index", testIndex)
+    .eq("round", 1);
+
+  const submissions = (data as { answers: string[] }[]) ?? [];
+  if (submissions.length === 0) return [];
+
+  const analysis: QuestionAnalysis[] = key.answers.map((correctAnswer, qi) => {
+    let wrongCount = 0;
+    const wrongTally = new Map<string, number>();
+    for (const sub of submissions) {
+      const picked = sub.answers[qi];
+      if (!picked || picked === correctAnswer) continue;
+      wrongCount++;
+      wrongTally.set(picked, (wrongTally.get(picked) ?? 0) + 1);
+    }
+    let topWrongAnswer: string | null = null;
+    let topWrongCount = 0;
+    for (const [answer, count] of wrongTally) {
+      if (count > topWrongCount) {
+        topWrongAnswer = answer;
+        topWrongCount = count;
+      }
+    }
+    return {
+      questionIndex: qi,
+      correctAnswer,
+      submissionCount: submissions.length,
+      wrongCount,
+      wrongRate: Math.round((wrongCount / submissions.length) * 1000) / 10,
+      topWrongAnswer,
+      topWrongCount,
+    };
+  });
+
+  return analysis.sort((a, b) => b.wrongRate - a.wrongRate).slice(0, 5);
 }

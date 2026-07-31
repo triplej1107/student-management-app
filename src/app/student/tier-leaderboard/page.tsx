@@ -1,9 +1,14 @@
 import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
-import { getStudentById } from "@/lib/data";
+import { getStudentById, getSemesterTopGradeCounts } from "@/lib/data";
 import { getTierLeaderboard, TIER_GRADES_DESC } from "@/lib/ujcTier";
 import { getUjcBalanceLeaderboard } from "@/lib/ujc";
 import { ScreenTitle } from "@/components/ui";
+
+function GoldStars({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return <span className="text-amber-500">{"★".repeat(count)}</span>;
+}
 
 export default async function TierLeaderboardPage() {
   const session = await requireStudentSession();
@@ -12,9 +17,10 @@ export default async function TierLeaderboardPage() {
   const student = await getStudentById(session.studentId);
   if (!student) notFound();
 
-  const [tierLeaderboard, ujcLeaderboard] = await Promise.all([
+  const [tierLeaderboard, ujcLeaderboard, goldStarCounts] = await Promise.all([
     getTierLeaderboard(),
     getUjcBalanceLeaderboard(),
+    getSemesterTopGradeCounts(),
   ]);
 
   const gradeGroups = TIER_GRADES_DESC.map((grade) => ({
@@ -48,6 +54,11 @@ export default async function TierLeaderboardPage() {
                     <div className="w-4 flex-none text-[11px] font-extrabold text-ink-muted">{i + 1}</div>
                     <div className="truncate text-xs font-bold text-ink">
                       {r.nickname || r.name}
+                      {goldStarCounts.get(r.studentId) ? (
+                        <span className="ml-1 text-[10px]">
+                          <GoldStars count={goldStarCounts.get(r.studentId) ?? 0} />
+                        </span>
+                      ) : null}
                       {isMe && <span className="ml-0.5 text-[10px] font-normal text-accent">(나)</span>}
                     </div>
                   </div>
@@ -81,6 +92,11 @@ export default async function TierLeaderboardPage() {
                         }
                       >
                         {r.nickname || r.name}
+                        {goldStarCounts.get(r.studentId) ? (
+                          <span className="ml-1">
+                            <GoldStars count={goldStarCounts.get(r.studentId) ?? 0} />
+                          </span>
+                        ) : null}
                         {isMe && " (나)"}
                       </span>
                     );

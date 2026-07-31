@@ -2,6 +2,7 @@ import "server-only";
 import { supabase } from "./supabase";
 import { toISODate, weekLabel, dayLabelOf } from "./weeks";
 import { classKeyFor } from "./classKey";
+import { SCHOOL_EXAMS } from "./types";
 import type {
   AttendanceStatus,
   CalendarNote,
@@ -955,6 +956,26 @@ export async function getSchoolExams(studentId: number): Promise<Map<string, Sch
   const { data } = await supabase.from("school_exams").select("*").eq("student_id", studentId);
   const map = new Map<string, SchoolExam>();
   for (const row of (data as SchoolExam[]) ?? []) map.set(row.exam_key, row);
+  return map;
+}
+
+const SEMESTER_SUMMARY_EXAM_KEYS = SCHOOL_EXAMS.filter(
+  (e): e is (typeof SCHOOL_EXAMS)[number] & { scoreless: true } => "scoreless" in e && e.scoreless
+).map((e) => e.key);
+
+/** 학기 종합(중간+기말 합산) 등급이 1등급인 학기 수를 학생별로 센다 —
+ * 리더보드에서 닉네임 옆에 금별로 보여주는 데 쓴다(최대 5개: 1학년 1·2학기,
+ * 2학년 1·2학기, 3학년 1학기 종합). */
+export async function getSemesterTopGradeCounts(): Promise<Map<number, number>> {
+  const { data } = await supabase
+    .from("school_exams")
+    .select("student_id")
+    .in("exam_key", SEMESTER_SUMMARY_EXAM_KEYS)
+    .eq("grade", 1);
+  const map = new Map<number, number>();
+  for (const row of (data as { student_id: number }[]) ?? []) {
+    map.set(row.student_id, (map.get(row.student_id) ?? 0) + 1);
+  }
   return map;
 }
 

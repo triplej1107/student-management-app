@@ -61,6 +61,16 @@ export async function getPushSubscriptionsForZongju(): Promise<PushSubscriptionR
   return (data as PushSubscriptionRow[]) ?? [];
 }
 
+/** "잊지마" 알림처럼 조교 전원에게 보내야 할 때 — 특정 staffId가 아니라
+ * staff_id가 채워진 구독 전부를 가져온다. */
+export async function getPushSubscriptionsForAllStaff(): Promise<PushSubscriptionRow[]> {
+  const { data } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint, p256dh, auth")
+    .not("staff_id", "is", null);
+  return (data as PushSubscriptionRow[]) ?? [];
+}
+
 export async function getPushSubscriptionsForStudents(
   studentIds: number[]
 ): Promise<Map<number, PushSubscriptionRow[]>> {
@@ -160,6 +170,11 @@ export async function sendClinicApprovedPush(subs: PushSubscriptionRow[], studen
     body: `${studentName} 학생의 이번 주 클리닉 점검표가 최종 결재됐어요.`,
     url: "/student/clinic",
   });
+}
+
+/** "잊지마" 돌발 일정 알림(하루 전/1시간 전)을 조교·종주T에게 보낸다. */
+export async function sendReminderPush(subs: PushSubscriptionRow[], body: string, url: string) {
+  await sendPushToSubs(subs, { title: "🔔 잊지마", body, url });
 }
 
 /** 학부모가 질문을 남기면 종주T에게 보낸다. */

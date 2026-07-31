@@ -112,6 +112,21 @@ export interface ClinicTemplate {
   updated_at: string;
 }
 
+/** "잊지마" — 조교/종주T가 입력하는 돌발 일정(보강, 교재 픽업, 학부모 방문
+ * 상담 등). event_date 당일 홈 화면 상단에 배지로 계속 뜨고, 하루 전·1시간
+ * 전에 조교·종주T 전원에게 푸시 알림이 간다. */
+export interface Reminder {
+  id: number;
+  event_date: string; // "YYYY-MM-DD"
+  event_time: string; // "HH:MM"
+  content: string;
+  day_before_pushed_at: string | null;
+  hour_before_pushed_at: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
+  created_at: string;
+}
+
 export interface TestScore {
   score?: string;
   total?: string;

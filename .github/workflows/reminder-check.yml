@@ -1,0 +1,18 @@
+name: Reminder check
+
+# Vercel Hobby 요금제는 cron을 하루 한 번만 돌릴 수 있어서, "잊지마"의
+# 1시간 전 알림은 GitHub Actions로 매시간 호출한다. 스케줄이 정시에서
+# 몇 분 밀릴 수 있어 라우트 쪽에서 여유(최대 90분 전)를 두고 판정한다.
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reminder-check endpoint
+        run: |
+          curl -sS -f -X GET "https://kaujm.vercel.app/api/cron/reminder-check" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

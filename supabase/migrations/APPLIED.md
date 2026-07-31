@@ -31,3 +31,4 @@ SQL Editor에서 실행해 "성공했어" 확인해줄 때 이 파일에 한 줄
 - [x] 0024_clinic_answer_key_points.sql
 - [x] 0025_omr_left_app.sql
 - [x] 0026_auto_absence.sql — 2026-07-30 확인
+- [x] 0027_reminders.sql — 2026-08-01 확인

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getStudentsWithBirthdayToday } from "@/lib/data";
 import { grantBirthdayUjc } from "@/lib/ujc";
 import { getPushSubscriptionsForStudents, sendBirthdayPush } from "@/lib/clinicPush";
-import { toISODate } from "@/lib/weeks";
+import { toISODate, kstToday } from "@/lib/weeks";
 
 /** Vercel Cron이 매일 09:00 KST(vercel.json)에 호출 — 오늘이 생일인
  * 재원생에게 UJC 1개를 지급하고 웹 푸시로 축하 메시지를 보낸다.
@@ -15,7 +15,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const today = new Date();
+  // 서버가 UTC라 new Date()를 쓰면 한국 날짜와 어긋날 수 있다(today.ts 참고).
+  const today = kstToday();
   const todayISO = toISODate(today);
   const students = await getStudentsWithBirthdayToday(today);
   const subsByStudent = await getPushSubscriptionsForStudents(students.map((s) => s.id));

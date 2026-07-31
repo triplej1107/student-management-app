@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { toISODate, weekLabel, dayLabelOf, mondayOf, parseISODate } from "./weeks";
+import { toISODate, weekLabel, dayLabelOf, mondayOf, parseISODate, kstToday } from "./weeks";
 import { classKeyFor } from "./classKey";
 import { SCHOOL_EXAMS } from "./types";
 import type {
@@ -727,7 +727,7 @@ export async function listNoticesForClass(
 export async function createNotice(classKey: ClassKey) {
   const { data } = await supabase
     .from("notices")
-    .insert({ class_key: classKey, title: "", notice_date: toISODate(new Date()), tag: "", content: "" })
+    .insert({ class_key: classKey, title: "", notice_date: toISODate(kstToday()), tag: "", content: "" })
     .select("*")
     .single();
   return data as Notice;

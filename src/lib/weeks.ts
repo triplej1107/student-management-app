@@ -45,7 +45,7 @@ export function weekLabel(weekStart: Date): string {
 }
 
 /** Rolling window of week_start dates (Mondays), newest first. */
-export function rollingWeeks(count: number, today: Date = new Date()): Date[] {
+export function rollingWeeks(count: number, today: Date = kstToday()): Date[] {
   const thisMonday = mondayOf(today);
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(thisMonday);
@@ -58,7 +58,7 @@ export function rollingWeeks(count: number, today: Date = new Date()): Date[] {
  * 끝난 다음 주에 기록되므로 (예: 7월 4주차 클리닉은 8월 1주차 동안 진행),
  * 진행 중인 달력상 이번 주는 아직 목록에 나타나면 안 된다 — 최신 주차는
  * 항상 "지난주"다. */
-export function rollingClinicWeeks(count: number, today: Date = new Date()): Date[] {
+export function rollingClinicWeeks(count: number, today: Date = kstToday()): Date[] {
   const anchor = new Date(today);
   anchor.setDate(anchor.getDate() - 7);
   return rollingWeeks(count, anchor);
@@ -106,7 +106,7 @@ export function wednesdayOf(date: Date): Date {
 
 /** Rolling window of question-week start dates (Wednesdays), newest first —
  * 학부모 질문 내역 화면에서 지난 주차를 넘겨보는 데 쓴다. */
-export function rollingQuestionWeeks(count: number, today: Date = new Date()): Date[] {
+export function rollingQuestionWeeks(count: number, today: Date = kstToday()): Date[] {
   const thisWednesday = wednesdayOf(today);
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(thisWednesday);

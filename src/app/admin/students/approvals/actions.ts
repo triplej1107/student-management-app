@@ -5,6 +5,7 @@ import { requireZongjuSession } from "@/lib/authz";
 import { setZongjuApproval, setZongjuFeedback, getStudentById } from "@/lib/data";
 import { maybeCreditZongjuApproval } from "@/lib/ujc";
 import { getPushSubscriptionsForStudents, sendClinicApprovedPush } from "@/lib/clinicPush";
+import { resetOmrSubmission } from "@/lib/clinicOmr";
 
 export async function toggleZongjuApprovalAction(
   studentId: number,
@@ -32,6 +33,17 @@ export async function toggleZongjuApprovalAction(
       await sendClinicApprovedPush(subs, student.name);
     }
   }
+}
+
+export async function resetOmrSubmissionAction(studentId: number, weekStartISO: string, testIndex: number) {
+  await requireZongjuSession();
+  await resetOmrSubmission(studentId, weekStartISO, testIndex);
+  revalidatePath(`/admin/students/approvals/${studentId}`);
+  revalidatePath("/admin/students/approvals");
+  revalidatePath("/staff/clinic");
+  revalidatePath("/student/omr");
+  revalidatePath("/student/clinic");
+  revalidatePath("/student");
 }
 
 export async function saveZongjuFeedbackAction(studentId: number, weekStartISO: string, text: string) {

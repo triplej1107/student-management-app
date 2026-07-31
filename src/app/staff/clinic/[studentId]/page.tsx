@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { BackButton } from "@/components/BackButton";
 import { requireStaffSession } from "@/lib/authz";
 import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from "@/lib/data";
+import { getOmrSubmissionsForStudentWeek } from "@/lib/clinicOmr";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
 import { ClinicChecklistEditor } from "@/components/staff/ClinicChecklistEditor";
@@ -26,10 +27,11 @@ export default async function StaffClinicDetailPage({
   const selectedWeekISO = toISODate(selectedWeekStart);
 
   const classKey = student.class_key;
-  const [template, check, currentStaff] = await Promise.all([
+  const [template, check, currentStaff, omrSubmissions] = await Promise.all([
     classKey ? getClinicTemplate(classKey, selectedWeekStart) : null,
     getClinicCheck(student.id, selectedWeekStart),
     getStaffById(session.staffId),
+    getOmrSubmissionsForStudentWeek(student.id, selectedWeekISO),
   ]);
   const approvedByStaff = check?.staff_approved_by ? await getStaffById(check.staff_approved_by) : null;
 
@@ -79,6 +81,7 @@ export default async function StaffClinicDetailPage({
           staffApprovedByName={approvedByStaff?.name ?? null}
           currentStaffName={currentStaff?.name ?? ""}
           zongjuApproved={check?.zongju_approved ?? false}
+          omrSubmissions={Object.fromEntries(omrSubmissions)}
         />
       )}
 

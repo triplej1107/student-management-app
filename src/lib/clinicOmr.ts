@@ -87,6 +87,43 @@ export async function getOmrSubmission(
   return (data as ClinicOmrSubmission) ?? null;
 }
 
+/** 조교/종주T 점검표 화면에서 4칸을 한 번에 보여주기 위해 test_index로 매핑해 반환. */
+export async function getOmrSubmissionsForStudentWeek(
+  studentId: number,
+  weekStartISO: string
+): Promise<Map<number, ClinicOmrSubmission>> {
+  const { data } = await supabase
+    .from("clinic_omr_submissions")
+    .select("*")
+    .eq("student_id", studentId)
+    .eq("week_start", weekStartISO)
+    .eq("round", 1);
+  const map = new Map<number, ClinicOmrSubmission>();
+  for (const row of (data as ClinicOmrSubmission[]) ?? []) {
+    map.set(row.test_index, row);
+  }
+  return map;
+}
+
+/** 학생이 OMR마킹을 실수로 이탈했거나 다시 응시해야 할 때, 조교·종주T가
+ * 제출 기록과 그 점수를 지워 다시 응시할 수 있게 한다. */
+export async function resetOmrSubmission(studentId: number, weekStartISO: string, testIndex: number) {
+  await supabase
+    .from("clinic_omr_submissions")
+    .delete()
+    .eq("student_id", studentId)
+    .eq("week_start", weekStartISO)
+    .eq("test_index", testIndex)
+    .eq("round", 1);
+
+  const weekStart = parseISODate(weekStartISO);
+  const existing = await getClinicCheck(studentId, weekStart);
+  const testScores: TestScore[] = existing?.test_scores ? [...existing.test_scores] : [{}, {}, {}, {}];
+  while (testScores.length < 4) testScores.push({});
+  testScores[testIndex] = {};
+  await setClinicTestScores(studentId, weekStart, testScores);
+}
+
 /** 정답키와 비교해 채점하고, 제출 기록을 남긴 뒤 기존 clinic_checks.test_scores에도
  * 그대로 반영한다 — 이 덕분에 testProgressLabel/isClinicFullyDone/ujcTier/
  * monthlyReport/밀림 관리 등 test_scores를 읽는 모든 곳이 수정 없이 그대로 동작한다. */

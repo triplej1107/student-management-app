@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { BackButton } from "@/components/BackButton";
 import { requireZongjuSession } from "@/lib/authz";
 import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from "@/lib/data";
+import { getOmrSubmissionsForStudentWeek } from "@/lib/clinicOmr";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
 import { AdminApprovalChecklist } from "@/components/admin/AdminApprovalChecklist";
@@ -26,9 +27,10 @@ export default async function AdminApprovalDetailPage({
   const selectedWeekISO = toISODate(selectedWeekStart);
 
   const classKey = student.class_key;
-  const [template, check] = await Promise.all([
+  const [template, check, omrSubmissions] = await Promise.all([
     classKey ? getClinicTemplate(classKey, selectedWeekStart) : null,
     getClinicCheck(student.id, selectedWeekStart),
+    getOmrSubmissionsForStudentWeek(student.id, selectedWeekISO),
   ]);
   const approvedByStaff = check?.staff_approved_by ? await getStaffById(check.staff_approved_by) : null;
 
@@ -78,6 +80,7 @@ export default async function AdminApprovalDetailPage({
           template={template}
           check={check ?? undefined}
           staffApprovedByName={approvedByStaff?.name ?? null}
+          omrSubmissions={Object.fromEntries(omrSubmissions)}
         />
       )}
 

@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { ClinicCheck, ClinicTemplate, TestScore } from "@/lib/types";
+import type { ClinicCheck, ClinicOmrSubmission, ClinicTemplate, TestScore } from "@/lib/types";
 import { filledHwSlots, filledTestSlots } from "@/lib/clinicProgress";
 import { useToast } from "@/components/Toast";
 import {
   toggleHwCheckAction,
   updateTestScoreAction,
   toggleStaffApprovalAction,
+  resetOmrSubmissionAction,
 } from "@/app/staff/clinic/actions";
 
 export function ClinicChecklistEditor({
@@ -19,6 +20,7 @@ export function ClinicChecklistEditor({
   staffApprovedByName,
   currentStaffName,
   zongjuApproved,
+  omrSubmissions,
 }: {
   studentId: number;
   weekStartISO: string;
@@ -27,6 +29,7 @@ export function ClinicChecklistEditor({
   staffApprovedByName: string | null;
   currentStaffName: string;
   zongjuApproved: boolean;
+  omrSubmissions: Record<number, ClinicOmrSubmission>;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -39,6 +42,7 @@ export function ClinicChecklistEditor({
   const [testScores, setTestScores] = useState<TestScore[]>(
     check?.test_scores ?? [{}, {}, {}, {}]
   );
+  const [resetSlots, setResetSlots] = useState<Set<number>>(new Set());
   const [staffApproved, setStaffApproved] = useState(check?.staff_approved ?? false);
   const [approvedByName, setApprovedByName] = useState(staffApprovedByName);
 
@@ -75,6 +79,16 @@ export function ClinicChecklistEditor({
     });
   }
 
+  function resetOmr(i: number) {
+    setTestScores((prev) => prev.map((t, idx) => (idx === i ? {} : t)));
+    setResetSlots((prev) => new Set(prev).add(i));
+    startTransition(async () => {
+      await resetOmrSubmissionAction(studentId, weekStartISO, i);
+      showToast("재응시할 수 있게 초기화했어요");
+      router.refresh();
+    });
+  }
+
   return (
     <>
       {hwSlots.length > 0 && (
@@ -106,29 +120,45 @@ export function ClinicChecklistEditor({
         <div className="mt-[18px]">
           <div className="mb-2 text-[13px] font-bold text-ink">클리닉테스트</div>
           <div className="flex flex-col gap-2">
-            {testSlots.map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 rounded-[10px] border border-line-soft bg-white p-2.5"
-              >
-                <span className="flex-1 text-[13px] text-ink">{template.test_labels[i]}</span>
-                <input
-                  value={testScores[i]?.score ?? ""}
-                  onChange={(e) => updateScore(i, "score", e.target.value)}
-                  onBlur={(e) => commitScore(i, "score", e.target.value)}
-                  placeholder="점수"
-                  className="w-11 rounded-md border border-line px-0.5 py-1.5 text-center text-xs"
-                />
-                <span className="text-ink-muted">/</span>
-                <input
-                  value={testScores[i]?.total ?? ""}
-                  onChange={(e) => updateScore(i, "total", e.target.value)}
-                  onBlur={(e) => commitScore(i, "total", e.target.value)}
-                  placeholder="총점"
-                  className="w-11 rounded-md border border-line px-0.5 py-1.5 text-center text-xs"
-                />
-              </div>
-            ))}
+            {testSlots.map((i) => {
+              const submission = !resetSlots.has(i) ? omrSubmissions[i] : undefined;
+              return (
+                <div key={i} className="rounded-[10px] border border-line-soft bg-white p-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-[13px] text-ink">{template.test_labels[i]}</span>
+                    <input
+                      value={testScores[i]?.score ?? ""}
+                      onChange={(e) => updateScore(i, "score", e.target.value)}
+                      onBlur={(e) => commitScore(i, "score", e.target.value)}
+                      placeholder="점수"
+                      className="w-11 rounded-md border border-line px-0.5 py-1.5 text-center text-xs"
+                    />
+                    <span className="text-ink-muted">/</span>
+                    <input
+                      value={testScores[i]?.total ?? ""}
+                      onChange={(e) => updateScore(i, "total", e.target.value)}
+                      onBlur={(e) => commitScore(i, "total", e.target.value)}
+                      placeholder="총점"
+                      className="w-11 rounded-md border border-line px-0.5 py-1.5 text-center text-xs"
+                    />
+                  </div>
+                  {submission && (
+                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-line-soft pt-2">
+                      <span className="text-[11px] text-ink-muted">
+                        OMR마킹 제출됨
+                        {submission.left_app && <span className="text-danger"> · 이탈로 자동 제출</span>}
+                      </span>
+                      <button
+                        onClick={() => resetOmr(i)}
+                        className="rounded-full border border-line px-2.5 py-1 text-[11px] font-bold text-ink-secondary"
+                      >
+                        재응시 허용
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ import {
   setStaffApproval,
   setClinicFeedback,
 } from "@/lib/data";
+import { resetOmrSubmission } from "@/lib/clinicOmr";
 import type { FeedbackTags, TestScore } from "@/lib/types";
 
 export async function toggleHwCheckAction(
@@ -45,6 +46,17 @@ export async function updateTestScoreAction(
   await setClinicTestScores(studentId, new Date(weekStartISO), testScores);
   revalidatePath(`/staff/clinic/${studentId}`);
   revalidatePath("/staff/clinic");
+  revalidatePath("/student/clinic");
+  revalidatePath("/student");
+}
+
+export async function resetOmrSubmissionAction(studentId: number, weekStartISO: string, testIndex: number) {
+  await requireStaffSession();
+  await resetOmrSubmission(studentId, weekStartISO, testIndex);
+  revalidatePath(`/staff/clinic/${studentId}`);
+  revalidatePath("/staff/clinic");
+  revalidatePath("/admin/students/approvals");
+  revalidatePath("/student/omr");
   revalidatePath("/student/clinic");
   revalidatePath("/student");
 }

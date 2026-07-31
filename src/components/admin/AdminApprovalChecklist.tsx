@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { ClinicCheck, ClinicTemplate } from "@/lib/types";
+import type { ClinicCheck, ClinicOmrSubmission, ClinicTemplate } from "@/lib/types";
 import { filledHwSlots, filledTestSlots } from "@/lib/clinicProgress";
 import { useToast } from "@/components/Toast";
-import { toggleZongjuApprovalAction } from "@/app/admin/students/approvals/actions";
+import { toggleZongjuApprovalAction, resetOmrSubmissionAction } from "@/app/admin/students/approvals/actions";
 
 export function AdminApprovalChecklist({
   studentId,
@@ -13,12 +13,14 @@ export function AdminApprovalChecklist({
   template,
   check,
   staffApprovedByName,
+  omrSubmissions,
 }: {
   studentId: number;
   weekStartISO: string;
   template: ClinicTemplate;
   check: ClinicCheck | undefined;
   staffApprovedByName: string | null;
+  omrSubmissions: Record<number, ClinicOmrSubmission>;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -26,6 +28,7 @@ export function AdminApprovalChecklist({
   const hwSlots = filledHwSlots(template);
   const testSlots = filledTestSlots(template);
   const [zongjuApproved, setZongjuApproved] = useState(check?.zongju_approved ?? false);
+  const [resetSlots, setResetSlots] = useState<Set<number>>(new Set());
 
   function toggle() {
     const next = !zongjuApproved;
@@ -33,6 +36,15 @@ export function AdminApprovalChecklist({
     startTransition(async () => {
       await toggleZongjuApprovalAction(studentId, weekStartISO, next);
       showToast(next ? "최종 결재 완료" : "최종 결재 취소됨");
+      router.refresh();
+    });
+  }
+
+  function resetOmr(i: number) {
+    setResetSlots((prev) => new Set(prev).add(i));
+    startTransition(async () => {
+      await resetOmrSubmissionAction(studentId, weekStartISO, i);
+      showToast("재응시할 수 있게 초기화했어요");
       router.refresh();
     });
   }
@@ -73,13 +85,27 @@ export function AdminApprovalChecklist({
             {testSlots.map((i) => {
               const t = check?.test_scores?.[i];
               const scoreLabel = t?.score || t?.total ? `${t?.score ?? "-"} / ${t?.total ?? "-"}` : "-";
+              const submission = !resetSlots.has(i) ? omrSubmissions[i] : undefined;
               return (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-[10px] border border-line-soft bg-white p-2.5"
-                >
-                  <span className="text-[13px] text-ink">{template.test_labels[i]}</span>
-                  <span className="text-[13px] font-bold text-accent">{scoreLabel}</span>
+                <div key={i} className="rounded-[10px] border border-line-soft bg-white p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-ink">{template.test_labels[i]}</span>
+                    <span className="text-[13px] font-bold text-accent">{scoreLabel}</span>
+                  </div>
+                  {submission && (
+                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-line-soft pt-2">
+                      <span className="text-[11px] text-ink-muted">
+                        OMR마킹 제출됨
+                        {submission.left_app && <span className="text-danger"> · 이탈로 자동 제출</span>}
+                      </span>
+                      <button
+                        onClick={() => resetOmr(i)}
+                        className="rounded-full border border-line px-2.5 py-1 text-[11px] font-bold text-ink-secondary"
+                      >
+                        재응시 허용
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}

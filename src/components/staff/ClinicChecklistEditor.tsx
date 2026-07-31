@@ -80,6 +80,10 @@ export function ClinicChecklistEditor({
   }
 
   function resetOmr(i: number) {
+    const ok = window.confirm(
+      `[${template.test_labels[i]}]\nOMR 제출 기록과 점수가 삭제되고, 학생이 처음부터 다시 응시하게 됩니다.\n재응시를 허용할까요?`
+    );
+    if (!ok) return;
     setTestScores((prev) => prev.map((t, idx) => (idx === i ? {} : t)));
     setResetSlots((prev) => new Set(prev).add(i));
     startTransition(async () => {

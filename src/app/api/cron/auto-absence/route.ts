@@ -2,18 +2,25 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getRosterForDate, getAttendanceMapForDate } from "@/lib/data";
-import { getAutoMarkedSetForDate } from "@/lib/attendanceAuto";
 import { buildAutoAbsentMessage } from "@/lib/attendanceMessages";
 import { getPushSubscriptionsForStudents, sendAttendancePush } from "@/lib/clinicPush";
 import { kstToday, toISODate } from "@/lib/weeks";
 import { isDeployedEnvironment } from "@/lib/env";
 
-/** Vercel Cron이 매일 22:00 KST(vercel.json, "0 13 * * *")에 호출 — 오늘
- * 클리닉이 있었는데 (1) 출결이 아예 안 눌렸거나 (2) 클리닉 시각이 지나
- * 자동으로 "지각" 처리된 뒤 아무도 확인·정정하지 않은 학생을 자동으로
- * 결석 처리한다(auto_marked=true). 사람이 직접 출석/지각/조정/결석을
- * 눌렀던 기록은(auto_marked=false) 그대로 둔다. 자동 결석 처리된 건은
- * 다음 날 출결 화면 맨 위 "확인 필요" 목록에 뜬다. */
+/** Vercel Cron이 매일 22:00 KST(vercel.json, "0 13 * * *")에 호출 — 그날
+ * 클리닉이 있었는데 결국 오지 않은 학생을 자동으로 결석 처리한다
+ * (auto_marked=true).
+ *
+ * 판정 기준은 "밤 10시 시점에 출석도 조정도 아닌 상태" 하나뿐이다:
+ * - 출결이 아예 안 눌린 학생 → 결석
+ * - "지각"인 학생 → 결석. 이 학원에서 지각은 "아직 안 왔음" 표시이고,
+ *   오면 조교가 출석으로 바꾼다. 그러니 밤까지 지각으로 남아있다는 건
+ *   끝내 오지 않았다는 뜻 — 조교가 직접 누른 지각이어도 마찬가지다.
+ * - "출석"/"조정"은 그대로 둔다(왔거나, 다른 날로 옮겼거나).
+ * - 이미 "결석"인 기록도 그대로 둔다 — 다시 덮어쓰면 알림만 중복된다.
+ *
+ * 자동 결석된 건은 다음 날부터 출결 화면 맨 위 "확인 필요" 목록에 떠서,
+ * 조교가 출근해 연락·조정하고 버튼을 누르면 목록에서 사라진다. */
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -23,16 +30,15 @@ export async function GET(req: Request) {
   const today = kstToday();
   const todayISO = toISODate(today);
 
-  const [roster, attendanceMap, autoMarkedIds] = await Promise.all([
+  const [roster, attendanceMap] = await Promise.all([
     getRosterForDate(today),
     getAttendanceMapForDate(today),
-    getAutoMarkedSetForDate(today),
   ]);
 
-  // 아예 미출결이거나, 자동 지각인 채 아무도 확인 안 한 학생 — 전부 자동 결석 대상.
-  const toConvert = roster.filter(
-    (r) => !attendanceMap.has(r.student.id) || autoMarkedIds.has(r.student.id)
-  );
+  const toConvert = roster.filter((r) => {
+    const status = attendanceMap.get(r.student.id);
+    return status === undefined || status === "지각";
+  });
 
   if (toConvert.length === 0) {
     return NextResponse.json({ ok: true, autoMarked: 0 });

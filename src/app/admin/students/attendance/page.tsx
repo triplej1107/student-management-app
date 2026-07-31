@@ -1,12 +1,12 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { getToday } from "@/lib/today";
-import { toISODate, kstToday } from "@/lib/weeks";
+import { toISODate, kstToday, parseISODate, dayLabelOf } from "@/lib/weeks";
 import {
   activeClinicDaysFrom,
   getAttendanceMapForDate,
   getParentTextedMapForDate,
   getWeeklyRoster,
-  getAutoAbsentRosterForDate,
+  getUnresolvedAutoAbsences,
 } from "@/lib/data";
 import { autoMarkLateStudents } from "@/lib/attendanceAuto";
 import { DAY_ORDER } from "@/lib/types";
@@ -49,12 +49,11 @@ export default async function AdminAttendancePage({
   }
   const checkedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
 
-  const yesterday = new Date(kstToday());
-  yesterday.setDate(yesterday.getDate() - 1);
-  const [autoAbsentRoster, autoAbsentTextedMap] = isViewingToday
-    ? await Promise.all([getAutoAbsentRosterForDate(yesterday), getParentTextedMapForDate(yesterday)])
-    : [[], new Map<number, boolean>()];
-  const yesterdayISO = toISODate(yesterday);
+  const autoAbsenceGroups = isViewingToday ? await getUnresolvedAutoAbsences(kstToday()) : [];
+  const autoAbsenceTextedMaps = await Promise.all(
+    autoAbsenceGroups.map((g) => getParentTextedMapForDate(parseISODate(g.dateISO)))
+  );
+  const autoAbsenceTotal = autoAbsenceGroups.reduce((sum, g) => sum + g.entries.length, 0);
 
   return (
     <div>
@@ -77,26 +76,36 @@ export default async function AdminAttendancePage({
         </div>
       )}
 
-      {autoAbsentRoster.length > 0 && (
+      {autoAbsenceTotal > 0 && (
         <div className="mt-3.5">
           <div className="mb-2 text-[13px] font-bold text-danger">
-            ⚠️ 어제 자동 결석 처리됨 · 확인 필요 ({autoAbsentRoster.length}명)
+            ⚠️ 자동 결석 처리됨 · 확인 필요 ({autoAbsenceTotal}명)
           </div>
-          <div className="flex flex-col gap-2">
-            {autoAbsentRoster.map((entry) => (
-              <AttendanceRow
-                key={entry.student.id}
-                student={entry.student}
-                effTime={entry.effTime}
-                hasMakeup={entry.hasMakeup}
-                makeup={entry.makeup}
-                status="결석"
-                dateISO={yesterdayISO}
-                parentTexted={autoAbsentTextedMap.get(entry.student.id)}
-                autoMarked
-              />
-            ))}
-          </div>
+          {autoAbsenceGroups.map((group, gi) => {
+            const d = parseISODate(group.dateISO);
+            return (
+              <div key={group.dateISO} className="mb-2.5">
+                <div className="mb-1.5 text-[11px] font-bold text-ink-muted">
+                  {d.getMonth() + 1}/{d.getDate()} ({dayLabelOf(d)}) · {group.entries.length}명
+                </div>
+                <div className="flex flex-col gap-2">
+                  {group.entries.map((entry) => (
+                    <AttendanceRow
+                      key={entry.student.id}
+                      student={entry.student}
+                      effTime={entry.effTime}
+                      hasMakeup={entry.hasMakeup}
+                      makeup={entry.makeup}
+                      status="결석"
+                      dateISO={group.dateISO}
+                      parentTexted={autoAbsenceTextedMaps[gi]?.get(entry.student.id)}
+                      autoMarked
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
           <div className="mt-3 border-b border-line-soft pb-1" />
         </div>
       )}

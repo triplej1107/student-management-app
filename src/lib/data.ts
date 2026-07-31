@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { toISODate, weekLabel, dayLabelOf, mondayOf } from "./weeks";
+import { toISODate, weekLabel, dayLabelOf, mondayOf, parseISODate } from "./weeks";
 import { classKeyFor } from "./classKey";
 import { SCHOOL_EXAMS } from "./types";
 import type {
@@ -386,20 +386,54 @@ export async function getRosterForDate(date: Date): Promise<RosterEntry[]> {
   return getRosterForDay(dayLabelOf(date), weekStart, weekEnd);
 }
 
-/** 그 날짜에 시스템이 자동으로 결석 처리한(auto_marked) 학생만 골라
- * 반환 — 다음 날 출결 화면 맨 위 "확인 필요" 목록에 쓴다. */
-export async function getAutoAbsentRosterForDate(date: Date): Promise<RosterEntry[]> {
-  const [roster, { data: records }] = await Promise.all([
-    getRosterForDate(date),
-    supabase
-      .from("attendance_records")
-      .select("student_id")
-      .eq("session_date", toISODate(date))
-      .eq("auto_marked", true)
-      .eq("status", "결석"),
-  ]);
-  const autoIds = new Set((records ?? []).map((r: { student_id: number }) => r.student_id));
-  return roster.filter((r) => autoIds.has(r.student.id));
+export interface AutoAbsenceGroup {
+  dateISO: string;
+  entries: RosterEntry[];
+}
+
+/** 지난 며칠 사이 시스템이 자동 결석 처리했는데 아직 아무도 확인·정정하지
+ * 않은(auto_marked가 여전히 true인) 건들을 날짜별로 묶어 반환 — 출결 화면
+ * 맨 위 "확인 필요" 목록에 쓴다.
+ *
+ * 밤 10시 자동 결석은 조교가 이미 퇴근한 뒤라 그날 처리할 수 없다. 다음 날
+ * 출근해서 "어제 얘네 결국 안 왔네" 하고 연락·조정하는 흐름이라 항상 그
+ * **이전** 날짜들만 본다. 어제 하루만 보면 일요일처럼 아무도 앱을 안 여는
+ * 날을 건너뛰며 토요일 건이 영영 안 보이므로 며칠치를 훑는다. 조교가 출결
+ * 버튼을 누르면 auto_marked가 꺼지면서(setAttendance) 목록에서 사라진다. */
+export async function getUnresolvedAutoAbsences(
+  today: Date,
+  lookbackDays = 7
+): Promise<AutoAbsenceGroup[]> {
+  const start = new Date(today);
+  start.setDate(start.getDate() - lookbackDays);
+
+  const { data } = await supabase
+    .from("attendance_records")
+    .select("student_id, session_date")
+    .gte("session_date", toISODate(start))
+    .lt("session_date", toISODate(today))
+    .eq("auto_marked", true)
+    .eq("status", "결석");
+
+  const rows = (data as { student_id: number; session_date: string }[]) ?? [];
+  if (rows.length === 0) return [];
+
+  const idsByDate = new Map<string, Set<number>>();
+  for (const row of rows) {
+    const set = idsByDate.get(row.session_date) ?? new Set<number>();
+    set.add(row.student_id);
+    idsByDate.set(row.session_date, set);
+  }
+
+  const dates = Array.from(idsByDate.keys()).sort();
+  const groups = await Promise.all(
+    dates.map(async (dateISO) => {
+      const roster = await getRosterForDate(parseISODate(dateISO));
+      const ids = idsByDate.get(dateISO)!;
+      return { dateISO, entries: roster.filter((r) => ids.has(r.student.id)) };
+    })
+  );
+  return groups.filter((g) => g.entries.length > 0);
 }
 
 // ============================================================

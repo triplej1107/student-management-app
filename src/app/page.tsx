@@ -94,7 +94,7 @@ export default async function RoleSelectPage() {
           alt="유종의미 국어학원"
           width={92}
           height={92}
-          className="rounded-[26px] shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+          className="logo-wiggle rounded-[26px] shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           priority
         />
       </Link>

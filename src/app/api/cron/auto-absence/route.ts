@@ -69,7 +69,10 @@ export async function GET(req: Request) {
   for (const r of toConvert) {
     const subs = subsByStudent.get(r.student.id);
     if (subs && subs.length > 0) {
-      await sendAttendancePush(subs, r.student.name, buildAutoAbsentMessage(r.effDay, r.effTime));
+      // 조용시간(22시~9시) 예외 — 이 알림이 그날의 마지막 알림이다.
+      await sendAttendancePush(subs, r.student.name, buildAutoAbsentMessage(r.effDay, r.effTime), {
+        allowInQuietHours: true,
+      });
       pushedTo++;
     }
   }

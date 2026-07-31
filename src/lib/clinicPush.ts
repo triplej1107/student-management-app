@@ -1,9 +1,20 @@
 import "server-only";
 import webpush from "web-push";
 import { supabase } from "./supabase";
+import { nowKST } from "./weeks";
+import { isQuietHour } from "./quietHours";
 
 const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const privateKey = process.env.VAPID_PRIVATE_KEY;
+
+/** 조용시간 — 밤 10시부터 아침 9시까지는 어떤 알림도 보내지 않는다.
+ * 학생·학부모가 자는 시간에 폰이 울리면 안 되기 때문. 밤 10시 자동 결석
+ * 알림만 "그날의 마지막 알림"으로 예외를 허용한다(allowInQuietHours) —
+ * Vercel 크론이 22:00~22:59 사이 아무 때나 실행될 수 있어서 그 시각을
+ * 조용시간에서 빼두면 그 한 시간이 통째로 열려버리기 때문이다. */
+function isQuietHoursKST(): boolean {
+  return isQuietHour(nowKST().getUTCHours());
+}
 
 if (publicKey && privateKey) {
   webpush.setVapidDetails("mailto:triplej1107@gmail.com", publicKey, privateKey);
@@ -88,12 +99,15 @@ export async function getPushSubscriptionsForStudents(
   return map;
 }
 
-/** 공통 발송 로직 — 만료된 구독(410 Gone/404)은 조용히 지운다. */
+/** 공통 발송 로직 — 만료된 구독(410 Gone/404)은 조용히 지운다.
+ * 모든 알림이 이 함수를 거치므로 조용시간 차단도 여기 한 곳에서 건다. */
 async function sendPushToSubs(
   subs: PushSubscriptionRow[],
-  payload: { title: string; body: string; url: string }
+  payload: { title: string; body: string; url: string },
+  opts?: { allowInQuietHours?: boolean }
 ) {
   if (!publicKey || !privateKey || subs.length === 0) return;
+  if (isQuietHoursKST() && !opts?.allowInQuietHours) return;
 
   const json = JSON.stringify(payload);
   const results = await Promise.allSettled(
@@ -155,12 +169,21 @@ export async function sendClinicBacklogPush(subs: PushSubscriptionRow[], weeksOv
 
 /** 조교/종주T가 출결을 입력하면 학생·학부모(같은 studentId 아래 구독된
  * 모든 기기 — 학생 폰과 학부모 폰이 함께 걸린다)에게 보낸다. */
-export async function sendAttendancePush(subs: PushSubscriptionRow[], studentName: string, body: string) {
-  await sendPushToSubs(subs, {
-    title: `${studentName} 학생 출결 안내`,
-    body,
-    url: "/student",
-  });
+export async function sendAttendancePush(
+  subs: PushSubscriptionRow[],
+  studentName: string,
+  body: string,
+  opts?: { allowInQuietHours?: boolean }
+) {
+  await sendPushToSubs(
+    subs,
+    {
+      title: `${studentName} 학생 출결 안내`,
+      body,
+      url: "/student",
+    },
+    opts
+  );
 }
 
 /** 종주T 클리닉 최종결재가 완료되면 학생·학부모에게 보낸다. */

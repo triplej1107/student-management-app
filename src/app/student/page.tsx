@@ -49,7 +49,17 @@ export default async function StudentHomePage() {
   return (
     <div className="box-border px-5 pt-2 pb-6">
       <div className="flex items-center justify-between">
-        <div className="text-xl font-extrabold text-ink">안녕하세요, {student.name}님</div>
+        <div>
+          <div className="text-xl font-extrabold text-ink">
+            {isParent ? `안녕하세요, ${student.name}의 학부모님` : `안녕하세요, ${student.name}님`}
+          </div>
+          {isParent && (
+            <div className="mt-0.5 text-[11px] text-ink-muted">
+              학번 {student.student_code}
+              {student.nickname && ` · 닉네임 ${student.nickname}`}
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           {isStudent && (
             <Link

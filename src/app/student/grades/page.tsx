@@ -21,7 +21,10 @@ export default async function StudentGradesPage() {
 
   const latestClinicPoint = [...clinicPercentile].reverse().find((p) => p.topPercent !== null) ?? null;
 
-  const schoolPoints: TrendPoint[] = SCHOOL_EXAMS.map(({ key, label }) => {
+  // "종합"은 그 학기 중간+기말을 합산한 값일 뿐 별개의 시험이 아니라서
+  // 등수 변화 그래프에서는 제외 — 안 그러면 같은 학기가 두 번(중간/기말 +
+  // 종합) 잡혀서 추세가 왜곡된다.
+  const schoolPoints: TrendPoint[] = SCHOOL_EXAMS.filter((e) => !("scoreless" in e && e.scoreless)).map(({ key, label }) => {
     const rec = schoolExams.get(key);
     return { label, value: rec?.rank ?? null, grade: rec?.grade ?? null, note: rec?.note ?? null };
   });

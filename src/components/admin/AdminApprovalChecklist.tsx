@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { ClinicCheck, ClinicOmrSubmission, ClinicTemplate } from "@/lib/types";
+import type { ClinicCheck, ClinicOmrSubmission, ClinicTemplate, TestScore } from "@/lib/types";
 import { filledHwSlots, filledTestSlots } from "@/lib/clinicProgress";
 import { useToast } from "@/components/Toast";
 import { toggleZongjuApprovalAction, resetOmrSubmissionAction } from "@/app/admin/students/approvals/actions";
+import { toggleHwCheckAction, updateTestScoreAction } from "@/app/staff/clinic/actions";
 
 export function AdminApprovalChecklist({
   studentId,
@@ -27,6 +28,12 @@ export function AdminApprovalChecklist({
   const [, startTransition] = useTransition();
   const hwSlots = filledHwSlots(template);
   const testSlots = filledTestSlots(template);
+  const [hwChecks, setHwChecks] = useState<boolean[]>(
+    check?.hw_checks ?? [false, false, false, false, false, false, false]
+  );
+  const [testScores, setTestScores] = useState<TestScore[]>(
+    check?.test_scores ?? [{}, {}, {}, {}]
+  );
   const [zongjuApproved, setZongjuApproved] = useState(check?.zongju_approved ?? false);
   const [resetSlots, setResetSlots] = useState<Set<number>>(new Set());
 
@@ -40,11 +47,34 @@ export function AdminApprovalChecklist({
     });
   }
 
+  function toggleHw(i: number) {
+    const next = !hwChecks[i];
+    setHwChecks((prev) => prev.map((v, idx) => (idx === i ? next : v)));
+    startTransition(async () => {
+      await toggleHwCheckAction(studentId, weekStartISO, i, next);
+      showToast("저장됨");
+      router.refresh();
+    });
+  }
+
+  function updateScore(i: number, field: "score" | "total", value: string) {
+    setTestScores((prev) => prev.map((t, idx) => (idx === i ? { ...t, [field]: value } : t)));
+  }
+
+  function commitScore(i: number, field: "score" | "total", value: string) {
+    startTransition(async () => {
+      await updateTestScoreAction(studentId, weekStartISO, i, field, value);
+      showToast("저장됨");
+      router.refresh();
+    });
+  }
+
   function resetOmr(i: number) {
     const ok = window.confirm(
       `[${template.test_labels[i]}]\nOMR 제출 기록과 점수가 삭제되고, 학생이 처음부터 다시 응시하게 됩니다.\n재응시를 허용할까요?`
     );
     if (!ok) return;
+    setTestScores((prev) => prev.map((t, idx) => (idx === i ? {} : t)));
     setResetSlots((prev) => new Set(prev).add(i));
     startTransition(async () => {
       await resetOmrSubmissionAction(studentId, weekStartISO, i);
@@ -59,25 +89,23 @@ export function AdminApprovalChecklist({
         <div className="mt-[18px]">
           <div className="mb-2 text-[13px] font-bold text-ink">숙제검사</div>
           <div className="flex flex-col gap-2">
-            {hwSlots.map((i) => {
-              const checked = !!check?.hw_checks?.[i];
-              return (
-                <div
-                  key={i}
-                  className="flex items-center gap-2.5 rounded-[10px] border border-line-soft bg-white p-2.5"
+            {hwSlots.map((i) => (
+              <div
+                key={i}
+                onClick={() => toggleHw(i)}
+                className="flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-line-soft bg-white p-2.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+              >
+                <span
+                  className={
+                    "flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[5px] border text-xs font-extrabold text-white " +
+                    (hwChecks[i] ? "border-accent bg-accent" : "border-line bg-white")
+                  }
                 >
-                  <span
-                    className={
-                      "flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[5px] border text-xs font-extrabold text-white " +
-                      (checked ? "border-accent bg-accent" : "border-line bg-white")
-                    }
-                  >
-                    {checked ? "✓" : ""}
-                  </span>
-                  <span className="flex-1 text-[13px] text-ink">{template.hw_labels[i]}</span>
-                </div>
-              );
-            })}
+                  {hwChecks[i] ? "✓" : ""}
+                </span>
+                <span className="flex-1 text-[13px] text-ink">{template.hw_labels[i]}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -87,14 +115,26 @@ export function AdminApprovalChecklist({
           <div className="mb-2 text-[13px] font-bold text-ink">클리닉테스트</div>
           <div className="flex flex-col gap-2">
             {testSlots.map((i) => {
-              const t = check?.test_scores?.[i];
-              const scoreLabel = t?.score || t?.total ? `${t?.score ?? "-"} / ${t?.total ?? "-"}` : "-";
               const submission = !resetSlots.has(i) ? omrSubmissions[i] : undefined;
               return (
                 <div key={i} className="rounded-[10px] border border-line-soft bg-white p-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] text-ink">{template.test_labels[i]}</span>
-                    <span className="text-[13px] font-bold text-accent">{scoreLabel}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-[13px] text-ink">{template.test_labels[i]}</span>
+                    <input
+                      value={testScores[i]?.score ?? ""}
+                      onChange={(e) => updateScore(i, "score", e.target.value)}
+                      onBlur={(e) => commitScore(i, "score", e.target.value)}
+                      placeholder="점수"
+                      className="w-11 rounded-md border border-line px-0.5 py-1.5 text-center text-xs"
+                    />
+                    <span className="text-ink-muted">/</span>
+                    <input
+                      value={testScores[i]?.total ?? ""}
+                      onChange={(e) => updateScore(i, "total", e.target.value)}
+                      onBlur={(e) => commitScore(i, "total", e.target.value)}
+                      placeholder="총점"
+                      className="w-11 rounded-md border border-line px-0.5 py-1.5 text-center text-xs"
+                    />
                   </div>
                   {submission && (
                     <div className="mt-2 flex items-center justify-between gap-2 border-t border-line-soft pt-2">

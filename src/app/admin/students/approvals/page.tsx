@@ -7,7 +7,14 @@ import {
   getClinicTemplatesForWeek,
   getWeeklyRoster,
 } from "@/lib/data";
-import { approvalStatus, approvalLabel } from "@/lib/clinicProgress";
+import {
+  approvalStatus,
+  approvalLabel,
+  clinicProgressLabel,
+  testProgressLabel,
+  isClinicComplete,
+  isTestComplete,
+} from "@/lib/clinicProgress";
 import { ScrollPillRow, PillLink, EmptyState, ScreenTitle } from "@/components/ui";
 import { AdminSubNav } from "@/components/admin/AdminTopNav";
 import { STUDENT_SUB_TABS } from "../subTabs";
@@ -48,13 +55,18 @@ export default async function AdminApprovalsPage({
   ]);
 
   // 조교 확인까지 끝나 종주T 최종 결재만 남은 학생을 최상단으로.
-  const rosterWithStatus = roster.map((r) => ({
-    ...r,
-    status: approvalStatus(
-      r.student.class_key ? templatesMap.get(r.student.class_key) : undefined,
-      checksMap.get(r.student.id)
-    ),
-  }));
+  const rosterWithStatus = roster.map((r) => {
+    const template = r.student.class_key ? templatesMap.get(r.student.class_key) : undefined;
+    const check = checksMap.get(r.student.id);
+    return {
+      ...r,
+      status: approvalStatus(template, check),
+      hwLabel: template ? clinicProgressLabel(template, check) : null,
+      hwComplete: template ? isClinicComplete(template, check) : false,
+      testLabel: template ? testProgressLabel(template, check) : null,
+      testComplete: template ? isTestComplete(template, check) : false,
+    };
+  });
   rosterWithStatus.sort((a, b) => {
     const rank = (s: string) => (s === "staff-approved" ? 0 : 1);
     const r = rank(a.status) - rank(b.status);
@@ -76,7 +88,7 @@ export default async function AdminApprovalsPage({
 
         <div className="mt-3.5 flex flex-col gap-2.5">
           {roster.length === 0 && <EmptyState>이 요일에는 학생이 없어요.</EmptyState>}
-          {rosterWithStatus.map(({ student, effTime, status }) => {
+          {rosterWithStatus.map(({ student, effTime, status, hwLabel, hwComplete, testLabel, testComplete }) => {
             return (
               <Link
                 key={student.id}
@@ -89,9 +101,31 @@ export default async function AdminApprovalsPage({
                     {effTime} · {student.class_key ?? "미배정"}
                   </div>
                 </div>
-                <span className={`rounded-full px-2.5 py-1.5 text-xs font-bold ${BADGE_STYLE[status]}`}>
-                  {approvalLabel(status)}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  {hwLabel && hwLabel !== "원본 없음" && (
+                    <span
+                      className={
+                        "rounded-full px-2 py-1 text-[11px] font-bold " +
+                        (hwComplete ? "bg-success-soft text-success" : "bg-accent-soft text-accent")
+                      }
+                    >
+                      {hwLabel}
+                    </span>
+                  )}
+                  {testLabel && (
+                    <span
+                      className={
+                        "rounded-full px-2 py-1 text-[11px] font-bold " +
+                        (testComplete ? "bg-success-soft text-success" : "bg-accent-soft text-accent")
+                      }
+                    >
+                      {testLabel}
+                    </span>
+                  )}
+                  <span className={`rounded-full px-2 py-1 text-[11px] font-bold ${BADGE_STYLE[status]}`}>
+                    {approvalLabel(status)}
+                  </span>
+                </div>
               </Link>
             );
           })}

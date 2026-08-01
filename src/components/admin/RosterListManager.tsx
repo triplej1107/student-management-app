@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CLASSES, type ClassKey, type Student } from "@/lib/types";
 import { IMPORT_COLUMNS } from "@/lib/parseRoster";
@@ -11,6 +11,8 @@ import {
   bulkDeleteAction,
   bulkSetClassKeyAction,
   bulkSetEnrolledAction,
+  importAcademyWorkbookAction,
+  type AcademyImportResult,
 } from "@/app/admin/students/roster/actions";
 
 function InstallBadge({ label, seenAt }: { label: string; seenAt: string | null }) {
@@ -119,7 +121,10 @@ export function RosterListManager({ students }: { students: Student[] }) {
 
   return (
     <div>
-      <BulkImportPanel onDone={() => router.refresh()} />
+      <AcademyWorkbookPanel onDone={() => router.refresh()} />
+      <div className="mt-2.5">
+        <BulkImportPanel onDone={() => router.refresh()} />
+      </div>
 
       <div className="mt-5 flex flex-wrap gap-1.5">
         <button
@@ -241,6 +246,102 @@ export function RosterListManager({ students }: { students: Student[] }) {
         {filtered.length === 0 && (
           <div className="py-6 text-center text-[13px] text-ink-muted/70">학생이 없어요.</div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** 학원관리 프로그램에서 내려받은 "회원명단" 엑셀을 그대로 올리는 칸.
+ * 열을 맞춰 붙여넣을 필요 없이 파일만 고르면 된다. */
+function AcademyWorkbookPanel({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<AcademyImportResult | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function submit() {
+    const file = inputRef.current?.files?.[0];
+    if (!file) return;
+    setResult(null);
+    const formData = new FormData();
+    formData.set("file", file);
+    startTransition(async () => {
+      const r = await importAcademyWorkbookAction(formData);
+      setResult(r);
+      onDone();
+    });
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full rounded-[10px] border border-dashed border-accent/60 py-3 text-[13px] font-bold text-accent shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+      >
+        📗 회원명단 엑셀로 학생정보 갱신
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-line-soft bg-white p-3.5">
+      <div className="mb-2 text-sm font-extrabold text-ink">회원명단 엑셀 불러오기</div>
+      <div className="mb-2 text-[11px] leading-relaxed text-ink-muted">
+        학원관리 프로그램에서 받은 <b>회원명단 엑셀 파일을 그대로</b> 올리면 학번을 기준으로 학생
+        정보가 갱신돼요. 열을 맞추거나 붙여넣을 필요 없어요.
+        <div className="mt-1.5 rounded-md bg-bg-page px-2 py-1.5">
+          갱신: 이름 · 학교 · 학년 · 연락처 · 첫수업일 · 수업요일/시간(종주T 국어 수업 기준)
+          <br />
+          <b>건드리지 않음: 재원/퇴원 상태, 반 배정, 클리닉 일정</b>
+          <br />
+          엑셀에서 빈 칸인 항목은 앱에 있던 값이 그대로 남아요.
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".xlsx"
+        onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+        className="w-full text-[11px] file:mr-2 file:rounded-lg file:border file:border-line file:bg-white file:px-2.5 file:py-1.5 file:text-[11px] file:font-bold file:text-ink-secondary"
+      />
+      {result && (
+        <div className="mt-2 text-[11px]">
+          <div className="font-bold text-ink">
+            신규 {result.inserted}명 · 갱신 {result.updated}명
+            {result.errors.length > 0 && ` · 오류 ${result.errors.length}건`}
+          </div>
+          {result.noClassSchedule.length > 0 && (
+            <div className="mt-1 text-warn">
+              국어 수업을 못 찾아 수업요일·시간은 그대로 둔 학생: {result.noClassSchedule.join(", ")}
+            </div>
+          )}
+          {result.errors.length > 0 && (
+            <ul className="mt-1 list-disc pl-4 text-danger">
+              {result.errors.slice(0, 10).map((e, i) => (
+                <li key={i}>
+                  {e.row > 0 ? `${e.row}번째 줄: ` : ""}
+                  {e.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      <div className="mt-2 flex gap-1.5">
+        <button
+          onClick={submit}
+          disabled={pending || !fileName}
+          className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-[0_3px_14px_rgba(20,30,60,0.12)] disabled:opacity-50"
+        >
+          {pending ? "불러오는 중..." : "불러오기"}
+        </button>
+        <button
+          onClick={() => setOpen(false)}
+          className="flex-1 rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+        >
+          닫기
+        </button>
       </div>
     </div>
   );

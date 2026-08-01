@@ -37,6 +37,10 @@ export interface Student {
   clinic_day: string | null;
   clinic_time: string | null;
   birthday: string | null; // "YYYY-MM-DD" (연도는 무시하고 월/일만 비교해 생일 판정)
+  /** 실제로 수업을 시작한 날 "YYYY-MM-DD". 이 날이 속한 주부터 클리닉
+   * 대상이 된다 — 그 이전 주차는 밀림·티어 산정에서 제외. 비워두면
+   * 기존처럼 전체 주차를 대상으로 본다(clinicBacklog.ts 참고). */
+  first_lesson_date: string | null;
   student_app_seen_at: string | null; // 학생 계정이 standalone(설치) 상태로 접속한 마지막 시각
   parent_app_seen_at: string | null; // 학부모 계정이 standalone(설치) 상태로 접속한 마지막 시각
   final_score_label: string | null;

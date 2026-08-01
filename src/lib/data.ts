@@ -112,6 +112,7 @@ export type RosterFieldUpdate = Partial<
     | "clinic_day"
     | "clinic_time"
     | "birthday"
+    | "first_lesson_date"
   >
 >;
 

@@ -33,3 +33,4 @@ SQL Editor에서 실행해 "성공했어" 확인해줄 때 이 파일에 한 줄
 - [x] 0026_auto_absence.sql — 2026-07-30 확인
 - [x] 0027_reminders.sql — 2026-08-01 확인
 - [x] 0028_new_student_onboardings.sql — 2026-08-01 확인
+- [x] 0029_first_lesson_date.sql — 2026-08-01 확인

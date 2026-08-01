@@ -91,13 +91,16 @@ function percentileMapForWeek(
 function summarizeTier(
   studentId: number,
   classKey: ClassKey,
-  createdAt: string,
+  /** 첫수업일이 있으면 그걸, 없으면 created_at(벌크 이관 시각일 수 있음)을
+   * 추적 시작점으로 쓴다 — 신규 학생이 오기 전 주차까지 미완료로 잡혀
+   * 티어가 억울하게 깎이지 않도록. */
+  trackingSinceSource: string,
   weeksAsc: Date[],
   templatesByWeek: Map<ClassKey, ClinicTemplate>[],
   checksByWeek: Map<number, ClinicCheck>[],
   percentileByWeek: Map<number, number>[]
 ): { eligible: boolean; tierScore: number | null; grade: TierGrade | null; completionRate: number | null; avgTestPercentile: number | null } {
-  const trackingSince = mondayOf(new Date(createdAt));
+  const trackingSince = mondayOf(new Date(trackingSinceSource));
 
   let applicableWeeks = 0;
   let doneWeeks = 0;
@@ -158,7 +161,7 @@ export async function getStudentTier(studentId: number, lookbackWeeks = 20): Pro
   const summary = summarizeTier(
     studentId,
     classKey,
-    student.created_at,
+    student.first_lesson_date ?? student.created_at,
     weeksAsc,
     templatesByWeek,
     checksByWeek,
@@ -215,7 +218,7 @@ export async function computeAllStudentTiers(lookbackWeeks = 20): Promise<Studen
     const summary = summarizeTier(
       student.id,
       student.class_key,
-      student.created_at,
+      student.first_lesson_date ?? student.created_at,
       weeksAsc,
       templatesByWeek,
       checksByWeek,

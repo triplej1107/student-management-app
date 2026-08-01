@@ -21,6 +21,7 @@ const COLUMNS = [
   { header: "수업시간", width: 9 },
   { header: "클리닉요일", width: 9 },
   { header: "클리닉시간", width: 9 },
+  { header: "첫수업일", width: 12 },
 ];
 
 const DAY_OPTIONS = ["월", "화", "수", "목", "금", "토", "일"];
@@ -41,6 +42,7 @@ const EXAMPLE_ROW = [
   "13:00",
   "목",
   "15:00",
+  "2026-03-02",
 ];
 
 async function main() {
@@ -110,6 +112,10 @@ async function main() {
     ["학부모전화번호 / 학생전화번호", "숫자만 또는 010-1234-5678 형식."],
     ["수업요일 / 클리닉요일", `"${DAY_OPTIONS.join("/")}" 중 하나.`],
     ["수업시간 / 클리닉시간", '24시간 기준 "HH:MM" 형식(예: 16:00).'],
+    [
+      "첫수업일",
+      '실제로 첫 수업을 들은 날 "YYYY-MM-DD"(예: 2026-03-02). 이 날이 속한 주 이전의 클리닉은 밀림·성실도 티어 계산에서 제외돼요 — 신규 학생이 오기도 전 주차까지 밀림으로 잡히는 걸 막아줍니다. 기존 학생은 비워둬도 지금까지와 똑같이 동작해요.',
+    ],
   ];
   for (const [label, desc] of notes) {
     const r = guide.addRow([label, desc]);

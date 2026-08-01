@@ -119,6 +119,7 @@ const emptyNewStudent = {
   class_time: "",
   clinic_day: "",
   clinic_time: "",
+  first_lesson_date: "",
 };
 
 function AddStudentForm({ onCreated }: { onCreated: (student: Student) => void }) {
@@ -262,6 +263,18 @@ function AddStudentForm({ onCreated }: { onCreated: (student: Student) => void }
           className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
         />
       </div>
+      <div className="mt-1.5 flex items-center gap-1.5">
+        <span className="flex-none text-xs text-ink-muted">첫수업</span>
+        <input
+          type="date"
+          value={form.first_lesson_date}
+          onChange={(e) => set("first_lesson_date", e.target.value)}
+          className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
+        />
+      </div>
+      <div className="mt-1 text-[11px] leading-relaxed text-ink-muted/80">
+        신규 학생은 첫수업일을 꼭 넣어주세요 — 그 주 이전 클리닉이 밀림으로 잡히지 않아요.
+      </div>
 
       {error && <div className="mt-1.5 text-[11px] font-semibold text-danger">{error}</div>}
       <div className="mt-2 flex gap-1.5">
@@ -298,6 +311,7 @@ function IndividualEditForm({
   const [school, setSchool] = useState(student.school ?? "");
   const [grade, setGrade] = useState(student.grade ?? "");
   const [birthday, setBirthday] = useState(student.birthday ?? "");
+  const [firstLessonDate, setFirstLessonDate] = useState(student.first_lesson_date ?? "");
   const [level, setLevel] = useState(student.level ?? "고등");
   const [parentPhone, setParentPhone] = useState(student.parent_phone ?? "");
   const [studentPhone, setStudentPhone] = useState(student.student_phone ?? "");
@@ -408,6 +422,20 @@ function IndividualEditForm({
             onBlur={(e) => commitRoster("birthday", e.target.value)}
             className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
           />
+        </div>
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <span className="flex-none text-xs text-ink-muted">첫수업</span>
+          <input
+            type="date"
+            value={firstLessonDate}
+            onChange={(e) => setFirstLessonDate(e.target.value)}
+            onBlur={(e) => commitRoster("first_lesson_date", e.target.value)}
+            className="flex-1 rounded-lg border border-line px-2.5 py-2 text-xs"
+          />
+        </div>
+        <div className="mb-1.5 text-[11px] leading-relaxed text-ink-muted/80">
+          첫수업일을 넣으면 그 주 이전 클리닉은 밀림·성실도 티어에서 제외돼요. 신규 학생이 오기 전
+          주차까지 밀림으로 잡히는 걸 막아줍니다.
         </div>
         <div className="mb-1.5 flex gap-1.5">
           <input

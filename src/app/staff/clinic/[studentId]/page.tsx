@@ -5,6 +5,7 @@ import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from 
 import { getOmrSubmissionsForStudentWeek } from "@/lib/clinicOmr";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
+import { resolveBackHref, fromQuery } from "@/lib/backTarget";
 import { ClinicChecklistEditor } from "@/components/staff/ClinicChecklistEditor";
 import { FeedbackEditor } from "@/components/staff/FeedbackEditor";
 
@@ -13,11 +14,11 @@ export default async function StaffClinicDetailPage({
   searchParams,
 }: {
   params: Promise<{ studentId: string }>;
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; from?: string }>;
 }) {
   const session = await requireStaffSession();
   const { studentId } = await params;
-  const { week } = await searchParams;
+  const { week, from } = await searchParams;
 
   const student = await getStudentById(Number(studentId));
   if (!student) notFound();
@@ -40,7 +41,7 @@ export default async function StaffClinicDetailPage({
 
   return (
     <div className="box-border px-5 pt-2 pb-7">
-      <BackButton href="/staff/clinic" />
+      <BackButton href={resolveBackHref(from, "/staff/clinic", "/staff/clinic-backlog")} />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">클리닉 점검표</div>
         <div className="mt-1 text-xs italic text-ink-muted">
@@ -57,7 +58,11 @@ export default async function StaffClinicDetailPage({
         {weeks.map((w) => {
           const iso = toISODate(w);
           return (
-            <PillLink key={iso} href={`/staff/clinic/${studentId}?week=${iso}`} active={iso === selectedWeekISO}>
+            <PillLink
+              key={iso}
+              href={`/staff/clinic/${studentId}?week=${iso}${fromQuery(from)}`}
+              active={iso === selectedWeekISO}
+            >
               {weekLabel(w)}
             </PillLink>
           );

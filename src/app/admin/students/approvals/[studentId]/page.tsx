@@ -5,6 +5,7 @@ import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from 
 import { getOmrSubmissionsForStudentWeek } from "@/lib/clinicOmr";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
+import { resolveBackHref, fromQuery } from "@/lib/backTarget";
 import { AdminApprovalChecklist } from "@/components/admin/AdminApprovalChecklist";
 import { ZongjuFeedbackEditor } from "@/components/admin/ZongjuFeedbackEditor";
 
@@ -13,11 +14,11 @@ export default async function AdminApprovalDetailPage({
   searchParams,
 }: {
   params: Promise<{ studentId: string }>;
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; from?: string }>;
 }) {
   await requireZongjuSession();
   const { studentId } = await params;
-  const { week } = await searchParams;
+  const { week, from } = await searchParams;
 
   const student = await getStudentById(Number(studentId));
   if (!student) notFound();
@@ -39,7 +40,7 @@ export default async function AdminApprovalDetailPage({
 
   return (
     <div>
-      <BackButton href="/admin/students/approvals" />
+      <BackButton href={resolveBackHref(from, "/admin/students/approvals", "/admin/clinic-backlog")} />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">클리닉 점검표</div>
         <div className="mt-1 text-xs italic text-ink-muted">{classKey ?? "미배정"}</div>
@@ -56,7 +57,7 @@ export default async function AdminApprovalDetailPage({
           return (
             <PillLink
               key={iso}
-              href={`/admin/students/approvals/${studentId}?week=${iso}`}
+              href={`/admin/students/approvals/${studentId}?week=${iso}${fromQuery(from)}`}
               active={iso === selectedWeekISO}
             >
               {weekLabel(w)}

@@ -122,7 +122,7 @@ export function ClinicBacklogView({
                   />
                 )}
                 <Link
-                  href={`${detailHrefBase}/${e.studentId}?week=${e.oldestIncompleteWeekISO}`}
+                  href={`${detailHrefBase}/${e.studentId}?week=${e.oldestIncompleteWeekISO}&from=backlog`}
                   className="flex flex-1 items-center justify-between"
                 >
                   <div>

@@ -6,12 +6,14 @@ import { getUjcBalance, getUjcHistory } from "@/lib/ujc";
 import { getStudentTier } from "@/lib/ujcTier";
 import { getStudentBacklogDetail } from "@/lib/clinicBacklog";
 import { getParentQuestion } from "@/lib/parentQuestions";
+import { getRemindersForStudent } from "@/lib/reminders";
 import { getToday } from "@/lib/today";
 import { weekLabel, toISODate } from "@/lib/weeks";
 import { ClinicChecklistSummaryCard } from "@/components/ClinicChecklistSummaryCard";
 import { UjcWalletCard } from "@/components/UjcWalletCard";
 import { ParentQuestionCard } from "@/components/ParentQuestionCard";
 import { HomeModals } from "@/components/HomeModals";
+import { StudentReminderCard } from "@/components/StudentReminderCard";
 import { InstallSeenBeacon } from "@/components/InstallSeenBeacon";
 import { logoutAction } from "@/app/login/actions";
 import { submitParentQuestionAction } from "./actions";
@@ -45,6 +47,10 @@ export default async function StudentHomePage() {
     isStudent ? getStudentBacklogDetail(student.id) : Promise.resolve(null),
     isParent ? getParentQuestion(student.id, toISODate(questionWeekStart)) : Promise.resolve(null),
   ]);
+  // 학생·학부모 모두에게 보여준다 — 챙겨야 할 돌발 일정은 집에서도 알아야 하므로.
+  const reminders = isStudentOrParent
+    ? await getRemindersForStudent(student.id, toISODate(today))
+    : [];
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
@@ -87,6 +93,8 @@ export default async function StudentHomePage() {
         backlog={isStudent ? backlog : null}
         showPushPrompt={isStudentOrParent}
       />
+
+      <StudentReminderCard reminders={reminders} />
 
       {isParent && (
         <div className="mt-4">

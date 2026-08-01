@@ -147,11 +147,19 @@ export interface Reminder {
   event_date: string; // "YYYY-MM-DD"
   event_time: string; // "HH:MM"
   content: string;
+  /** 이 일정의 당사자 학생. 연결하면 그 학생·학부모에게도 알림이 가고
+   * 학생 홈 화면에도 뜬다 — 즉 내용이 학생에게 그대로 보인다. */
+  student_id: number | null;
   day_before_pushed_at: string | null;
   hour_before_pushed_at: string | null;
   resolved: boolean;
   resolved_at: string | null;
   created_at: string;
+}
+
+/** 목록 화면에서 학생 이름을 함께 보여주기 위한 형태. */
+export interface ReminderWithStudent extends Reminder {
+  studentName: string | null;
 }
 
 export interface TestScore {

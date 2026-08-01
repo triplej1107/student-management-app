@@ -6,7 +6,12 @@ import {
   getRemindersDueForHourBeforePush,
   markHourBeforePushed,
 } from "@/lib/reminders";
-import { getPushSubscriptionsForAllStaff, getPushSubscriptionsForZongju, sendReminderPush } from "@/lib/clinicPush";
+import {
+  getPushSubscriptionsForAllStaff,
+  getPushSubscriptionsForStudents,
+  getPushSubscriptionsForZongju,
+  sendReminderPush,
+} from "@/lib/clinicPush";
 import { kstToday, toISODate, nowKST } from "@/lib/weeks";
 import { isDeployedEnvironment } from "@/lib/env";
 
@@ -70,21 +75,29 @@ export async function GET(req: Request) {
     getPushSubscriptionsForZongju(),
   ]);
 
-  for (const r of dayBeforeDue) {
-    const body = `내일 ${formatTimeKorean(r.event_time)} — ${r.content}`;
+  // 학생이 연결된 건은 그 학생·학부모에게도 보낸다(같은 student_id에 묶인
+  // 구독이라 학생 폰과 학부모 폰이 함께 걸린다).
+  const linkedIds = [...dayBeforeDue, ...hourBeforeDue]
+    .map((r) => r.student_id)
+    .filter((id): id is number => id !== null);
+  const subsByStudent = await getPushSubscriptionsForStudents([...new Set(linkedIds)]);
+
+  async function fanOut(r: { student_id: number | null }, body: string) {
+    const studentSubs = r.student_id ? (subsByStudent.get(r.student_id) ?? []) : [];
     await Promise.all([
       sendReminderPush(staffSubs, body, "/staff"),
       sendReminderPush(zongjuSubs, body, "/admin"),
+      studentSubs.length > 0 ? sendReminderPush(studentSubs, body, "/student") : Promise.resolve(),
     ]);
+  }
+
+  for (const r of dayBeforeDue) {
+    await fanOut(r, `내일 ${formatTimeKorean(r.event_time)} — ${r.content}`);
     await markDayBeforePushed(r.id);
   }
 
   for (const r of hourBeforeDue) {
-    const body = `1시간 뒤 ${formatTimeKorean(r.event_time)} — ${r.content}`;
-    await Promise.all([
-      sendReminderPush(staffSubs, body, "/staff"),
-      sendReminderPush(zongjuSubs, body, "/admin"),
-    ]);
+    await fanOut(r, `1시간 뒤 ${formatTimeKorean(r.event_time)} — ${r.content}`);
     await markHourBeforePushed(r.id);
   }
 

@@ -1,19 +1,58 @@
 import "server-only";
 import { supabase } from "./supabase";
-import type { Reminder } from "./types";
+import type { Reminder, ReminderWithStudent } from "./types";
 
-export async function listUpcomingReminders(): Promise<Reminder[]> {
+/** supabase 조인 결과({ students: { name } })를 평평한 studentName으로 편다. */
+type JoinedRow = Reminder & { students?: { name: string } | null };
+function withStudentName(row: JoinedRow): ReminderWithStudent {
+  const { students, ...rest } = row;
+  return { ...rest, studentName: students?.name ?? null };
+}
+
+const SELECT = "*, students(name)";
+
+export async function listUpcomingReminders(): Promise<ReminderWithStudent[]> {
   const { data } = await supabase
     .from("reminders")
-    .select("*")
+    .select(SELECT)
     .eq("resolved", false)
     .order("event_date")
     .order("event_time");
-  return (data as Reminder[]) ?? [];
+  return ((data as JoinedRow[]) ?? []).map(withStudentName);
 }
 
-export async function createReminder(eventDateISO: string, eventTime: string, content: string) {
-  await supabase.from("reminders").insert({ event_date: eventDateISO, event_time: eventTime, content });
+export async function createReminder(
+  eventDateISO: string,
+  eventTime: string,
+  content: string,
+  studentId: number | null
+) {
+  await supabase.from("reminders").insert({
+    event_date: eventDateISO,
+    event_time: eventTime,
+    content,
+    student_id: studentId,
+  });
+}
+
+/** 내용·날짜·시간·학생을 고친다. 알림을 아직 안 보낸 건이면 새 시각 기준으로
+ * 다시 보내야 하므로 발송 표시를 지운다 — 날짜를 미뤘는데 "하루 전" 알림이
+ * 이미 갔다고 표시돼 있으면 영영 안 가기 때문. */
+export async function updateReminder(
+  id: number,
+  fields: { eventDateISO: string; eventTime: string; content: string; studentId: number | null }
+) {
+  await supabase
+    .from("reminders")
+    .update({
+      event_date: fields.eventDateISO,
+      event_time: fields.eventTime,
+      content: fields.content,
+      student_id: fields.studentId,
+      day_before_pushed_at: null,
+      hour_before_pushed_at: null,
+    })
+    .eq("id", id);
 }
 
 export async function deleteReminder(id: number) {
@@ -28,12 +67,29 @@ export async function resolveReminder(id: number) {
 }
 
 /** 오늘(event_date) 아직 해결 안 된 알림 — 조교/종주T 홈 화면 상단 배지용. */
-export async function getTodayActiveReminders(todayISO: string): Promise<Reminder[]> {
+export async function getTodayActiveReminders(todayISO: string): Promise<ReminderWithStudent[]> {
+  const { data } = await supabase
+    .from("reminders")
+    .select(SELECT)
+    .eq("event_date", todayISO)
+    .eq("resolved", false)
+    .order("event_time");
+  return ((data as JoinedRow[]) ?? []).map(withStudentName);
+}
+
+/** 그 학생 본인에게 걸린, 오늘 이후의 아직 안 끝난 일정 — 학생 홈 화면용.
+ * 지난 건은 굳이 계속 보여줄 필요가 없어 오늘부터만 본다. */
+export async function getRemindersForStudent(
+  studentId: number,
+  todayISO: string
+): Promise<Reminder[]> {
   const { data } = await supabase
     .from("reminders")
     .select("*")
-    .eq("event_date", todayISO)
+    .eq("student_id", studentId)
     .eq("resolved", false)
+    .gte("event_date", todayISO)
+    .order("event_date")
     .order("event_time");
   return (data as Reminder[]) ?? [];
 }

@@ -96,6 +96,7 @@ export default async function StaffAttendancePage({
                       dateISO={group.dateISO}
                       parentTexted={autoAbsenceTextedMaps[gi]?.get(entry.student.id)}
                       autoMarked
+                      clinicHrefBase="/staff/clinic"
                     />
                   ))}
                 </div>
@@ -122,6 +123,7 @@ export default async function StaffAttendancePage({
               dateISO={dateISO}
               parentTexted={parentTextedMap.get(entry.student.id)}
               autoMarked={autoMarkedIds.has(entry.student.id)}
+              clinicHrefBase="/staff/clinic"
             />
           ),
         }))}

@@ -100,6 +100,7 @@ export default async function AdminAttendancePage({
                       dateISO={group.dateISO}
                       parentTexted={autoAbsenceTextedMaps[gi]?.get(entry.student.id)}
                       autoMarked
+                      clinicHrefBase="/admin/students/approvals"
                     />
                   ))}
                 </div>
@@ -126,6 +127,7 @@ export default async function AdminAttendancePage({
               dateISO={dateISO}
               parentTexted={parentTextedMap.get(entry.student.id)}
               autoMarked={autoMarkedIds.has(entry.student.id)}
+              clinicHrefBase="/admin/students/approvals"
             />
           ),
         }))}

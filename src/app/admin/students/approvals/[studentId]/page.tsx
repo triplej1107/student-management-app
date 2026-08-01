@@ -40,7 +40,12 @@ export default async function AdminApprovalDetailPage({
 
   return (
     <div>
-      <BackButton href={resolveBackHref(from, "/admin/students/approvals", "/admin/clinic-backlog")} />
+      <BackButton
+        href={resolveBackHref(from, "/admin/students/approvals", {
+          backlog: "/admin/clinic-backlog",
+          attendance: "/admin/students/attendance",
+        })}
+      />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">클리닉 점검표</div>
         <div className="mt-1 text-xs italic text-ink-muted">{classKey ?? "미배정"}</div>

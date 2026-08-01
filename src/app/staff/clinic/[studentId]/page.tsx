@@ -41,7 +41,12 @@ export default async function StaffClinicDetailPage({
 
   return (
     <div className="box-border px-5 pt-2 pb-7">
-      <BackButton href={resolveBackHref(from, "/staff/clinic", "/staff/clinic-backlog")} />
+      <BackButton
+        href={resolveBackHref(from, "/staff/clinic", {
+          backlog: "/staff/clinic-backlog",
+          attendance: "/staff/attendance",
+        })}
+      />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">클리닉 점검표</div>
         <div className="mt-1 text-xs italic text-ink-muted">

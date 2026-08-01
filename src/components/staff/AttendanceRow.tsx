@@ -35,6 +35,7 @@ export function AttendanceRow({
   dateISO,
   parentTexted,
   autoMarked,
+  clinicHrefBase,
 }: {
   student: Student;
   effTime: string;
@@ -43,6 +44,10 @@ export function AttendanceRow({
   status?: AttendanceStatus;
   dateISO: string;
   parentTexted?: boolean;
+  /** 이름을 눌렀을 때 열 점검표 주소의 앞부분 — 조교는 /staff/clinic,
+   * 종주T는 /admin/students/approvals. 종주T에게 조교 전용 주소를 주면
+   * 권한 검사에 걸려 홈으로 튕긴다. */
+  clinicHrefBase: string;
   /** 이 status가 사람이 아니라 시스템이 자동으로 기록한 것 — 클리닉 시각이
    * 지나도록 미출석이면 자동 "지각"으로, 그 지각이 밤까지 안 고쳐지면
    * 자동 "결석"으로 표시된다. 출석/지각/결석 버튼을 실제로 누르면 바로 꺼진다. */
@@ -119,7 +124,7 @@ export function AttendanceRow({
   return (
     <div className="rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]">
       <div className="flex items-start justify-between">
-        <Link href={`/staff/clinic/${student.id}`} className="cursor-pointer">
+        <Link href={`${clinicHrefBase}/${student.id}?from=attendance`} className="cursor-pointer">
           <div className="text-[15px] font-bold text-ink">
             {student.name}
             {classTag && <span className="text-xs font-normal text-ink-muted">({classTag})</span>}

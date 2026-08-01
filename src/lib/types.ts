@@ -122,6 +122,7 @@ export const NEW_STUDENT_CHECKLIST = [
   "학부모 밴드 초대",
   "학생·학부모 앱 설치 확인",
   "앞선 교재들 챙겨주기",
+  "단톡방 초대 후 중요톡 다시 해주기",
 ] as const;
 
 export interface NewStudentOnboarding {

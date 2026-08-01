@@ -1,6 +1,15 @@
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import type { ClinicPercentilePoint } from "@/lib/types";
 
+/** 내신 등수 그래프의 세로축을 전교생 수 기준으로 고정하기 위한 값.
+ *
+ * 축을 데이터에 맞춰 자동으로 늘리면 1등 → 6등처럼 사실상 거의 같은
+ * 성적이 화면을 가로지르는 폭락으로 보인다. 전교생(약 240명) 안에서의
+ * 위치로 그려야 실제 체감과 맞는다. 학교마다 다르지만 우리 학원 주력
+ * 학교들 기준 어림값이고, 이보다 등수가 낮은 학생은 아래에서 축을
+ * 늘려 잘리지 않게 한다. */
+const APPROX_SCHOOL_SIZE = 240;
+
 /** 성적 그래프 3종 — 학생 본인 화면과 종주T 개별 관리 화면이 함께 쓴다.
  * 데이터 계산은 lib/gradeTrends.ts에 있고 여기는 그리기만 한다. */
 export function StudentGradeCharts({
@@ -17,6 +26,13 @@ export function StudentGradeCharts({
   /** 종주T 개별 화면처럼 이미 설명이 많은 곳에서는 보조 설명을 줄인다. */
   compact?: boolean;
 }) {
+  // 전교생 수보다 등수가 낮은 학생(다른 학교 등)도 그래프에서 잘리지 않도록
+  // 실제 최저 등수까지는 축을 늘린다.
+  const rankAxisMax = Math.max(
+    APPROX_SCHOOL_SIZE,
+    ...schoolPoints.map((p) => p.value).filter((v): v is number => v !== null)
+  );
+
   return (
     <>
       <div className="rounded-2xl border border-line-soft bg-white p-3.5">
@@ -50,8 +66,10 @@ export function StudentGradeCharts({
 
       <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">
         <div className="mb-1 text-sm font-bold text-ink">내신 학교등수 변화</div>
-        <div className="mb-2 text-xs text-ink-muted">등수는 낮을수록(위쪽일수록) 좋아요</div>
-        <TrendChart points={schoolPoints} higherIsBetter={false} unit="등" />
+        <div className="mb-2 text-xs text-ink-muted">
+          등수는 낮을수록(위쪽일수록) 좋아요 · 전교 {rankAxisMax}명 기준
+        </div>
+        <TrendChart points={schoolPoints} higherIsBetter={false} unit="등" yDomain={[1, rankAxisMax]} />
       </div>
 
       <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">

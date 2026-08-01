@@ -4,7 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { REFERRAL_STATE_LABEL, type ReferralState } from "@/lib/scholarshipRules";
-import type { GradeGroup, GradeRow, ReferralRow } from "@/lib/scholarships";
+import type {
+  GradeGroup,
+  GradeRow,
+  GradeScholarshipData,
+  PaidEntry,
+  ReferralRow,
+} from "@/lib/scholarships";
 import { setScholarshipCheckAction } from "@/app/admin/students/scholarships/actions";
 
 function manwon(amount: number) {
@@ -60,19 +66,48 @@ const STATE_BADGE: Record<ReferralState, string> = {
 
 export function ScholarshipBoard({
   referrals,
-  gradeGroups,
+  gradeData,
 }: {
   referrals: ReferralRow[];
-  gradeGroups: GradeGroup[];
+  gradeData: GradeScholarshipData;
 }) {
   const [tab, setTab] = useState<"referral" | "grade">("referral");
+  const [showHistory, setShowHistory] = useState(false);
 
   const dueCount = referrals.filter((r) => r.state === "due").length;
-  const gradeUnpaid = gradeGroups.reduce((n, g) => n + g.rows.filter((r) => !r.paid).length, 0);
+  const gradeUnpaid = gradeData.groups.reduce((n, g) => n + g.rows.length, 0);
+
+  // 지급 완료한 건 목록에서 빼고 여기로 모은다.
+  const history: PaidEntry[] = [
+    ...referrals
+      .filter((r) => r.state === "paid")
+      .map((r) => ({
+        kind: "referral" as const,
+        refKey: r.refKey,
+        context: "친구 소개",
+        name: r.referrer?.name ?? r.referrerName ?? "미상",
+        reason: `${r.referred.name} 소개`,
+        amount: r.amount,
+      })),
+    ...gradeData.paid,
+  ];
+
+  if (showHistory) {
+    return <HistoryPanel entries={history} onClose={() => setShowHistory(false)} />;
+  }
 
   return (
     <div>
-      <div className="mt-3.5 flex gap-2">
+      <div className="mt-3.5 flex justify-end">
+        <button
+          onClick={() => setShowHistory(true)}
+          className="rounded-lg border border-line bg-white px-3 py-1.5 text-[11px] font-bold text-ink-secondary shadow-[0_1px_4px_rgba(20,30,60,0.10)]"
+        >
+          지급 내역 {history.length > 0 && `(${history.length})`}
+        </button>
+      </div>
+
+      <div className="mt-2 flex gap-2">
         {(
           [
             ["referral", "친구 소개", dueCount],
@@ -102,8 +137,82 @@ export function ScholarshipBoard({
       {tab === "referral" ? (
         <ReferralSection rows={referrals} />
       ) : (
-        <GradeSection groups={gradeGroups} />
+        <GradeSection groups={gradeData.groups} />
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// 지급 내역 — 언제 누구에게 왜 얼마 줬는지만 한 줄씩.
+// ============================================================
+
+function HistoryPanel({ entries, onClose }: { entries: PaidEntry[]; onClose: () => void }) {
+  const total = entries.reduce((sum, e) => sum + e.amount, 0);
+
+  return (
+    <div>
+      <div className="mt-3.5 flex items-center justify-between">
+        <div className="text-[15px] font-extrabold text-ink">지급 내역</div>
+        <button
+          onClick={onClose}
+          className="rounded-lg border border-line bg-white px-3 py-1.5 text-[11px] font-bold text-ink-secondary shadow-[0_1px_4px_rgba(20,30,60,0.10)]"
+        >
+          목록으로
+        </button>
+      </div>
+
+      {entries.length === 0 ? (
+        <div className="mt-3 rounded-2xl border border-line-soft bg-white p-5 text-center text-[13px] text-ink-muted/70">
+          아직 지급한 장학금이 없어요.
+        </div>
+      ) : (
+        <>
+          <div className="mt-1 text-[11px] text-ink-muted">
+            모두 {entries.length}건 · 합계 {total.toLocaleString()}원
+          </div>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {entries.map((e) => (
+              <HistoryRow key={`${e.kind}_${e.refKey}`} entry={e} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function HistoryRow({ entry }: { entry: PaidEntry }) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [pending, startTransition] = useTransition();
+
+  function undo() {
+    if (!confirm(`${entry.name} 지급 완료를 취소하고 목록으로 되돌릴까요?`)) return;
+    startTransition(async () => {
+      await setScholarshipCheckAction(entry.kind, entry.refKey, "paid", false);
+      showToast("목록으로 되돌렸어요");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-xl border border-line-soft bg-white px-3 py-2">
+      <div className="min-w-0 text-[13px] text-ink">
+        <span className="text-[11px] text-ink-muted">{entry.context}</span>
+        <span className="ml-1.5 font-bold">{entry.name}</span>
+        <span className="ml-1 text-[11px] text-ink-muted">{entry.reason}</span>
+      </div>
+      <div className="flex flex-none items-center gap-1.5">
+        <span className="text-[13px] font-extrabold text-accent">{manwon(entry.amount)}</span>
+        <button
+          onClick={undo}
+          disabled={pending}
+          className="rounded-md border border-line px-1.5 py-1 text-[10px] font-bold text-ink-muted disabled:opacity-50"
+        >
+          되돌리기
+        </button>
+      </div>
     </div>
   );
 }
@@ -121,14 +230,14 @@ function ReferralSection({ rows }: { rows: ReferralRow[] }) {
       hint: "소개한 학생을 못 찾았거나 첫수업일이 비어 있어요. 명단에서 채워주면 자동으로 넘어가요.",
     },
     { state: "waiting", title: "기다리는 중", hint: "둘째 달이 시작되면 지급 대상으로 올라와요." },
-    { state: "paid", title: "지급 완료" },
     { state: "void", title: "무효", hint: "두 달을 못 채우고 그만둔 경우예요." },
   ];
 
-  if (rows.length === 0) {
+  // 지급 완료한 건 "지급 내역"으로 빠져서 여기 남는 게 없을 수도 있다.
+  if (rows.every((r) => r.state === "paid")) {
     return (
       <div className="mt-4 rounded-2xl border border-line-soft bg-white p-5 text-center text-[13px] text-ink-muted/70">
-        소개로 온 학생이 아직 없어요.
+        {rows.length === 0 ? "소개로 온 학생이 아직 없어요." : "챙길 소개 장학금이 없어요."}
         <div className="mt-1 text-[11px]">
           회원명단 엑셀 [메모] 칸에 &ldquo;OOO 소개&rdquo;라고 써두면 여기에 자동으로 올라와요.
         </div>
@@ -239,9 +348,10 @@ function GradeSection({ groups }: { groups: GradeGroup[] }) {
   if (groups.length === 0) {
     return (
       <div className="mt-4 rounded-2xl border border-line-soft bg-white p-5 text-center text-[13px] text-ink-muted/70">
-        1등급을 받은 학생이 아직 없어요.
+        챙길 성적 장학금이 없어요.
         <div className="mt-1 text-[11px]">
-          개별 탭에서 내신 성적(등급·등수)을 넣으면 여기에 자동으로 올라와요.
+          학년별로 이번 1학기 기말만 봐요. 개별 탭에서 내신 성적(등급·등수)을 넣으면 여기에 자동으로
+          올라와요.
         </div>
       </div>
     );
@@ -250,28 +360,21 @@ function GradeSection({ groups }: { groups: GradeGroup[] }) {
   return (
     <div className="mt-4">
       <div className="mb-3 rounded-xl bg-accent-soft/50 px-3 py-2 text-[11px] leading-relaxed text-ink-secondary">
-        1등급 <b>3만원</b>, 그중 전교 3등 이내면 <b>5만원</b>이에요. 네이버 리뷰를 확인한 뒤에
-        지급합니다.
+        1등급 <b>3만원</b>, 그중 전교 3등 이내면 <b>5만원</b>이에요. 네이버 리뷰를 확인해야 지급
+        완료를 누를 수 있어요.
       </div>
-      {groups.map((group) => {
-        const unpaid = group.rows.filter((r) => !r.paid);
-        const paid = group.rows.filter((r) => r.paid);
-        return (
-          <div key={group.examKey} className="mb-5">
-            <div className="mb-2 text-[13px] font-extrabold text-ink">
-              {group.label}{" "}
-              <span className="font-normal text-ink-muted">
-                ({group.rows.length}명{unpaid.length > 0 && ` · 미지급 ${unpaid.length}`})
-              </span>
-            </div>
-            <div className="flex flex-col gap-2">
-              {[...unpaid, ...paid].map((row) => (
-                <GradeRowCard key={row.refKey} row={row} />
-              ))}
-            </div>
+      {groups.map((group) => (
+        <div key={group.examKey} className="mb-5">
+          <div className="mb-2 text-[13px] font-extrabold text-ink">
+            {group.label} <span className="font-normal text-ink-muted">({group.rows.length}명)</span>
           </div>
-        );
-      })}
+          <div className="flex flex-col gap-2">
+            {group.rows.map((row) => (
+              <GradeRowCard key={row.refKey} row={row} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -290,12 +393,7 @@ function GradeRowCard({ row }: { row: GradeRow }) {
   }
 
   return (
-    <div
-      className={
-        "rounded-2xl border p-3 " +
-        (row.paid ? "border-line-soft bg-bg-page" : "border-line-soft bg-white")
-      }
-    >
+    <div className="rounded-2xl border border-line-soft bg-white p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[15px] font-bold text-ink">
@@ -317,18 +415,23 @@ function GradeRowCard({ row }: { row: GradeRow }) {
           {manwon(row.amount)}
         </span>
       </div>
-      <div className="mt-2 flex justify-end gap-1.5">
+      <div className="mt-2 flex items-center justify-end gap-1.5">
+        {!row.reviewDone && (
+          <span className="mr-auto text-[10px] text-ink-muted/80">리뷰 확인 후 지급</span>
+        )}
         <CheckToggle
           checked={row.reviewDone}
           label="네이버 리뷰"
           onToggle={() => toggle("review_done", !row.reviewDone, "네이버 리뷰를")}
           disabled={pending}
         />
+        {/* 리뷰를 안 썼는데 먼저 줘버리는 걸 막는다 — 리뷰가 조건인 장학금이라
+            순서가 뒤집히면 되돌릴 수가 없다. */}
         <CheckToggle
-          checked={row.paid}
+          checked={false}
           label="지급 완료"
-          onToggle={() => toggle("paid", !row.paid, "지급 완료를")}
-          disabled={pending}
+          onToggle={() => toggle("paid", true, "지급 완료를")}
+          disabled={pending || !row.reviewDone}
         />
       </div>
     </div>

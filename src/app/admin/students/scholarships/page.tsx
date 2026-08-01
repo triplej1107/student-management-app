@@ -7,7 +7,7 @@ import { STUDENT_TAB_GROUPS } from "../subTabs";
 export default async function AdminScholarshipsPage() {
   await requireZongjuSession();
 
-  const [referrals, gradeGroups] = await Promise.all([
+  const [referrals, gradeData] = await Promise.all([
     getReferralScholarships(),
     getGradeScholarships(),
   ]);
@@ -21,7 +21,7 @@ export default async function AdminScholarshipsPage() {
         누구에게 언제 줘야 하는지 자동으로 뽑아줘요. 준 건 체크해두면 다음에 안 뜹니다.
       </div>
 
-      <ScholarshipBoard referrals={referrals} gradeGroups={gradeGroups} />
+      <ScholarshipBoard referrals={referrals} gradeData={gradeData} />
     </div>
   );
 }

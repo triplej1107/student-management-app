@@ -93,7 +93,6 @@ export interface GradeRow {
   rank: number | null;
   amount: number;
   reviewDone: boolean;
-  paid: boolean;
 }
 
 export interface GradeGroup {
@@ -171,11 +170,47 @@ export async function getReferralScholarships(todayISO = toISODate(kstToday())):
  * 장학금이 두 번 나가면 안 된다. */
 const GRADED_EXAMS = SCHOOL_EXAMS.filter((e) => !("scoreless" in e && e.scoreless));
 
+const EXAM_LABEL = new Map(SCHOOL_EXAMS.map((e) => [e.key as string, e.label]));
+
 /**
- * 성적 장학금 목록 — 내신 1등급을 받은 학생을 시험별로 묶는다.
- * 최근 시험이 위로 오도록 슬롯 순서를 뒤집는다.
+ * 챙길 시험은 학년별로 "그 학년 1학기 기말" 하나뿐이다.
+ *
+ * 지난 학년과 중간고사까지 다 띄우면 목록이 감당이 안 된다는 원장님 판단.
+ * 2학년은 2학년 1학기 기말만, 1학년은 1학년 1학기 기말만 본다.
  */
-export async function getGradeScholarships(): Promise<GradeGroup[]> {
+const FINAL_EXAM_BY_GRADE: Record<string, string> = {
+  "1": "g1s1fin",
+  "2": "g2s1fin",
+  "3": "g3s1fin",
+};
+
+/** "2", "2학년" 등 어떻게 적혀 있든 학년 숫자만 뽑아 슬롯을 고른다. */
+function currentFinalExamKey(grade: string | null): string | null {
+  const digit = grade?.match(/[123]/)?.[0];
+  return digit ? FINAL_EXAM_BY_GRADE[digit] : null;
+}
+
+export interface PaidEntry {
+  kind: ScholarshipKind;
+  /** 되돌리기용 — scholarship_checks.ref_key */
+  refKey: string;
+  /** "2학년 1학기 기말" 또는 "친구 소개" */
+  context: string;
+  name: string;
+  /** "전교 11등" 같은 사유 한 줄 */
+  reason: string;
+  amount: number;
+}
+
+export interface GradeScholarshipData {
+  /** 아직 안 준 것만. 학년에 맞는 1학기 기말 하나만 본다. */
+  groups: GradeGroup[];
+  /** 지급 내역 — 이건 학년 필터를 걸지 않는다. 학년이 올라가도 예전에 준
+   * 기록은 그대로 남아야 하니까. */
+  paid: PaidEntry[];
+}
+
+export async function getGradeScholarships(): Promise<GradeScholarshipData> {
   const [{ data: examRows }, students, checks] = await Promise.all([
     supabase
       .from("school_exams")
@@ -191,20 +226,36 @@ export async function getGradeScholarships(): Promise<GradeGroup[]> {
 
   const studentById = new Map(students.map((s) => [s.id, s]));
   const byExam = new Map<string, GradeRow[]>();
+  const paid: PaidEntry[] = [];
 
   for (const row of (examRows as Pick<SchoolExam, "student_id" | "exam_key" | "rank">[]) ?? []) {
     const student = studentById.get(row.student_id);
     if (!student) continue;
     const refKey = `${row.student_id}:${row.exam_key}`;
     const check = checks.get(refKey);
+    const amount = gradeScholarshipAmount(row.rank);
+
+    if (check?.paid) {
+      paid.push({
+        kind: "grade",
+        refKey,
+        context: EXAM_LABEL.get(row.exam_key) ?? row.exam_key,
+        name: student.name,
+        reason: row.rank !== null ? `전교 ${row.rank}등` : "1등급",
+        amount,
+      });
+      continue;
+    }
+
+    if (row.exam_key !== currentFinalExamKey(student.grade)) continue;
+
     const list = byExam.get(row.exam_key) ?? [];
     list.push({
       refKey,
       student: toRef(student),
       rank: row.rank,
-      amount: gradeScholarshipAmount(row.rank),
+      amount,
       reviewDone: check?.review_done ?? false,
-      paid: check?.paid ?? false,
     });
     byExam.set(row.exam_key, list);
   }
@@ -217,5 +268,5 @@ export async function getGradeScholarships(): Promise<GradeGroup[]> {
     rows.sort((a, b) => b.amount - a.amount || (a.rank ?? 999) - (b.rank ?? 999));
     groups.push({ examKey: exam.key, label: exam.label, rows });
   }
-  return groups;
+  return { groups, paid };
 }

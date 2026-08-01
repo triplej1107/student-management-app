@@ -55,7 +55,8 @@ export default async function AdminHomePage() {
     getDutySubstitutesForDates(priorityDates),
   ]);
   const staffById = new Map(staff.map((s) => [s.id, s]));
-  const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
+  // 실제로 온 학생 수만 — 조정·지각은 아직 안 온 상태다(출결 화면과 동일 기준).
+  const attendedCount = roster.filter((r) => attendanceMap.get(r.student.id) === "출석").length;
 
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(

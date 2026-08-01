@@ -40,7 +40,8 @@ export default async function StaffHomePage() {
       getTodayActiveReminders(toISODate(today)),
     ]);
   const onboardings = await listOpenOnboardings();
-  const attendedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
+  // 실제로 온 학생 수만 — 조정·지각은 아직 안 온 상태다(출결 화면과 동일 기준).
+  const attendedCount = roster.filter((r) => attendanceMap.get(r.student.id) === "출석").length;
   const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
   const notices = noticeLists
     .flat()

@@ -47,7 +47,9 @@ export default async function StaffAttendancePage({
     attendanceMap = result.attendanceMap;
     autoMarkedIds = result.autoMarkedIds;
   }
-  const checkedCount = roster.filter((r) => attendanceMap.has(r.student.id)).length;
+  // "체크됨"은 실제로 온 학생 수 — 조정·지각은 아직 안 온 상태이고, 오면
+  // 출석으로 바꾸므로 세지 않는다.
+  const checkedCount = roster.filter((r) => attendanceMap.get(r.student.id) === "출석").length;
 
   const autoAbsenceGroups = isViewingToday ? await getUnresolvedAutoAbsences(kstToday()) : [];
   const autoAbsenceTextedMaps = await Promise.all(

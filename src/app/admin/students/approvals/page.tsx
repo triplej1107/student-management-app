@@ -15,6 +15,7 @@ import {
   isClinicComplete,
   isTestComplete,
 } from "@/lib/clinicProgress";
+import { getPendingApprovals } from "@/lib/approvals";
 import { ScrollPillRow, PillLink, EmptyState, ScreenTitle } from "@/components/ui";
 import { AdminSubNav } from "@/components/admin/AdminTopNav";
 import { STUDENT_SUB_TABS } from "../subTabs";
@@ -46,12 +47,13 @@ export default async function AdminApprovalsPage({
 
   const roster = selectedDay ? weeklyRoster.filter((r) => r.effDay === selectedDay) : [];
 
-  const [checksMap, templatesMap] = await Promise.all([
+  const [checksMap, templatesMap, pendingApprovals] = await Promise.all([
     getClinicChecksForStudents(
       roster.map((r) => r.student.id),
       clinicWeekStart
     ),
     getClinicTemplatesForWeek(clinicWeekStart),
+    getPendingApprovals(),
   ]);
 
   // 조교 확인까지 끝나 종주T 최종 결재만 남은 학생을 최상단으로.
@@ -78,6 +80,47 @@ export default async function AdminApprovalsPage({
       <AdminSubNav tabs={STUDENT_SUB_TABS} />
       <div className="mt-4">
         <ScreenTitle>결재 관리</ScreenTitle>
+
+        {pendingApprovals.length > 0 && (
+          <div className="mb-4 rounded-2xl border border-accent/40 bg-accent-soft/40 p-3.5">
+            <div className="text-[13px] font-extrabold text-accent">
+              ⏳ 최종결재 대기 {pendingApprovals.length}명
+            </div>
+            <div className="mt-0.5 mb-2 text-[11px] text-ink-muted">
+              요일·주차 상관없이 조교 확인까지 끝난 건 전부예요. 오래 밀린 주차가 위에 있어요.
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {pendingApprovals.map((p) => (
+                <Link
+                  key={`${p.student.id}_${p.weekStartISO}`}
+                  href={`/admin/students/approvals/${p.student.id}?week=${p.weekStartISO}`}
+                  className="flex items-center justify-between rounded-xl bg-white px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-bold text-ink">
+                      {p.student.name}
+                      <span className="ml-1 text-[11px] font-normal text-ink-muted">
+                        {p.student.student_code}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-ink-muted">
+                      {p.student.class_key ?? "미배정"}
+                    </div>
+                  </div>
+                  <span
+                    className={
+                      "flex-none rounded-full px-2 py-1 text-[11px] font-bold " +
+                      (p.isCurrentWeek ? "bg-accent-soft text-accent" : "bg-warn-soft text-warn")
+                    }
+                  >
+                    {p.weekLabelText}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         <ScrollPillRow>
           {activeDays.map((d) => (
             <PillLink key={d} href={`/admin/students/approvals?day=${d}`} active={d === selectedDay}>

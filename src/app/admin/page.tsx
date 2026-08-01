@@ -13,6 +13,7 @@ import {
 } from "@/lib/data";
 import { isClinicComplete } from "@/lib/clinicProgress";
 import { getClinicBacklog } from "@/lib/clinicBacklog";
+import { getPendingApprovals } from "@/lib/approvals";
 import { getParentQuestionsForWeek } from "@/lib/parentQuestions";
 import { getTodayActiveReminders } from "@/lib/reminders";
 import { listOpenOnboardings } from "@/lib/newStudents";
@@ -69,10 +70,9 @@ export default async function AdminHomePage() {
     return !isClinicComplete(template, checksMap.get(r.student.id));
   }).length;
 
-  const pendingApprovalCount = roster.filter((r) => {
-    const check = checksMap.get(r.student.id);
-    return check?.staff_approved && !check.zongju_approved;
-  }).length;
+  // 오늘 요일치만 세면 지난 주차에 밀린 결재가 "0명"으로 보여, 눌러 들어간
+  // 화면과 숫자가 안 맞는다 — 요일·주차 상관없이 전부 센다.
+  const pendingApprovalCount = (await getPendingApprovals()).length;
 
   const backlog = await getClinicBacklog();
   const backlogUrgentCount = backlog.filter((e) => e.weeksOverdue >= 2).length;

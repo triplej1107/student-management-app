@@ -32,7 +32,9 @@ export const ADMIN_TABS: NavTab[] = [
   { href: "/admin/staff/profiles", label: "조교", matchPrefixes: ["/admin/staff"] },
   { href: "/admin", label: "홈", icon: "왕관", popped: true, hideLabel: true },
   {
-    href: "/admin/students/templates",
+    // 하위탭을 폴더로 묶으면서 착지점을 출결로 옮겼다 — 매일 쓰는 화면이라
+    // 폴더를 한 번 더 누르지 않고 바로 닿아야 한다.
+    href: "/admin/students/attendance",
     label: "학생",
     matchPrefixes: ["/admin/students", "/admin/reports", "/admin/clinic-backlog"],
   },

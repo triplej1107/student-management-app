@@ -1,11 +1,11 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { listNoticesForClass } from "@/lib/data";
 import { CLASSES, type ClassKey } from "@/lib/types";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink } from "@/components/ui";
 import { NoticeEditorRow } from "@/components/admin/NoticeEditorRow";
 import { addNoticeAction } from "./actions";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 export default async function AdminNoticesPage({
   searchParams,
@@ -22,7 +22,7 @@ export default async function AdminNoticesPage({
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
 
       <div className="mt-4 flex flex-wrap gap-2">
         {CLASSES.map((c) => (

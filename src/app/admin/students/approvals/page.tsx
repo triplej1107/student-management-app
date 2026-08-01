@@ -17,8 +17,8 @@ import {
 } from "@/lib/clinicProgress";
 import { getPendingApprovals } from "@/lib/approvals";
 import { ScrollPillRow, PillLink, EmptyState, ScreenTitle } from "@/components/ui";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 const BADGE_STYLE: Record<string, string> = {
   "no-template": "bg-line-soft text-ink-muted",
@@ -77,7 +77,7 @@ export default async function AdminApprovalsPage({
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
       <div className="mt-4">
         <ScreenTitle>결재 관리</ScreenTitle>
 

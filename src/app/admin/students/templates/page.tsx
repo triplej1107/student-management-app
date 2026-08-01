@@ -2,10 +2,10 @@ import { requireZongjuSession } from "@/lib/authz";
 import { getClinicTemplate } from "@/lib/data";
 import { CLASSES, type ClassKey } from "@/lib/types";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink } from "@/components/ui";
 import { TemplateEditor } from "@/components/admin/TemplateEditor";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 export default async function AdminTemplatesPage({
   searchParams,
@@ -26,7 +26,7 @@ export default async function AdminTemplatesPage({
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
 
       <div className="mt-4 flex flex-wrap gap-2 border-b border-line-soft pb-4">
         {CLASSES.map((c) => (

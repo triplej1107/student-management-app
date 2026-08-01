@@ -1,9 +1,9 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { getParentQuestionsForWeek } from "@/lib/parentQuestions";
 import { rollingQuestionWeeks, questionWeekLabel, toISODate, parseISODate } from "@/lib/weeks";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink, EmptyState } from "@/components/ui";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 export default async function AdminParentQuestionsHistoryPage({
   searchParams,
@@ -21,7 +21,7 @@ export default async function AdminParentQuestionsHistoryPage({
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
       <div className="mt-4 text-[19px] font-extrabold text-ink">학부모 질문 내역</div>
       <div className="mt-1 text-xs text-ink-muted">
         학부모 화면에는 이번 질문 주(수요일 리셋) 것만 보이지만, 여기서는 지난 주차 기록도 계속

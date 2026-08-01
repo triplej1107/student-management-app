@@ -9,9 +9,9 @@ import {
   toISODate,
   toYearMonth,
 } from "@/lib/weeks";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { CalendarNoteEditorRow } from "@/components/admin/CalendarNoteEditorRow";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 import { addCalendarNoteAction } from "./actions";
 
 export default async function AdminCalendarPage({
@@ -37,7 +37,7 @@ export default async function AdminCalendarPage({
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
 
       <div className="mt-4 flex items-center justify-between">
         <Link

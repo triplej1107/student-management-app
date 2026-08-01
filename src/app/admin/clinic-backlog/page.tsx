@@ -2,8 +2,8 @@ import { requireZongjuSession } from "@/lib/authz";
 import { getClinicBacklog, currentBacklogEvalWeek } from "@/lib/clinicBacklog";
 import { getClinicContactLogs } from "@/lib/clinicContactLog";
 import { ClinicBacklogView } from "@/components/ClinicBacklogView";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
-import { STUDENT_SUB_TABS } from "../students/subTabs";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
+import { STUDENT_TAB_GROUPS } from "../students/subTabs";
 import { toggleContactAction, saveContactNoteAction, clearBacklogAction, clearBacklogEntriesAction } from "./actions";
 
 export default async function ClinicBacklogPage() {
@@ -14,7 +14,7 @@ export default async function ClinicBacklogPage() {
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
       <div className="mt-4 text-[19px] font-extrabold text-ink">클리닉 밀림 관리</div>
       <div className="mt-1 text-xs text-ink-muted">
         밀린 주차 수가 많은 순으로 정렬돼요. 밀림이 있으면 학생·학부모에게 매주 자동으로 웹 푸시가

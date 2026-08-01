@@ -10,11 +10,11 @@ import {
 } from "@/lib/data";
 import { autoMarkLateStudents } from "@/lib/attendanceAuto";
 import { DAY_ORDER } from "@/lib/types";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { ScrollPillRow, PillLink } from "@/components/ui";
 import { AttendanceRow } from "@/components/staff/AttendanceRow";
 import { SearchableRoster } from "@/components/SearchableRoster";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 export default async function AdminAttendancePage({
   searchParams,
@@ -59,7 +59,7 @@ export default async function AdminAttendancePage({
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
 
       <div className="mt-4 text-[19px] font-extrabold text-ink">클리닉 출결 관리</div>
       <div className="mt-1 text-xs text-ink-muted">학생이 클리닉 일자 변경을 요청하면 여기서 바로 조정할 수 있어요.</div>

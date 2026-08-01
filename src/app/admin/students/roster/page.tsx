@@ -1,8 +1,8 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { listStudents } from "@/lib/data";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { RosterListManager } from "@/components/admin/RosterListManager";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 export default async function AdminRosterPage() {
   await requireZongjuSession();
@@ -10,7 +10,7 @@ export default async function AdminRosterPage() {
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
       <div className="mt-4">
         <RosterListManager students={students} />
       </div>

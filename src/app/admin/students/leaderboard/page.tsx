@@ -2,8 +2,8 @@ import { requireZongjuSession } from "@/lib/authz";
 import { getSemesterTopGradeCounts } from "@/lib/data";
 import { getTierLeaderboard, TIER_GRADES_DESC } from "@/lib/ujcTier";
 import { getUjcBalanceLeaderboard } from "@/lib/ujc";
-import { AdminSubNav } from "@/components/admin/AdminTopNav";
-import { STUDENT_SUB_TABS } from "../subTabs";
+import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
+import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 function GoldStars({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -30,7 +30,7 @@ export default async function AdminLeaderboardPage() {
 
   return (
     <div>
-      <AdminSubNav tabs={STUDENT_SUB_TABS} />
+      <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
 
       <div className="mt-4 text-[19px] font-extrabold text-ink">학생 순위</div>
       <div className="mt-1 text-xs text-ink-muted">

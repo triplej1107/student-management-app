@@ -4,6 +4,8 @@ import {
   parseGradeLabel,
   normalizeStudentCode,
   normalizeExportDate,
+  normalizeDayLabel,
+  normalizeTimeLabel,
 } from "./academyExport";
 
 describe("parseClassSchedule", () => {
@@ -54,6 +56,46 @@ describe("normalizeStudentCode", () => {
   it("숫자가 없으면 빈 문자열", () => {
     expect(normalizeStudentCode("")).toBe("");
     expect(normalizeStudentCode("-")).toBe("");
+  });
+});
+
+// 2학기부터 프로그램에 채워질 코칭수업(클리닉) 요일·시간 대비.
+// 표기가 흔들리면 자동 지각 판정과 출결 명단이 통째로 어긋나므로
+// 흔한 표기를 전부 앱 형식으로 흡수하는지 고정해둔다.
+describe("normalizeDayLabel", () => {
+  it("여러 표기에서 요일 한 글자만 뽑는다", () => {
+    expect(normalizeDayLabel("토")).toBe("토");
+    expect(normalizeDayLabel("토요일")).toBe("토");
+    expect(normalizeDayLabel("(일)")).toBe("일");
+    expect(normalizeDayLabel(" 수 ")).toBe("수");
+  });
+
+  it("요일이 없으면 null — 기존 클리닉 요일을 지우지 않게", () => {
+    expect(normalizeDayLabel("")).toBeNull();
+    expect(normalizeDayLabel("미정")).toBeNull();
+  });
+});
+
+describe("normalizeTimeLabel", () => {
+  it("여러 표기를 HH:MM으로 통일한다", () => {
+    expect(normalizeTimeLabel("15:00")).toBe("15:00");
+    expect(normalizeTimeLabel("15시")).toBe("15:00");
+    expect(normalizeTimeLabel("9")).toBe("09:00");
+    expect(normalizeTimeLabel("9:5")).toBe("09:05");
+    expect(normalizeTimeLabel("15시 30분")).toBe("15:30");
+  });
+
+  it("오전/오후 표기를 24시간제로 바꾼다", () => {
+    expect(normalizeTimeLabel("오후 3시")).toBe("15:00");
+    expect(normalizeTimeLabel("오전 9시")).toBe("09:00");
+    expect(normalizeTimeLabel("오후 12시")).toBe("12:00");
+    expect(normalizeTimeLabel("오전 12시")).toBe("00:00");
+  });
+
+  it("읽을 수 없으면 null — 기존 클리닉 시간을 지우지 않게", () => {
+    expect(normalizeTimeLabel("")).toBeNull();
+    expect(normalizeTimeLabel("미정")).toBeNull();
+    expect(normalizeTimeLabel("99시")).toBeNull();
   });
 });
 

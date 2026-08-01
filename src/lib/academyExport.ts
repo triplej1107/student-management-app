@@ -34,6 +34,50 @@ export function normalizeStudentCode(raw: string): string {
     return digits ? digits.padStart(5, "0") : "";
 }
 
+/** "토"/"토요일"/"(토)" 등 → "토". 요일로 못 읽으면 null(기존 값 유지).
+ *
+ * 2학기부터 프로그램에 코칭수업(클리닉) 요일이 채워질 예정인데, 그 값이
+ * 어떤 표기로 올지 아직 알 수 없어서 흔한 표기를 모두 받아준다. 앱은
+ * 한 글자 요일("토")만 쓰므로 여기서 반드시 정규화해야 출결 명단이
+ * 어긋나지 않는다. */
+export function normalizeDayLabel(raw: string): string | null {
+  if (!raw) return null;
+  const m = raw.match(/[월화수목금토일]/);
+  return m ? m[0] : null;
+}
+
+/** "15:00"/"15시"/"오후 3시"/"15" 등 → "15:00". 못 읽으면 null(기존 값 유지).
+ *
+ * 클리닉 시간은 isPastClinicTime이 "HH:MM"으로 파싱하기 때문에 표기가
+ * 흔들리면 자동 지각 판정이 통째로 어긋난다. 2학기에 프로그램이 어떤
+ * 형식으로 내보내든 여기서 흡수한다. */
+export function normalizeTimeLabel(raw: string): string | null {
+  if (!raw) return null;
+  const text = raw.trim();
+  const isPm = /오후|PM/i.test(text);
+  const isAm = /오전|AM/i.test(text);
+
+  // "15:30" 또는 "15시 30분" — 분까지 있는 경우 먼저.
+  let m = text.match(/(\d{1,2})\s*(?::|시)\s*(\d{1,2})/);
+  let hour: number;
+  let minute = 0;
+  if (m) {
+    hour = Number(m[1]);
+    minute = Number(m[2]);
+  } else {
+    // "15시" 또는 숫자만
+    m = text.match(/(\d{1,2})/);
+    if (!m) return null;
+    hour = Number(m[1]);
+  }
+
+  if (isPm && hour < 12) hour += 12;
+  if (isAm && hour === 12) hour = 0;
+  if (hour > 23 || minute > 59) return null;
+
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 /** 엑셀 셀이 날짜형/문자열 어느 쪽으로 와도 "YYYY-MM-DD"로. 못 읽으면 null
  * (= 빈 칸과 동일 취급이라 기존 값을 지우지 않는다). */
 export function normalizeExportDate(raw: string): string | null {

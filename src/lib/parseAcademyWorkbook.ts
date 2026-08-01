@@ -1,8 +1,10 @@
 import "server-only";
 import ExcelJS from "exceljs";
 import {
+  normalizeDayLabel,
   normalizeExportDate,
   normalizeStudentCode,
+  normalizeTimeLabel,
   parseClassSchedule,
   parseGradeLabel,
 } from "./academyExport";
@@ -108,8 +110,10 @@ export async function parseAcademyWorkbook(buffer: ArrayBuffer): Promise<Academy
       first_lesson_date: normalizeExportDate(cellText(ws, r, col("첫수업"))),
       class_day: schedule?.day ?? null,
       class_time: schedule?.time ?? null,
-      clinic_day: cellText(ws, r, col("코칭수업 요일")) || null,
-      clinic_time: cellText(ws, r, col("코칭수업 시간")) || null,
+      // 2학기부터 채워질 예정 — 표기가 어떻게 오든 앱 형식("토", "15:00")으로
+      // 맞춰서 넣는다. 못 읽으면 null이라 기존 클리닉 일정이 유지된다.
+      clinic_day: normalizeDayLabel(cellText(ws, r, col("코칭수업 요일"))),
+      clinic_time: normalizeTimeLabel(cellText(ws, r, col("코칭수업 시간"))),
     });
   }
 

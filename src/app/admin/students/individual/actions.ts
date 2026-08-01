@@ -76,6 +76,8 @@ export async function updateRosterFieldAction(studentId: number, field: string, 
     await resetUjcBalance(studentId);
   }
   revalidatePath("/admin/students/individual");
+  // 첫수업일·소개 메모·재원 여부가 바뀌면 장학금 대상 판정이 통째로 달라진다.
+  revalidatePath("/admin/students/scholarships");
   revalidatePath("/student");
   revalidatePath("/staff");
 }

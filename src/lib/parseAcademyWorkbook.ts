@@ -80,6 +80,8 @@ export async function parseAcademyWorkbook(buffer: ArrayBuffer): Promise<Academy
     };
   }
 
+  const memoCol = col("메모") > 0 ? col("메모") : col("비고");
+
   const rows: BulkImportRow[] = [];
   const skipped: { row: number; message: string }[] = [];
   const noClassSchedule: string[] = [];
@@ -114,6 +116,9 @@ export async function parseAcademyWorkbook(buffer: ArrayBuffer): Promise<Academy
       // 맞춰서 넣는다. 못 읽으면 null이라 기존 클리닉 일정이 유지된다.
       clinic_day: normalizeDayLabel(cellText(ws, r, col("코칭수업 요일"))),
       clinic_time: normalizeTimeLabel(cellText(ws, r, col("코칭수업 시간"))),
+      // "OOO 소개"가 적히는 칸. 프로그램 버전에 따라 [메모]이거나 [비고]라
+      // 둘 다 찾아본다. 비어 있으면 앱에 있던 기존 메모가 유지된다.
+      referral_note: cellText(ws, r, memoCol) || null,
     });
   }
 

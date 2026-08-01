@@ -313,6 +313,7 @@ function IndividualEditForm({
   const [grade, setGrade] = useState(student.grade ?? "");
   const [birthday, setBirthday] = useState(student.birthday ?? "");
   const [firstLessonDate, setFirstLessonDate] = useState(student.first_lesson_date ?? "");
+  const [referralNote, setReferralNote] = useState(student.referral_note ?? "");
   const [level, setLevel] = useState(student.level ?? "고등");
   const [parentPhone, setParentPhone] = useState(student.parent_phone ?? "");
   const [studentPhone, setStudentPhone] = useState(student.student_phone ?? "");
@@ -437,6 +438,19 @@ function IndividualEditForm({
         <div className="mb-1.5 text-[11px] leading-relaxed text-ink-muted/80">
           첫수업일을 넣으면 그 주 이전 클리닉은 밀림·성실도 티어에서 제외돼요. 신규 학생이 오기 전
           주차까지 밀림으로 잡히는 걸 막아줍니다.
+        </div>
+        <div className="mb-1.5">
+          <input
+            value={referralNote}
+            onChange={(e) => setReferralNote(e.target.value)}
+            onBlur={(e) => commitRoster("referral_note", e.target.value)}
+            placeholder="메모 (예: 홍길동 소개)"
+            className="w-full rounded-lg border border-line px-2.5 py-2 text-xs"
+          />
+          <div className="mt-1 text-[11px] leading-relaxed text-ink-muted/80">
+            회원명단 엑셀 [메모] 칸에서 가져온 값이에요. &ldquo;OOO 소개&rdquo;라고 적혀 있으면
+            장학금 탭에 친구 소개 장학금으로 올라와요.
+          </div>
         </div>
         <div className="mb-1.5 flex gap-1.5">
           <input

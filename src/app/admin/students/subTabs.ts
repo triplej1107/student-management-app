@@ -33,6 +33,7 @@ export const STUDENT_TAB_GROUPS: SubTabGroup[] = [
       { href: "/admin/students/roster", label: "명단" },
       { href: "/admin/students/individual", label: "개별" },
       { href: "/admin/students/leaderboard", label: "순위" },
+      { href: "/admin/students/scholarships", label: "장학금" },
       { href: "/admin/reports", label: "보고서" },
     ],
   },

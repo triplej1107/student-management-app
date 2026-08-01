@@ -41,6 +41,10 @@ export interface Student {
    * 대상이 된다 — 그 이전 주차는 밀림·티어 산정에서 제외. 비워두면
    * 기존처럼 전체 주차를 대상으로 본다(clinicBacklog.ts 참고). */
   first_lesson_date: string | null;
+  /** 회원명단 엑셀 [메모]/[비고] 열 원문. "OOO 소개"가 들어 있으면 친구 소개
+   * 장학금 대상이 된다(scholarships.ts). 원문 그대로 두는 이유는 이름 매칭이
+   * 틀렸을 때 사람이 보고 고칠 수 있어야 하기 때문. */
+  referral_note: string | null;
   student_app_seen_at: string | null; // 학생 계정이 standalone(설치) 상태로 접속한 마지막 시각
   parent_app_seen_at: string | null; // 학부모 계정이 standalone(설치) 상태로 접속한 마지막 시각
   final_score_label: string | null;

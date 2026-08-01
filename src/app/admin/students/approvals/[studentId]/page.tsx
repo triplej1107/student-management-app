@@ -66,7 +66,10 @@ export default async function AdminApprovalDetailPage({
       </div>
 
       <div className="mt-3.5 flex justify-between text-[13px]">
-        <span className="font-bold text-ink">이름 {student.name}</span>
+        <span className="font-bold text-ink">
+          이름 {student.name}
+          <span className="ml-1 font-normal text-ink-muted">{student.student_code}</span>
+        </span>
         <span className="text-ink-muted">{todayLabel}</span>
       </div>
 

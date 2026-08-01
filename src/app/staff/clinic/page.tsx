@@ -70,7 +70,7 @@ export default async function StaffClinicListPage({
 
     return {
       key: student.id,
-      searchText: `${student.name} ${student.school ?? ""} ${student.grade ?? ""}`,
+      searchText: `${student.name} ${student.student_code} ${student.school ?? ""} ${student.grade ?? ""}`,
       node: (
         <Link
           href={`/staff/clinic/${student.id}`}
@@ -79,6 +79,7 @@ export default async function StaffClinicListPage({
           <div>
             <div className="text-[15px] font-bold text-ink">
               {student.name}
+              <span className="ml-1 text-xs font-normal text-ink-muted">{student.student_code}</span>
               {classTag && <span className="text-xs font-normal text-ink-muted">({classTag})</span>}
             </div>
             <div className="mt-0.5 text-xs text-ink-muted">
@@ -133,7 +134,7 @@ export default async function StaffClinicListPage({
         ))}
       </ScrollPillRow>
 
-      <SearchableRoster items={items} placeholder="이름/학교로 검색" emptyLabel="이 요일에는 학생이 없어요." />
+      <SearchableRoster items={items} placeholder="이름/학번/학교로 검색" emptyLabel="이 요일에는 학생이 없어요." />
     </div>
   );
 }

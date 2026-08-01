@@ -96,7 +96,10 @@ export default async function AdminApprovalsPage({
                 className="flex items-center justify-between rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
               >
                 <div>
-                  <div className="text-[15px] font-bold text-ink">{student.name}</div>
+                  <div className="text-[15px] font-bold text-ink">
+                    {student.name}
+                    <span className="ml-1 text-xs font-normal text-ink-muted">{student.student_code}</span>
+                  </div>
                   <div className="mt-0.5 text-xs text-ink-muted">
                     {effTime} · {student.class_key ?? "미배정"}
                   </div>

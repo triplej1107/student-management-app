@@ -74,8 +74,23 @@ export function StudentGradeCharts({
 
       <div className="mt-3.5 rounded-2xl border border-line-soft bg-white p-3.5">
         <div className="mb-1 text-sm font-bold text-ink">모의고사 백분위 변화</div>
-        <div className="mb-2 text-xs text-ink-muted">백분위는 높을수록(위쪽일수록) 좋아요</div>
-        <TrendChart points={mockPoints} higherIsBetter={true} unit="%" />
+        <div className="mb-2 text-xs text-ink-muted">
+          백분위는 높을수록(위쪽일수록) 좋아요 · 0~100 전체 기준
+        </div>
+        {/* 백분위는 원래 0~100 척도라 축을 거기 고정한다. 자동 축이면 96 → 91처럼
+            거의 같은 성적이 화면을 가로지르는 폭락으로 보인다(내신 등수와 같은 문제).
+            음영은 클리닉 그래프와 동일하게 상위권 구간을 표시. */}
+        <TrendChart
+          points={mockPoints}
+          higherIsBetter={true}
+          unit="%"
+          yDomain={[0, 100]}
+          bands={[
+            { from: 90, to: 100, opacity: 0.16 },
+            { from: 75, to: 90, opacity: 0.1 },
+            { from: 50, to: 75, opacity: 0.05 },
+          ]}
+        />
       </div>
     </>
   );

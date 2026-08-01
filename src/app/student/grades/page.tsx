@@ -5,6 +5,7 @@ import { SCHOOL_EXAMS, MOCK_EXAMS } from "@/lib/types";
 import { rollingClinicWeeks } from "@/lib/weeks";
 import { ScreenTitle } from "@/components/ui";
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
+import { TabSeenBeacon } from "@/components/TabSeenBeacon";
 
 export default async function StudentGradesPage() {
   const session = await requireStudentSession();
@@ -36,6 +37,7 @@ export default async function StudentGradesPage() {
 
   return (
     <div className="box-border px-5 pt-2 pb-7">
+      <TabSeenBeacon tab="grades" />
       <ScreenTitle>성적</ScreenTitle>
 
       <div className="mt-4 rounded-2xl border border-line-soft bg-white p-3.5">

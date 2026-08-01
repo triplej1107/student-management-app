@@ -1,4 +1,6 @@
 import { requireStudentSession } from "@/lib/authz";
+import { getStudentById } from "@/lib/data";
+import { getStudentTabDots } from "@/lib/tabUpdates";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { STUDENT_TABS } from "@/lib/navTabs";
 
@@ -10,10 +12,14 @@ export default async function StudentLayout({ children }: { children: React.Reac
     session.role === "parent"
       ? STUDENT_TABS.map((t) => (t.icon === "UJC" ? { ...t, label: "유종의미" } : t))
       : STUDENT_TABS;
+
+  const student = await getStudentById(session.studentId);
+  const dotHrefs = student ? await getStudentTabDots(student, session.role ?? "student") : [];
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <div className="flex-1 overflow-y-auto">{children}</div>
-      <BottomTabBar tabs={tabs} />
+      <BottomTabBar tabs={tabs} dotHrefs={dotHrefs} />
     </div>
   );
 }

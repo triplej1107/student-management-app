@@ -5,6 +5,7 @@ import { getToday } from "@/lib/today";
 import { addMonths, monthStart, monthEnd, parseYearMonth, toYearMonth } from "@/lib/weeks";
 import { ScreenTitle, Tag, EmptyState } from "@/components/ui";
 import { MonthCalendar } from "@/components/MonthCalendar";
+import { TabSeenBeacon } from "@/components/TabSeenBeacon";
 
 export default async function StudentNoticesPage({
   searchParams,
@@ -34,6 +35,7 @@ export default async function StudentNoticesPage({
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
+      <TabSeenBeacon tab="notices" />
       <ScreenTitle>공지사항</ScreenTitle>
       <div className="mt-4 flex flex-col gap-2.5">
         {notices.length === 0 && <EmptyState>등록된 공지가 없어요.</EmptyState>}

@@ -5,6 +5,7 @@ import { rollingClinicWeeks, weekLabel, toISODate, parseISODate, kstToday, nowKS
 import { isLessonPlanPublished } from "@/lib/lessonPlanVisibility";
 import { PillLink, ScreenTitle } from "@/components/ui";
 import { LessonPlanReadOnly } from "@/components/LessonPlanReadOnly";
+import { TabSeenBeacon } from "@/components/TabSeenBeacon";
 
 export default async function StudentLessonPage({
   searchParams,
@@ -36,6 +37,7 @@ export default async function StudentLessonPage({
 
   return (
     <div className="box-border px-5 pt-2 pb-7">
+      <TabSeenBeacon tab="lesson" />
       <div className="border-b border-line pb-3 text-center">
         <ScreenTitle>수업</ScreenTitle>
         <div className="mt-1 text-xs italic text-ink-muted">유종의미 종주T</div>

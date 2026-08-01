@@ -4,6 +4,7 @@ import { getStudentById, getClinicTemplate, getClinicCheck } from "@/lib/data";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState, ScreenTitle } from "@/components/ui";
 import { ClinicChecklistReadOnly } from "@/components/ClinicChecklistReadOnly";
+import { TabSeenBeacon } from "@/components/TabSeenBeacon";
 
 export default async function StudentClinicPage({
   searchParams,
@@ -26,6 +27,7 @@ export default async function StudentClinicPage({
 
   return (
     <div className="box-border px-5 pt-2 pb-7">
+      <TabSeenBeacon tab="clinic" />
       <div className="border-b border-line pb-3 text-center">
         <ScreenTitle>클리닉 점검표</ScreenTitle>
         <div className="mt-1 text-xs italic text-ink-muted">유종의미 종주T</div>

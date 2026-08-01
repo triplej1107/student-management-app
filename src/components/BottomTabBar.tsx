@@ -108,8 +108,17 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
 
 const ROOT_HREFS = ["/staff", "/student", "/admin"];
 
-export function BottomTabBar({ tabs }: { tabs: NavTab[] }) {
+export function BottomTabBar({
+  tabs,
+  dotHrefs,
+}: {
+  tabs: NavTab[];
+  /** 새 소식이 있는 탭의 href 목록 — 아이콘 위에 작은 점만 찍는다.
+   * 지금 보고 있는 탭에는 찍지 않는다(이미 보는 중이므로). */
+  dotHrefs?: string[];
+}) {
   const pathname = usePathname();
+  const dots = new Set(dotHrefs ?? []);
   return (
     <div
       className="sticky bottom-0 z-10 flex box-border gap-1 border-t border-line bg-white px-2.5 pt-2 pb-[calc(env(safe-area-inset-bottom)+10px)]"
@@ -155,7 +164,15 @@ export function BottomTabBar({ tabs }: { tabs: NavTab[] }) {
               (active ? "bg-accent-soft text-accent" : "text-ink-muted")
             }
           >
-            {icon}
+            <span className="relative">
+              {icon}
+              {dots.has(tab.href) && !active && (
+                <span
+                  aria-label="새 소식"
+                  className="absolute -right-1 -top-0.5 h-[7px] w-[7px] rounded-full bg-accent ring-2 ring-white"
+                />
+              )}
+            </span>
             {tab.label}
           </Link>
         );

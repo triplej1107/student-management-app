@@ -16,6 +16,7 @@ import {
   upsertMockExamAction,
 } from "@/app/admin/students/individual/actions";
 import { GradesEditor } from "@/components/admin/GradesEditor";
+import { StudentGradeTrendPanel } from "@/components/admin/StudentGradeTrendPanel";
 
 export function IndividualManager() {
   const router = useRouter();
@@ -540,6 +541,8 @@ function IndividualEditForm({
         fetchAction={getMockExamsAction}
         saveAction={upsertMockExamAction}
       />
+
+      <StudentGradeTrendPanel studentId={student.id} />
     </div>
   );
 }

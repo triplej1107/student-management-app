@@ -18,6 +18,7 @@ import {
   type NewStudentInput,
 } from "@/lib/data";
 import { resetUjcBalance } from "@/lib/ujc";
+import { getStudentGradeTrends, type StudentGradeTrends } from "@/lib/gradeTrends";
 import { classKeyFor } from "@/lib/classKey";
 import type { ClassKey, MockExam, SchoolExam, Student, StudentOverrides } from "@/lib/types";
 
@@ -157,4 +158,11 @@ export async function upsertMockExamAction(
   await upsertMockExam(studentId, examKey, fields);
   revalidatePath("/admin/students/individual");
   revalidatePath("/student");
+}
+
+/** 개별 관리 화면 맨 아래에 학생 성적 그래프를 보여주기 위한 조회 —
+ * 학생 본인 화면과 같은 계산(lib/gradeTrends)을 그대로 쓴다. */
+export async function getStudentGradeTrendsAction(studentId: number): Promise<StudentGradeTrends> {
+  await requireZongjuSession();
+  return getStudentGradeTrends(studentId);
 }

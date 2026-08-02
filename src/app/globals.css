@@ -118,3 +118,38 @@
     }
   }
 }
+
+/* 슬라임 게임 — 살아있는 느낌의 대기 애니메이션 (SlimeSprite) */
+@keyframes slime-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.035, 0.955); }
+}
+@keyframes slime-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-2deg); }
+  70% { transform: rotate(2deg); }
+}
+@keyframes slime-twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+g.slime-breathe {
+  animation: slime-breathe 2.4s ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 50% 85.5%;
+}
+g.slime-wobble {
+  animation: slime-wobble 3.2s ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 50% 85.5%;
+}
+g.slime-sparkle {
+  animation: slime-twinkle 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  g.slime-breathe,
+  g.slime-wobble,
+  g.slime-sparkle {
+    animation: none;
+  }
+}

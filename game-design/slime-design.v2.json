@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "confirmedAt": "2026-08-02",
+  "note": "종주 확정 스펙 v2 — 성장 단계 파생 계수 포함. v1 대비 입 폭 18→20, 각성 크기 108→114%. 앱 통합 시 이 값을 렌더러 기준값으로 사용",
+  "params": {
+    "bodyW": 64,
+    "bodyH": 93,
+    "tipLen": 29,
+    "tipLean": 3,
+    "eyeW": 11,
+    "eyeH": 15,
+    "eyeGap": 42,
+    "eyeY": 95,
+    "mouthW": 20,
+    "mouthD": 13,
+    "mouthY": 118,
+    "lineW": 3
+  },
+  "stages": {
+    "eggW": 38,
+    "eggH": 85,
+    "babyScale": 68,
+    "babyTip": 45,
+    "babyMouth": 50,
+    "awakeScale": 114
+  },
+  "colors": {
+    "fire": { "fill": "#E24B4A", "stroke": "#A32D2D", "eye": "#501313" },
+    "water": { "fill": "#85B7EB", "stroke": "#378ADD", "eye": "#042C53" },
+    "wood": { "fill": "#97C459", "stroke": "#639922", "eye": "#173404" },
+    "gold": { "fill": "#FAC775", "stroke": "#EF9F27", "eye": "#412402" },
+    "earth": { "fill": "#A97155", "stroke": "#7A4B33", "eye": "#3B2114" }
+  }
+}

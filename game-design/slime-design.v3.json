@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "confirmedAt": "2026-08-02",
+  "note": "종주 확정 스펙 v3 — v2 리부트(만두 몸통 + 방울 꼭지) 기반. 얼굴=미니멀(세로선 눈), 스타일=픽셀. 이전 v1/v2(물방울 실루엣) 스펙은 폐기. 앱 통합 시 이 값이 렌더러 기준값.",
+  "params": {
+    "bodyW": 48,
+    "bodyH": 89,
+    "stemLen": 9,
+    "dropR": 7,
+    "tipLean": 2,
+    "eyeSize": 10,
+    "pupilR": 4,
+    "eyeGap": 30,
+    "eyeY": 102,
+    "mouthW": 7,
+    "mouthY": 121,
+    "lineW": 3
+  },
+  "stages": {
+    "eggW": 38,
+    "eggH": 85,
+    "babyScale": 68,
+    "babyTip": 50,
+    "babyMouth": 60,
+    "awakeScale": 114
+  },
+  "colors": {
+    "fire": { "fill": "#E24B4A", "stroke": "#A32D2D", "eye": "#501313" },
+    "water": { "fill": "#85B7EB", "stroke": "#378ADD", "eye": "#042C53" },
+    "wood": { "fill": "#97C459", "stroke": "#639922", "eye": "#173404" },
+    "gold": { "fill": "#FAC775", "stroke": "#EF9F27", "eye": "#412402" },
+    "earth": { "fill": "#A97155", "stroke": "#7A4B33", "eye": "#3B2114" }
+  },
+  "faceMode": "mini",
+  "styleMode": "pixel"
+}

@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>슬라임 디자인 랩 v2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #f0ede6;
+    color: #2e2a26;
+    font-family: Pretendard, -apple-system, "Malgun Gothic", system-ui, sans-serif;
+    padding: 20px 16px 48px;
+  }
+  main { max-width: 780px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 800; }
+  .sub { margin-top: 4px; font-size: 12.5px; color: #8a8378; }
+  .card { background: #fff; border: 1px solid #e5e0d6; border-radius: 16px; padding: 16px; margin-top: 14px; }
+  h2 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .tabs { display: flex; gap: 6px; margin-top: 10px; align-items: center; }
+  .tabs .tag { font-size: 11.5px; color: #8a8378; width: 44px; flex: none; }
+  .tabs button {
+    flex: 1; border-radius: 999px; padding: 9px 4px; font-size: 13px; font-weight: 700;
+    font-family: inherit; cursor: pointer; border: 1px solid #e5e0d6; background: #fff; color: #6b6459;
+  }
+  .tabs button.sel { border-color: #c05a2e; background: #faeee6; color: #c05a2e; }
+  .slime-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+  .slime-card {
+    border: 2px solid transparent; border-radius: 14px; background: none;
+    padding: 6px 4px 10px; cursor: pointer; text-align: center; font-family: inherit;
+  }
+  .slime-card.sel { border-color: #c05a2e; background: #faeee6; }
+  .slime-card .nm { margin-top: 4px; font-size: 12px; font-weight: 700; color: #2e2a26; }
+  .slime-card .tr { font-size: 11px; color: #8a8378; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 26px; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  .ctl label { display: flex; justify-content: space-between; font-size: 12px; color: #6b6459; }
+  .ctl label b { color: #2e2a26; }
+  .ctl input[type=range] { width: 100%; margin-top: 4px; accent-color: #c05a2e; }
+  .group-title { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: #c05a2e; margin-top: 4px; }
+  .color-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .color-list { display: flex; flex-direction: column; gap: 10px; }
+  .color-list label { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #6b6459; }
+  .color-list input[type=color] { width: 46px; height: 34px; border: 1px solid #e5e0d6; border-radius: 8px; background: #fff; cursor: pointer; padding: 2px; }
+  .color-list code { font-size: 12px; color: #8a8378; }
+  .growth { display: flex; justify-content: center; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0ece3; flex-wrap: wrap; }
+  .growth .cell { text-align: center; }
+  .growth .cell div { font-size: 11px; color: #8a8378; margin-top: 2px; }
+  .eq label { display: block; font-size: 12px; color: #6b6459; margin-bottom: 3px; }
+  .eq select {
+    width: 100%; padding: 8px 10px; font-size: 13px; font-family: inherit;
+    border: 1px solid #e5e0d6; border-radius: 10px; background: #fff; color: #2e2a26;
+  }
+  .btns { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  button.act {
+    flex: 1; min-width: 120px; border-radius: 12px; padding: 13px 10px;
+    font-size: 13.5px; font-weight: 700; font-family: inherit; cursor: pointer;
+    border: 1px solid #e5e0d6; background: #fff; color: #6b6459;
+  }
+  button.act.primary { border-color: #c05a2e; background: #faeee6; color: #c05a2e; }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1, 1); }
+    50% { transform: scale(1.035, 0.955); }
+  }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(0deg); }
+    30% { transform: rotate(-2deg); }
+    70% { transform: rotate(2deg); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+  g.breathe { animation: breathe 2.4s ease-in-out infinite; transform-box: view-box; transform-origin: 50% 85.5%; }
+  g.wobble { animation: wobble 3.2s ease-in-out infinite; transform-box: view-box; transform-origin: 50% 85.5%; }
+  g.sparkle { animation: twinkle 2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<main>
+  <h1>슬라임 디자인 랩 <span style="font-size:13px;color:#c05a2e;">v2</span></h1>
+  <div class="sub">레퍼런스 기반 리부트 — 낮고 둥근 몸통 + 방울 꼭지. 단계·얼굴·스타일 탭으로 조합을 비교하고, 슬라임을 눌러 색을 조정하세요. 자동 저장됩니다.</div>
+
+  <div class="tabs"><span class="tag">단계</span><span id="stageTabs" style="display:contents"></span></div>
+  <div class="tabs"><span class="tag">얼굴</span><span id="faceTabs" style="display:contents"></span></div>
+  <div class="tabs"><span class="tag">스타일</span><span id="styleTabs" style="display:contents"></span></div>
+
+  <section class="card"><div class="slime-row" id="slimeRow"></div></section>
+
+  <section class="card">
+    <h2>기준형 (틴)</h2>
+    <div class="grid" id="sliders"></div>
+  </section>
+
+  <section class="card">
+    <h2>단계 파생</h2>
+    <div class="grid" id="stageSliders"></div>
+  </section>
+
+  <section class="card">
+    <h2>장비 입히기 <span style="font-weight:400;font-size:11.5px;color:#8a8378;">— 틴·각성 단계에서 표시. 픽셀 스타일은 도트 버전으로 표시</span></h2>
+    <div class="grid" id="equipGrid"></div>
+  </section>
+
+  <section class="card">
+    <h2>색상 — <span id="selName"></span></h2>
+    <div class="color-wrap">
+      <div id="bigPreview"></div>
+      <div class="color-list" id="colorList"></div>
+    </div>
+    <div class="growth" id="growthStrip"></div>
+  </section>
+
+  <div class="btns">
+    <button class="act" id="undoBtn">↩ 되돌리기</button>
+    <button class="act primary" id="copyBtn">디자인 값 JSON 복사</button>
+    <button class="act" id="pngBtn">선택 슬라임 PNG 저장</button>
+    <button class="act" id="resetBtn">기본값 복원</button>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+const BASELINE = 145;
+const STORAGE_KEY = "slime-lab-v2";
+const VIEWBOX = "-96 -26 192 200";
+const VB_W = 192, VB_H = 200;
+
+// 확정 스펙 v3 (2026-08-02) — slime-design.v3.json과 동일
+const DEFAULT_PARAMS = {
+  bodyW: 48, bodyH: 89,
+  stemLen: 9, dropR: 7, tipLean: 2,
+  eyeSize: 10, pupilR: 4, eyeGap: 30, eyeY: 102,
+  mouthW: 7, mouthY: 121, lineW: 3,
+};
+
+const DEFAULT_STAGES = {
+  eggW: 38, eggH: 85,
+  babyScale: 68, babyTip: 50, babyMouth: 60,
+  awakeScale: 114,
+};
+
+const SLIDERS = [
+  ["bodyW", "몸통 폭", 42, 72],
+  ["bodyH", "몸통 높이", 56, 104],
+  ["stemLen", "꼭지 길이", 4, 24],
+  ["dropR", "꼭지 방울 크기", 3, 9],
+  ["tipLean", "꼭지 휨", -12, 12],
+  ["eyeSize", "눈 크기", 4, 17],
+  ["pupilR", "눈동자 크기 (구글리)", 2, 9],
+  ["eyeGap", "눈 간격", 16, 52],
+  ["eyeY", "눈 높이", 76, 122],
+  ["mouthW", "입 크기", 2, 15],
+  ["mouthY", "입 높이", 98, 138],
+  ["lineW", "외곽선 두께", 2, 5],
+];
+
+const STAGE_SLIDERS = [
+  ["알", "eggW", "알 폭", 30, 46],
+  ["알", "eggH", "알 높이", 70, 96],
+  ["베이비", "babyScale", "크기 비율 %", 55, 85],
+  ["베이비", "babyTip", "꼭지 비율 %", 25, 80],
+  ["베이비", "babyMouth", "입 비율 %", 35, 80],
+  ["각성", "awakeScale", "크기 비율 %", 100, 114],
+];
+
+const STAGES = [
+  { key: "egg", label: "알" },
+  { key: "baby", label: "베이비" },
+  { key: "teen", label: "틴" },
+  { key: "awake", label: "각성" },
+];
+
+const FACES = [
+  { key: "googly", label: "구글리" },
+  { key: "mini", label: "미니멀" },
+  { key: "kawaii", label: "카와이" },
+];
+
+const STYLES = [
+  { key: "flat", label: "플랫" },
+  { key: "jelly", label: "젤리" },
+  { key: "toon", label: "카툰" },
+  { key: "kawaii", label: "파스텔" },
+  { key: "pixel", label: "픽셀" },
+];
+
+const ATTRS = [
+  { key: "fire", label: "화 · 불티", trait: "열정형" },
+  { key: "water", label: "수 · 이슬", trait: "꾸준형" },
+  { key: "wood", label: "목 · 새싹", trait: "암기형" },
+  { key: "gold", label: "금 · 별빛", trait: "논리형" },
+  { key: "earth", label: "토 · 바위", trait: "끈기형" },
+];
+
+const DEFAULT_COLORS = {
+  fire: { fill: "#E24B4A", stroke: "#A32D2D", eye: "#501313" },
+  water: { fill: "#85B7EB", stroke: "#378ADD", eye: "#042C53" },
+  wood: { fill: "#97C459", stroke: "#639922", eye: "#173404" },
+  gold: { fill: "#FAC775", stroke: "#EF9F27", eye: "#412402" },
+  earth: { fill: "#A97155", stroke: "#7A4B33", eye: "#3B2114" },
+};
+
+const COLOR_FIELDS = [["fill", "몸통"], ["stroke", "외곽선·꼭지"], ["eye", "눈·입"]];
+
+let params = { ...DEFAULT_PARAMS };
+let stages = { ...DEFAULT_STAGES };
+let colors = JSON.parse(JSON.stringify(DEFAULT_COLORS));
+let equip = { hat: "none", eye: "none", rhand: "none", lhand: "none" };
+let selected = "water";
+let selectedStage = "teen";
+let faceMode = "mini";
+let styleMode = "pixel";
+let uidCounter = 0;
+
+try {
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  if (saved.params) params = { ...params, ...saved.params };
+  if (saved.stages) stages = { ...stages, ...saved.stages };
+  if (saved.colors) for (const k in colors) if (saved.colors[k]) colors[k] = { ...colors[k], ...saved.colors[k] };
+  if (saved.equip) equip = { ...equip, ...saved.equip };
+  if (saved.faceMode) faceMode = saved.faceMode;
+  if (saved.styleMode) styleMode = saved.styleMode;
+} catch (e) { /* 깨진 저장본은 무시 */ }
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ params, stages, colors, equip, faceMode, styleMode }));
+}
+
+// 되돌리기 — 0.8초 안의 연속 변경(슬라이더 드래그)은 한 번으로 묶는다.
+const history = [];
+let lastPush = 0;
+function pushHistory() {
+  const now = Date.now();
+  if (now - lastPush < 800) return;
+  history.push(JSON.stringify({ params, stages, colors, equip, faceMode, styleMode }));
+  if (history.length > 60) history.shift();
+  lastPush = now;
+}
+// 핸들러들이 객체 참조를 클로저로 잡고 있으므로 복원은 반드시 in-place로.
+function applyState(o) {
+  Object.assign(params, o.params);
+  Object.assign(stages, o.stages);
+  for (const k in colors) if (o.colors && o.colors[k]) colors[k] = { ...o.colors[k] };
+  Object.assign(equip, o.equip);
+  if (o.faceMode) faceMode = o.faceMode;
+  if (o.styleMode) styleMode = o.styleMode;
+}
+function undo() {
+  const snap = history.pop();
+  if (!snap) return;
+  applyState(JSON.parse(snap));
+  lastPush = 0;
+  save();
+  renderAll();
+}
+
+function shade(hex, t) {
+  const n = parseInt(hex.slice(1), 16);
+  const target = t > 0 ? 255 : 0;
+  const a = Math.abs(t);
+  const mix = (v) => Math.round(v + (target - v) * a);
+  const r = mix((n >> 16) & 255), g = mix((n >> 8) & 255), b = mix(n & 255);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+// ============================================================
+// 몸통 — 낮고 둥근 만두(dome). 바닥은 평평, 옆구리는 살짝 퍼짐.
+// ============================================================
+function bodyPath(p) {
+  const W = p.bodyW, H = p.bodyH, B = BASELINE;
+  const n = (v) => Math.round(v * 10) / 10;
+  return `M0 ${B} ` +
+    `C${n(-0.62 * W)} ${B} ${n(-0.94 * W)} ${n(B - 0.16 * H)} ${n(-0.99 * W)} ${n(B - 0.45 * H)} ` +
+    `C${n(-1.02 * W)} ${n(B - 0.72 * H)} ${n(-0.62 * W)} ${n(B - H)} 0 ${n(B - H)} ` +
+    `C${n(0.62 * W)} ${n(B - H)} ${n(1.02 * W)} ${n(B - 0.72 * H)} ${n(0.99 * W)} ${n(B - 0.45 * H)} ` +
+    `C${n(0.94 * W)} ${n(B - 0.16 * H)} ${n(0.62 * W)} ${B} 0 ${B} Z`;
+}
+
+// ============================================================
+// 꼭지(안테나) — 가는 줄기 + 끝의 방울. 틴부터 방울이 속성 모양으로 핀다.
+// ============================================================
+function antenna(attr, c, p, scale, plain) {
+  const topY = BASELINE - p.bodyH;
+  const lean = p.tipLean, L = p.stemLen;
+  const s = (p.dropR / 5) * (scale || 1);
+  const tx = lean, ty = topY - L - 2;
+  const stem = `<path d="M${lean * 0.25} ${topY + 3} Q${lean * 0.6} ${topY - L * 0.55} ${tx} ${ty + 3}" fill="none" stroke="${c.stroke}" stroke-width="2.6" stroke-linecap="round"/>`;
+  const g = (inner) => `<g transform="translate(${tx} ${ty - 3 * s}) scale(${s})">${inner}</g>`;
+  if (plain) return stem + g(`<circle cx="0" cy="0" r="4.5" fill="${c.stroke}"/><circle cx="-1.4" cy="-1.4" r="1.2" fill="#fff" opacity="0.6"/>`);
+  switch (attr) {
+    case "fire":
+      return stem + g(`<path d="M0 6 C-5 6 -7 1 -5 -3 C-3.5 -6 -1 -7 0 -11 C1 -7 3.5 -6 5 -3 C7 1 5 6 0 6 Z" fill="${c.stroke}"/>` +
+        `<path d="M0 4 C-2.5 4 -3.5 1.5 -2.5 -0.5 C-1.5 -2.5 0 -3 0 -5 C0 -3 1.5 -2.5 2.5 -0.5 C3.5 1.5 2.5 4 0 4 Z" fill="${c.fill}"/>`);
+    case "water":
+      return stem + g(`<path d="M0 6 C-4.5 6 -6.5 2 -4.5 -2 C-3 -5 -1 -6 0 -9 C1 -6 3 -5 4.5 -2 C6.5 2 4.5 6 0 6 Z" fill="${c.stroke}"/>` +
+        `<circle cx="-1.6" cy="0.5" r="1.6" fill="#fff" opacity="0.7"/>`);
+    case "wood":
+      return stem + g(`<ellipse cx="1" cy="-2" rx="8" ry="4.2" fill="${c.stroke}" transform="rotate(-26 1 -2)"/>` +
+        `<line x1="-4.5" y1="1" x2="6" y2="-4.5" stroke="${c.fill}" stroke-width="1.4"/>`);
+    case "gold":
+      return stem + g(`<path d="M0 -8 L2.2 -2.2 L8 0 L2.2 2.2 L0 8 L-2.2 2.2 L-8 0 L-2.2 -2.2 Z" fill="${c.stroke}"/>` +
+        `<circle cx="5" cy="-6" r="1.4" fill="${c.stroke}" opacity="0.8"/>`);
+    case "earth":
+      return stem + g(`<path d="M-5.5 4 L-6.5 -2.5 L0 -6.5 L6.5 -3 L5.5 4 Z" fill="${c.stroke}"/>` +
+        `<path d="M0 -6.5 L6.5 -3 L1 -1 Z" fill="#fff" opacity="0.35"/>`);
+  }
+  return stem;
+}
+
+// ============================================================
+// 얼굴 3종 — 구글리(흰자+점 눈동자) / 미니멀(세로선) / 카와이(글로시)
+// ============================================================
+function face(p, c) {
+  const ex = p.eyeGap / 2, y = p.eyeY;
+  if (faceMode === "googly") {
+    let s = "";
+    for (const cx of [-ex, ex]) {
+      s += `<circle cx="${cx}" cy="${y}" r="${p.eyeSize}" fill="#fff" stroke="#33302B" stroke-width="2"/>` +
+        `<circle cx="${cx}" cy="${y + p.eyeSize * 0.2}" r="${p.pupilR}" fill="#26231F"/>` +
+        `<circle cx="${cx + p.pupilR * 0.35}" cy="${y + p.eyeSize * 0.2 - p.pupilR * 0.45}" r="${Math.max(1, p.pupilR * 0.28)}" fill="#fff"/>`;
+    }
+    s += `<ellipse cx="0" cy="${p.mouthY}" rx="${p.mouthW}" ry="${p.mouthW * 0.72}" fill="#26231F"/>`;
+    if (p.mouthW >= 5) s += `<ellipse cx="0" cy="${p.mouthY + p.mouthW * 0.28}" rx="${p.mouthW * 0.52}" ry="${p.mouthW * 0.3}" fill="#E2938F"/>`;
+    return s;
+  }
+  if (faceMode === "mini") {
+    const L = p.eyeSize * 0.85;
+    return `<line x1="${-ex}" y1="${y - L}" x2="${-ex}" y2="${y + L}" stroke="${c.eye}" stroke-width="3.4" stroke-linecap="round"/>` +
+      `<line x1="${ex}" y1="${y - L}" x2="${ex}" y2="${y + L}" stroke="${c.eye}" stroke-width="3.4" stroke-linecap="round"/>` +
+      `<path d="M${-p.mouthW} ${p.mouthY} Q0 ${p.mouthY + p.mouthW * 0.7} ${p.mouthW} ${p.mouthY}" fill="none" stroke="${c.eye}" stroke-width="2.6" stroke-linecap="round"/>`;
+  }
+  let s = "";
+  for (const cx of [-ex, ex]) {
+    s += `<ellipse cx="${cx}" cy="${y}" rx="${p.eyeSize * 0.72}" ry="${p.eyeSize}" fill="${c.eye}"/>` +
+      `<circle cx="${cx - p.eyeSize * 0.22}" cy="${y - p.eyeSize * 0.35}" r="${p.eyeSize * 0.32}" fill="#fff"/>` +
+      `<circle cx="${cx + p.eyeSize * 0.3}" cy="${y + p.eyeSize * 0.35}" r="${p.eyeSize * 0.14}" fill="#fff"/>`;
+  }
+  s += `<path d="M${-p.mouthW} ${p.mouthY - 2} Q${-p.mouthW / 2} ${p.mouthY + 3} 0 ${p.mouthY - 1} Q${p.mouthW / 2} ${p.mouthY + 3} ${p.mouthW} ${p.mouthY - 2}" fill="none" stroke="${c.eye}" stroke-width="2.6" stroke-linecap="round"/>`;
+  return s;
+}
+
+// ============================================================
+// 렌더 스타일별 몸통 (몸통 + 내부 음영 + 광택)
+// ============================================================
+function styleColors(base) {
+  if (styleMode === "kawaii") return { fill: shade(base.fill, 0.38), stroke: "#2F3B52", eye: "#2F3B52" };
+  if (styleMode === "toon") return { fill: base.fill, stroke: shade(base.stroke, -0.2), eye: base.eye };
+  return base;
+}
+
+function renderBody(p, c, base) {
+  const body = bodyPath(p);
+  const sh = BASELINE - p.bodyH;
+  const W = p.bodyW;
+  const gs = p.bodyH / params.bodyH;
+  const glossX = -W * 0.45;
+  const glossY = sh + 20 * gs;
+  const id = ++uidCounter;
+  const star = (x, y, s, o) =>
+    `<path transform="translate(${x} ${y})" d="M0 ${-s} L${s * 0.3} ${-s * 0.3} L${s} 0 L${s * 0.3} ${s * 0.3} L0 ${s} L${-s * 0.3} ${s * 0.3} L${-s} 0 L${-s * 0.3} ${-s * 0.3} Z" fill="#fff" opacity="${o}"/>`;
+  if (styleMode === "jelly") {
+    return `<defs><linearGradient id="jg${id}" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0" stop-color="${shade(c.fill, 0.35)}"/>` +
+      `<stop offset="0.45" stop-color="${c.fill}"/>` +
+      `<stop offset="1" stop-color="${shade(c.fill, -0.18)}"/></linearGradient>` +
+      `<clipPath id="jc${id}"><path d="${body}"/></clipPath></defs>` +
+      `<path d="${body}" fill="url(#jg${id})" fill-opacity="0.92" stroke="${c.stroke}" stroke-width="${p.lineW}" stroke-linejoin="round"/>` +
+      `<g clip-path="url(#jc${id})">` +
+      `<ellipse cx="0" cy="${BASELINE - 5}" rx="${W * 0.85}" ry="20" fill="${shade(c.fill, 0.45)}" opacity="0.4"/>` +
+      `<ellipse cx="${W * 0.3}" cy="${BASELINE - 22}" rx="${W * 0.45}" ry="17" fill="${shade(c.fill, -0.32)}" opacity="0.16"/>` +
+      `<circle cx="${-W * 0.32}" cy="${BASELINE - 26}" r="4" fill="#fff" opacity="0.25"/>` +
+      `<circle cx="${-W * 0.12}" cy="${BASELINE - 15}" r="2.5" fill="#fff" opacity="0.2"/>` +
+      `<circle cx="${W * 0.42}" cy="${BASELINE - 36}" r="3" fill="#fff" opacity="0.22"/>` +
+      `</g>` +
+      `<ellipse cx="${glossX}" cy="${glossY}" rx="${10 * gs}" ry="${15 * gs}" fill="#fff" opacity="0.7" transform="rotate(24 ${glossX} ${glossY})"/>` +
+      `<circle cx="${glossX + 13 * gs}" cy="${glossY + 15 * gs}" r="${3.5 * gs}" fill="#fff" opacity="0.85"/>` +
+      star(W * 0.32, sh + 30 * gs, 6, 0.9) + star(-W * 0.05, sh + 12 * gs, 4, 0.85);
+  }
+  if (styleMode === "toon") {
+    const spk = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${shade(c.fill, -0.32)}" opacity="0.5"/>`;
+    const dia = (x, y, s) => `<path transform="translate(${x} ${y})" d="M0 ${-s} L${s} 0 L0 ${s} L${-s} 0 Z" fill="${shade(c.fill, -0.32)}" opacity="0.5"/>`;
+    return `<defs><clipPath id="tc${id}"><path d="${body}"/></clipPath></defs>` +
+      `<path d="${body}" fill="${c.fill}" stroke="${c.stroke}" stroke-width="${p.lineW + 1.5}" stroke-linejoin="round"/>` +
+      `<g clip-path="url(#tc${id})">` +
+      `<path d="M${-W} ${BASELINE - 18} Q0 ${BASELINE - 36} ${W} ${BASELINE - 18} L${W} 147 L${-W} 147 Z" fill="${shade(c.fill, -0.25)}" opacity="0.4"/>` +
+      `</g>` +
+      spk(W * 0.5, sh + 26 * gs, 2.5) + spk(W * 0.6, BASELINE - p.bodyH * 0.45, 2) + dia(W * 0.36, sh + 14 * gs, 3) +
+      spk(-W * 0.55, BASELINE - p.bodyH * 0.38, 2) + spk(-W * 0.38, sh + 20 * gs, 1.8) + dia(0.1 * W, sh + 6 * gs, 2.2) +
+      `<ellipse cx="${glossX}" cy="${glossY}" rx="${9 * gs}" ry="${13 * gs}" fill="#fff" opacity="0.5" transform="rotate(24 ${glossX} ${glossY})"/>`;
+  }
+  if (styleMode === "kawaii") {
+    return `<defs><clipPath id="kc${id}"><path d="${body}"/></clipPath></defs>` +
+      `<path d="${body}" fill="${c.fill}" stroke="${c.stroke}" stroke-width="${p.lineW + 1}" stroke-linejoin="round"/>` +
+      `<g clip-path="url(#kc${id})">` +
+      `<ellipse cx="0" cy="${BASELINE + 10}" rx="${W * 1.05}" ry="${p.bodyH * 0.34}" fill="${base.fill}" opacity="0.38"/>` +
+      `</g>` +
+      `<path d="M${glossX - 5} ${glossY - 5} Q${glossX + 4} ${glossY - 13} ${glossX + 12} ${glossY - 9}" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.85"/>` +
+      `<circle cx="${glossX + 18}" cy="${glossY - 5}" r="2.5" fill="#fff" opacity="0.85"/>`;
+  }
+  return `<path d="${body}" fill="${c.fill}" stroke="${c.stroke}" stroke-width="${p.lineW}" stroke-linejoin="round"/>` +
+    `<ellipse cx="${glossX}" cy="${glossY}" rx="${9 * gs}" ry="${14 * gs}" fill="#fff" opacity="0.35" transform="rotate(24 ${glossX} ${glossY})"/>`;
+}
+
+// ============================================================
+// 픽셀 스타일 — 실루엣 격자 샘플링 + 도트 장비 스프라이트
+// 스프라이트 문법: 행 문자열, "."은 빈 칸, 문자는 PIXEL_PAL 색.
+// ============================================================
+const PIXEL_PAL = {
+  K: "#33302B", F: "#FFFFFF", S: "#D7DBE0", s: "#9AA1AC",
+  G: "#F2C14E", g: "#C9922E", W: "#C9A24E", w: "#8B6B35",
+  A: "#A97155", a: "#7A4B33", R: "#E24B4A", r: "#A32D2D",
+  B: "#378ADD", b: "#185FA5", P: "#7F77DD", p: "#534AB7", Y: "#EFD489",
+};
+
+const PIXEL_SPRITES = {
+  woodsword: ["..K..", ".KWK.", ".KWK.", ".KWK.", ".KWK.", "KwwwK", ".KAK.", ".KaK."],
+  knightsword: ["..K..", ".KFK.", ".KSK.", ".KSK.", ".KSK.", ".KSK.", "KGGGK", ".KPK.", ".KPK.", ".KBK."],
+  holysword: ["...K...", "..KGK..", ".KGFGK.", ".KGFGK.", ".KGFGK.", ".KGFGK.", ".KGGGK.", "KGGgGGK", "..KRK..", "..KRK..", "..KrK.."],
+  woodshield: ["..KKK..", ".KWWWK.", "KWWwWWK", "KWwswWK", "KWWwWWK", ".KwwwK.", "..KKK.."],
+  kite: [".KKKKK.", "KSBBBSK", "KBBGBBK", "KBGGGBK", "KBBGBBK", ".KBBBK.", "..KBK..", "...K..."],
+  dragonscale: [".KKKKK.", "KGrrrGK", "KrRRRrK", "KrrrrrK", "KrRRRrK", ".KrrrK.", "..KrK..", "...K..."],
+  straw: ["..KKKKK..", ".KYYYYYK.", "KKRRRRRKK", "KYYYYYYYK"],
+  staff: ["..K..", ".KPK.", "KPFPK", ".KPK.", ".KAK.", ".KAK.", ".KAK.", ".KAK.", ".KaK."],
+  spellbook: ["KKKKKK", "KpPPPK", "KpPGPK", "KpPPPK", "KKKKKK"],
+  wizard: ["...G...", "...K...", "..KPK..", ".KPFPK.", ".KPPPK.", "KpPPPpK", "KKKKKKK"],
+  crown: ["R.G.B", "GGGGG", "ggggg"],
+};
+
+function drawSprite(rows, x0, y0, cell) {
+  let s = "";
+  rows.forEach((row, j) => {
+    [...row].forEach((ch, i) => {
+      if (ch === ".") return;
+      s += `<rect x="${x0 + i * cell}" y="${y0 + j * cell}" width="${cell}" height="${cell}" fill="${PIXEL_PAL[ch]}"/>`;
+    });
+  });
+  return s;
+}
+
+function pixelGlasses(kind, p, cell) {
+  // 4x4 대형 프레임 — 렌즈가 눈보다 확실히 크게
+  const ex = p.eyeGap / 2, y = p.eyeY;
+  const leftOf = (v) => Math.floor(v / cell) * cell;
+  let s = "";
+  const sides = kind === "monocle" ? [1] : [-1, 1];
+  for (const sd of sides) {
+    const fx = leftOf(sd * ex) - cell, fy = leftOf(y) - cell;
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        const center = i >= 1 && i <= 2 && j >= 1 && j <= 2;
+        let fill;
+        if (kind === "sun") fill = center ? "#4A4740" : PIXEL_PAL.K;
+        else if (center) continue;
+        else fill = kind === "monocle" ? PIXEL_PAL.g : PIXEL_PAL.K;
+        s += `<rect x="${fx + i * cell}" y="${fy + j * cell}" width="${cell}" height="${cell}" fill="${fill}"/>`;
+      }
+    }
+    if (kind === "sun") s += `<rect x="${fx + cell}" y="${fy + cell}" width="${cell}" height="${cell}" fill="#FFFFFF" opacity="0.8"/>`;
+  }
+  if (kind === "monocle") {
+    const cxL = leftOf(ex), cyT = leftOf(y);
+    s += `<rect x="${cxL + 3 * cell}" y="${cyT + 3 * cell}" width="${cell}" height="${cell}" fill="${PIXEL_PAL.g}"/>` +
+      `<rect x="${cxL + 4 * cell}" y="${cyT + 4 * cell}" width="${cell}" height="${cell}" fill="${PIXEL_PAL.g}"/>`;
+  } else {
+    const cyT = leftOf(y);
+    const bL = leftOf(-ex) + 3 * cell, bR = leftOf(ex) - cell;
+    for (let x = bL; x < bR; x += cell) {
+      s += `<rect x="${x}" y="${cyT}" width="${cell}" height="${cell}" fill="${PIXEL_PAL.K}"/>`;
+    }
+  }
+  return s;
+}
+
+function pixelEquipLayer(p, cell) {
+  const snap = (v) => Math.round(v / cell) * cell;
+  const topY = BASELINE - p.bodyH;
+  let s = "";
+  const rKey = equip.rhand, lKey = equip.lhand, hKey = equip.hat, eKey = equip.eye;
+  if (rKey !== "none" && PIXEL_SPRITES[rKey]) {
+    const rows = PIXEL_SPRITES[rKey];
+    const x0 = snap(p.bodyW + 11) - Math.floor(rows[0].length / 2) * cell;
+    const y0 = snap(BASELINE - cell) - rows.length * cell;
+    // 그립(아래 중앙)을 축으로 바깥쪽으로 기울여 "들고 있는" 느낌을 준다
+    const gx = x0 + (rows[0].length * cell) / 2;
+    const gy = y0 + rows.length * cell - cell;
+    s += `<g transform="rotate(28 ${gx} ${gy})">` + drawSprite(rows, x0, y0, cell) + `</g>`;
+  }
+  if (lKey !== "none" && PIXEL_SPRITES[lKey]) {
+    const rows = PIXEL_SPRITES[lKey];
+    const x0 = snap(-(p.bodyW + 11)) - Math.floor(rows[0].length / 2) * cell;
+    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor(rows.length / 2) * cell;
+    s += drawSprite(rows, x0, y0, cell);
+  }
+  if (hKey !== "none" && PIXEL_SPRITES[hKey]) {
+    const rows = PIXEL_SPRITES[hKey];
+    const x0 = snap(-p.bodyW * 0.35) - Math.floor(rows[0].length / 2) * cell;
+    const y0 = snap(topY) - (rows.length - 1) * cell;
+    s += drawSprite(rows, x0, y0, cell);
+  }
+  if (eKey !== "none") s += pixelGlasses(eKey, p, cell);
+  return s;
+}
+
+function pixelSparkle(x, y, col, cell) {
+  let s = "";
+  for (const [dx, dy] of [[0, 0], [cell, 0], [-cell, 0], [0, cell], [0, -cell]]) {
+    s += `<rect x="${x + dx}" y="${y + dy}" width="${cell}" height="${cell}" fill="${col}" opacity="${dx === 0 && dy === 0 ? 0.95 : 0.7}"/>`;
+  }
+  return s;
+}
+const hitSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+hitSvg.setAttribute("width", "0");
+hitSvg.setAttribute("height", "0");
+hitSvg.style.position = "absolute";
+const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+hitSvg.appendChild(hitPath);
+document.body.appendChild(hitSvg);
+
+function pixelSvg(attr, width, stageKey, delay) {
+  const p = deriveParams(stageKey);
+  const c = colors[attr];
+  hitPath.setAttribute("d", bodyPath(p));
+  const cell = 7;
+  const x1 = Math.ceil((p.bodyW + 6) / cell) * cell;
+  const y0 = Math.floor((BASELINE - p.bodyH - 6) / cell) * cell;
+  const pt = hitSvg.createSVGPoint();
+  const grid = new Set();
+  const key = (x, y) => x + "_" + y;
+  for (let y = y0; y < BASELINE; y += cell) {
+    for (let x = -x1; x < x1; x += cell) {
+      pt.x = x + cell / 2;
+      pt.y = y + cell / 2;
+      if (hitPath.isPointInFill(pt)) grid.add(key(x, y));
+    }
+  }
+  // 꼭지: 줄기 1픽셀 폭 + 방울 2x2
+  const topY = BASELINE - p.bodyH;
+  const stemX = Math.round(p.tipLean * 0.5 / cell) * cell;
+  const stemCells = Math.max(1, Math.round(p.stemLen / cell));
+  let rects = "";
+  for (let i = 1; i <= stemCells; i++) rects += `<rect x="${stemX}" y="${topY - i * cell}" width="${cell}" height="${cell}" fill="${c.stroke}"/>`;
+  rects += `<rect x="${stemX - cell / 2}" y="${topY - (stemCells + 1) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
+    `<rect x="${stemX + cell / 2}" y="${topY - (stemCells + 1) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
+    `<rect x="${stemX - cell / 2}" y="${topY - (stemCells + 2) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
+    `<rect x="${stemX + cell / 2}" y="${topY - (stemCells + 2) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>`;
+  const ex = p.eyeGap / 2;
+  for (const k of grid) {
+    const [x, y] = k.split("_").map(Number);
+    const cx = x + cell / 2, cy = y + cell / 2;
+    const edge = !(grid.has(key(x - cell, y)) && grid.has(key(x + cell, y)) && grid.has(key(x, y - cell)) && grid.has(key(x, y + cell)));
+    let fill = edge ? c.stroke : c.fill;
+    if (!edge) {
+      if (cy < BASELINE - p.bodyH * 0.5 && cx < -p.bodyW * 0.1) fill = shade(c.fill, 0.2);
+      else if (cy > BASELINE - 18) fill = shade(c.fill, -0.16);
+    }
+    if (faceMode === "googly") {
+      if (Math.abs(Math.abs(cx) - ex) < p.eyeSize * 0.85 && Math.abs(cy - p.eyeY) < p.eyeSize * 0.85) fill = "#fff";
+      if (Math.abs(Math.abs(cx) - ex) < p.pupilR && Math.abs(cy - (p.eyeY + p.eyeSize * 0.2)) < p.pupilR) fill = "#26231F";
+    } else if (faceMode === "mini") {
+      if (Math.abs(Math.abs(cx) - ex) < cell * 0.6 && Math.abs(cy - p.eyeY) < p.eyeSize * 0.85) fill = c.eye;
+    } else {
+      if (Math.abs(Math.abs(cx) - ex) < p.eyeSize * 0.7 && Math.abs(cy - p.eyeY) < p.eyeSize * 0.95) fill = c.eye;
+    }
+    rects += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="${fill}"/>`;
+  }
+  if (faceMode === "kawaii") {
+    for (const s of [-1, 1]) {
+      const hx = Math.round((s * ex - p.eyeSize * 0.25) / cell) * cell;
+      const hy = Math.round((p.eyeY - p.eyeSize * 0.5) / cell) * cell;
+      rects += `<rect x="${hx}" y="${hy}" width="${cell}" height="${cell}" fill="#fff"/>`;
+    }
+  }
+  const sx = Math.round((-p.bodyW * 0.5) / cell) * cell;
+  const sy = Math.round((BASELINE - p.bodyH * 0.72) / cell) * cell;
+  rects += `<rect x="${sx}" y="${sy}" width="${cell}" height="${cell}" fill="#fff" opacity="0.85"/>` +
+    `<rect x="${sx + cell}" y="${sy + cell}" width="${cell}" height="${cell}" fill="#fff" opacity="0.55"/>`;
+  const seen = new Set();
+  for (let t = 0; t <= 1.001; t += 0.1) {
+    const mx = (1 - t) * (1 - t) * -p.mouthW + t * t * p.mouthW;
+    const my = (1 - t) * (1 - t) * p.mouthY + 2 * t * (1 - t) * (p.mouthY + p.mouthW * 0.7) + t * t * p.mouthY;
+    const gx = Math.floor(mx / cell) * cell, gy = Math.floor(my / cell) * cell;
+    if (!seen.has(gx + "_" + gy) && grid.has(key(gx, gy))) {
+      seen.add(gx + "_" + gy);
+      rects += `<rect x="${gx}" y="${gy}" width="${cell}" height="${cell}" fill="${faceMode === "googly" ? "#26231F" : c.eye}"/>`;
+    }
+  }
+  const snap = (v) => Math.round(v / cell) * cell;
+  const wearing = stageKey === "teen" || stageKey === "awake";
+  let extra = wearing ? pixelEquipLayer(p, cell) : "";
+  let auraPix = "";
+  if (stageKey === "awake") {
+    auraPix = `<g class="sparkle">` +
+      pixelSparkle(snap(-(p.bodyW + 18)), snap(BASELINE - p.bodyH * 0.65), c.fill, cell) +
+      pixelSparkle(snap(p.bodyW + 18), snap(BASELINE - p.bodyH * 0.95), c.fill, cell) +
+      pixelSparkle(snap(p.bodyW + 22), snap(BASELINE - 18), c.stroke, cell) +
+      `</g>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}">` +
+    `<ellipse cx="0" cy="148" rx="${p.bodyW * 0.8}" ry="6" fill="#000" opacity="0.08"/>` +
+    auraPix +
+    `<g class="breathe" style="animation-delay:${delay || 0}s">` + rects + extra + `</g></svg>`;
+}
+
+// ============================================================
+// 단계 파생
+// ============================================================
+function deriveParams(stageKey) {
+  if (stageKey === "teen") return { ...params };
+  const p = params;
+  const scale = stageKey === "baby" ? stages.babyScale / 100 : stages.awakeScale / 100;
+  const bodyH = p.bodyH * scale;
+  const sh = BASELINE - p.bodyH;
+  const sh2 = BASELINE - bodyH;
+  const mapY = (y) => sh2 + (y - sh) * scale;
+  const d = {
+    ...p,
+    bodyW: p.bodyW * scale,
+    bodyH,
+    eyeGap: p.eyeGap * scale,
+    eyeY: mapY(p.eyeY),
+    mouthY: mapY(p.mouthY),
+  };
+  if (stageKey === "baby") {
+    d.stemLen = p.stemLen * (stages.babyTip / 100);
+    d.dropR = p.dropR * 0.85;
+    d.tipLean = p.tipLean * 0.6;
+    d.eyeSize = p.eyeSize * 0.9;
+    d.pupilR = p.pupilR * 0.9;
+    d.mouthW = p.mouthW * (stages.babyMouth / 100);
+    d.lineW = Math.max(2, p.lineW - 0.5);
+  } else {
+    d.stemLen = p.stemLen * 1.1;
+  }
+  return d;
+}
+
+// ============================================================
+// 각성 오라
+// ============================================================
+function aura(c, p) {
+  const W = p.bodyW;
+  const mid = BASELINE - p.bodyH * 0.55;
+  const diamond = (x, y, s, o, col) =>
+    `<path transform="translate(${x} ${y})" d="M0 ${-s} L${s} 0 L0 ${s} L${-s} 0 Z" fill="${col}" opacity="${o}"/>`;
+  const star4 = (x, y, s, o, col) =>
+    `<path transform="translate(${x} ${y})" d="M0 ${-s} L${s * 0.28} ${-s * 0.28} L${s} 0 L${s * 0.28} ${s * 0.28} L0 ${s} L${-s * 0.28} ${s * 0.28} L${-s} 0 L${-s * 0.28} ${-s * 0.28} Z" fill="${col}" opacity="${o}"/>`;
+  const dot = (x, y, r, o) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c.fill}" opacity="${o}"/>`;
+  return `<circle cx="0" cy="${mid}" r="${W * 1.12}" fill="${c.fill}" opacity="0.1"/>` +
+    `<circle cx="0" cy="${mid}" r="${W * 1.12}" fill="none" stroke="${c.fill}" stroke-width="1.5" opacity="0.35" stroke-dasharray="1 7" stroke-linecap="round"/>` +
+    `<ellipse cx="0" cy="148" rx="${W * 0.95}" ry="7" fill="none" stroke="${c.fill}" stroke-width="2" opacity="0.45"/>` +
+    star4(-W - 9, 66, 7, 0.9, c.fill) + star4(W + 8, 52, 5.5, 0.9, c.stroke) +
+    star4(W + 6, 104, 4.5, 0.65, c.fill) +
+    diamond(-W - 5, 96, 4.5, 0.8, c.fill) + diamond(W + 7, 80, 4, 0.8, c.fill) +
+    diamond(-W - 1, 48, 3, 0.6, c.stroke) + diamond(W + 1, 36, 3, 0.6, c.fill) +
+    dot(-W - 12, 112, 2, 0.7) + dot(W + 12, 40, 2, 0.7) + dot(-W - 8, 36, 1.6, 0.55);
+}
+
+// ============================================================
+// 알 — 전 속성 공통 미스터리 알
+// ============================================================
+const EGG_SHELL = "#FDF8EF", EGG_LINE = "#B9AD9B", EGG_SPECKLE = "#DACFBC";
+
+function eggSVG(width, delay) {
+  const w = stages.eggW, h = stages.eggH;
+  const n = (v) => Math.round(v * 10) / 10;
+  const path = `M0 ${BASELINE} C${n(-w * 0.85)} ${BASELINE} ${n(-w * 1.1)} ${n(BASELINE - h * 0.27)} ${n(-w)} ${n(BASELINE - h * 0.58)} ` +
+    `C${n(-w * 0.9)} ${n(BASELINE - h * 0.88)} ${n(-w * 0.5)} ${n(BASELINE - h)} 0 ${n(BASELINE - h)} ` +
+    `C${n(w * 0.5)} ${n(BASELINE - h)} ${n(w * 0.9)} ${n(BASELINE - h * 0.88)} ${n(w)} ${n(BASELINE - h * 0.58)} ` +
+    `C${n(w * 1.1)} ${n(BASELINE - h * 0.27)} ${n(w * 0.85)} ${BASELINE} 0 ${BASELINE} Z`;
+  if (styleMode === "pixel") {
+    hitPath.setAttribute("d", path);
+    const cell = 5; // 알은 더 작은 셀로 샘플링해 곡선을 둥글게 살린다
+    const x1 = Math.ceil((w + 6) / cell) * cell;
+    const y0 = Math.floor((BASELINE - h - 6) / cell) * cell;
+    const pt = hitSvg.createSVGPoint();
+    const grid = new Set();
+    const key = (x, y) => x + "_" + y;
+    for (let y = y0; y < BASELINE; y += cell) {
+      for (let x = -x1; x < x1; x += cell) {
+        pt.x = x + cell / 2;
+        pt.y = y + cell / 2;
+        if (hitPath.isPointInFill(pt)) grid.add(key(x, y));
+      }
+    }
+    let rects = "";
+    for (const k of grid) {
+      const [x, y] = k.split("_").map(Number);
+      const edge = !(grid.has(key(x - cell, y)) && grid.has(key(x + cell, y)) && grid.has(key(x, y - cell)) && grid.has(key(x, y + cell)));
+      rects += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="${edge ? EGG_LINE : EGG_SHELL}"/>`;
+    }
+    const sp = (fx, fy, col, o) =>
+      `<rect x="${Math.round(fx / cell) * cell}" y="${Math.round(fy / cell) * cell}" width="${cell}" height="${cell}" fill="${col}"${o ? ` opacity="${o}"` : ""}/>`;
+    rects += sp(-w * 0.34, BASELINE - h * 0.38, EGG_SPECKLE) + sp(w * 0.3, BASELINE - h * 0.24, EGG_SPECKLE) +
+      sp(w * 0.12, BASELINE - h * 0.55, EGG_SPECKLE) +
+      sp(-w * 0.38, BASELINE - h * 0.78, "#FFFFFF", 0.85) + sp(-w * 0.38 + cell, BASELINE - h * 0.78 + cell, "#FFFFFF", 0.55);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}">` +
+      `<ellipse cx="0" cy="148" rx="${n(w * 0.9)}" ry="6" fill="#000" opacity="0.08"/>` +
+      `<g class="wobble" style="animation-delay:${delay || 0}s">` + rects + `</g></svg>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}">` +
+    `<ellipse cx="0" cy="148" rx="${n(w * 0.9)}" ry="6" fill="#000" opacity="0.08"/>` +
+    `<g class="wobble" style="animation-delay:${delay || 0}s">` +
+    `<path d="${path}" fill="${EGG_SHELL}" stroke="${EGG_LINE}" stroke-width="${params.lineW}" stroke-linejoin="round"/>` +
+    `<circle cx="${n(-w * 0.34)}" cy="${n(BASELINE - h * 0.38)}" r="2.5" fill="${EGG_SPECKLE}"/>` +
+    `<circle cx="${n(w * 0.3)}" cy="${n(BASELINE - h * 0.24)}" r="2" fill="${EGG_SPECKLE}"/>` +
+    `<circle cx="${n(w * 0.12)}" cy="${n(BASELINE - h * 0.55)}" r="1.6" fill="${EGG_SPECKLE}"/>` +
+    `<ellipse cx="${n(-w * 0.38)}" cy="${n(BASELINE - h * 0.78)}" rx="4.5" ry="8" fill="#fff" opacity="0.6" transform="rotate(20 ${n(-w * 0.38)} ${n(BASELINE - h * 0.78)})"/>` +
+    `</g></svg>`;
+}
+
+// ============================================================
+// 장비 — v2: 새 몸통에 맞춘 통통한(chibi) 비율. 무기는 몸 바깥쪽으로.
+// ============================================================
+const EQUIP = {
+  hat: { label: "머리", items: [
+    { key: "straw", name: "밀짚모자", d: (p) => {
+      const topY = BASELINE - p.bodyH;
+      return `<g transform="translate(${-p.bodyW * 0.34} ${topY + 9}) rotate(-13)">` +
+        `<ellipse cx="0" cy="1" rx="30" ry="7.5" fill="#EFD489" stroke="#C9A24E" stroke-width="2.4"/>` +
+        `<path d="M-17 0 C-17 -16 17 -16 17 0 Z" fill="#EFD489" stroke="#C9A24E" stroke-width="2.4"/>` +
+        `<path d="M-16.2 -4.5 L16.2 -4.5 L17 0 L-17 0 Z" fill="#E24B4A"/></g>`;
+    }},
+    { key: "wizard", name: "마법사 고깔", d: (p) => {
+      const topY = BASELINE - p.bodyH;
+      return `<g transform="translate(${-p.bodyW * 0.34} ${topY + 9}) rotate(-13)">` +
+        `<path d="M-16 0 L-4 -34 C-2 -39 2 -37 3 -33 L16 0 Z" fill="#7F77DD" stroke="#534AB7" stroke-width="2.4"/>` +
+        `<circle cx="-5" cy="-13" r="2.4" fill="#EEEDFE"/><circle cx="5" cy="-21" r="1.9" fill="#EEEDFE"/>` +
+        `<ellipse cx="0" cy="0" rx="21" ry="5.5" fill="#534AB7"/>` +
+        `<path d="M0 -44 L2 -38.5 L8 -36.5 L2 -34.5 L0 -29 L-2 -34.5 L-8 -36.5 L-2 -38.5 Z" fill="#F2C14E"/></g>`;
+    }},
+    { key: "crown", name: "수석의 왕관", d: (p) => {
+      const topY = BASELINE - p.bodyH;
+      return `<g transform="translate(${-p.bodyW * 0.34} ${topY + 10}) rotate(-11)">` +
+        `<path d="M-18 0 L-18 -15 L-9 -6 L0 -18 L9 -6 L18 -15 L18 0 Z" fill="#F2C14E" stroke="#C9922E" stroke-width="2.4" stroke-linejoin="round"/>` +
+        `<circle cx="0" cy="-18" r="2.8" fill="#E24B4A"/><circle cx="-18" cy="-15" r="2.4" fill="#378ADD"/><circle cx="18" cy="-15" r="2.4" fill="#378ADD"/>` +
+        `<circle cx="-8.5" cy="-3" r="2" fill="#E24B4A"/><circle cx="8.5" cy="-3" r="2" fill="#378ADD"/></g>`;
+    }},
+  ]},
+  eye: { label: "눈", items: [
+    { key: "horn", name: "뿔테안경", d: (p) => {
+      const ex = p.eyeGap / 2, r = p.eyeSize + 5, y = p.eyeY;
+      return `<circle cx="${-ex}" cy="${y}" r="${r}" fill="none" stroke="#2C2C2A" stroke-width="3.5"/>` +
+        `<circle cx="${ex}" cy="${y}" r="${r}" fill="none" stroke="#2C2C2A" stroke-width="3.5"/>` +
+        `<path d="M${-ex + r} ${y - 3} Q0 ${y - r * 0.8} ${ex - r} ${y - 3}" fill="none" stroke="#2C2C2A" stroke-width="3.5"/>` +
+        `<line x1="${-ex - r}" y1="${y - 2}" x2="${-ex - r - 9}" y2="${y - 7}" stroke="#2C2C2A" stroke-width="3.5"/>` +
+        `<line x1="${ex + r}" y1="${y - 2}" x2="${ex + r + 9}" y2="${y - 7}" stroke="#2C2C2A" stroke-width="3.5"/>`;
+    }},
+    { key: "sun", name: "선글라스", d: (p) => {
+      const ex = p.eyeGap / 2, r = p.eyeSize + 5, y = p.eyeY;
+      return `<circle cx="${-ex}" cy="${y}" r="${r}" fill="#2C2C2A" stroke="#2C2C2A" stroke-width="2.5"/>` +
+        `<circle cx="${ex}" cy="${y}" r="${r}" fill="#2C2C2A" stroke="#2C2C2A" stroke-width="2.5"/>` +
+        `<circle cx="${-ex - r * 0.3}" cy="${y - r * 0.35}" r="2.6" fill="#fff" opacity="0.8"/>` +
+        `<circle cx="${ex - r * 0.3}" cy="${y - r * 0.35}" r="2.6" fill="#fff" opacity="0.8"/>` +
+        `<path d="M${-ex + r} ${y - 3} Q0 ${y - r * 0.8} ${ex - r} ${y - 3}" fill="none" stroke="#2C2C2A" stroke-width="3.5"/>`;
+    }},
+    { key: "monocle", name: "모노클", d: (p) => {
+      const ex = p.eyeGap / 2, r = p.eyeSize + 4.5, y = p.eyeY;
+      return `<circle cx="${ex}" cy="${y}" r="${r}" fill="#fff" fill-opacity="0.15" stroke="#C9922E" stroke-width="3"/>` +
+        `<path d="M${ex + r - 1} ${y + 4} Q${ex + r + 10} ${y + 15} ${ex + 5} ${y + 28}" fill="none" stroke="#C9922E" stroke-width="1.8" stroke-dasharray="3 2"/>`;
+    }},
+  ]},
+  rhand: { label: "오른손 (무기)", items: [
+    { key: "woodsword", name: "나무 검", d: (p) => {
+      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      return `<g transform="translate(${x} ${y}) rotate(26)">` +
+        `<rect x="-5.5" y="-42" width="11" height="34" rx="5.5" fill="#C9A24E" stroke="#8B6B35" stroke-width="2"/>` +
+        `<line x1="0" y1="-38" x2="0" y2="-12" stroke="#8B6B35" stroke-width="1.5" opacity="0.5"/>` +
+        `<rect x="-11" y="-9" width="22" height="6" rx="3" fill="#8B6B35"/>` +
+        `<rect x="-3.2" y="-3" width="6.4" height="13" rx="3" fill="#A97155" stroke="#7A4B33" stroke-width="1.6"/></g>`;
+    }},
+    { key: "knightsword", name: "기사의 장검", d: (p) => {
+      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      return `<g transform="translate(${x} ${y}) rotate(26)">` +
+        `<path d="M-5 -12 L-5 -40 L0 -50 L5 -40 L5 -12 Z" fill="#D7DBE0" stroke="#8C93A0" stroke-width="2"/>` +
+        `<line x1="0" y1="-44" x2="0" y2="-14" stroke="#AEB4BE" stroke-width="1.8"/>` +
+        `<rect x="-12" y="-12" width="24" height="6.5" rx="3" fill="#F2C14E" stroke="#C9922E" stroke-width="1.6"/>` +
+        `<rect x="-3.2" y="-5.5" width="6.4" height="14" rx="3" fill="#534AB7" stroke="#3C3489" stroke-width="1.6"/>` +
+        `<circle cx="0" cy="10" r="3.5" fill="#378ADD" stroke="#0C447C" stroke-width="1.4"/></g>`;
+    }},
+    { key: "holysword", name: "성검 유종", d: (p) => {
+      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      return `<g transform="translate(${x} ${y}) rotate(26)">` +
+        `<path d="M0 -60 L8 -47 L5 -12 L-5 -12 L-8 -47 Z" fill="#F5E663" opacity="0.3"/>` +
+        `<path d="M-5 -12 L-5 -44 L0 -55 L5 -44 L5 -12 Z" fill="#F2C14E" stroke="#C9922E" stroke-width="2"/>` +
+        `<line x1="0" y1="-49" x2="0" y2="-14" stroke="#FFF2C2" stroke-width="1.8"/>` +
+        `<path d="M-13 -9.5 Q0 -17 13 -9.5 L13 -5 Q0 -11.5 -13 -5 Z" fill="#F2C14E" stroke="#C9922E" stroke-width="1.6"/>` +
+        `<rect x="-3.2" y="-5" width="6.4" height="14" rx="3" fill="#A32D2D" stroke="#7A1F1F" stroke-width="1.6"/>` +
+        `<circle cx="0" cy="11" r="4" fill="#E24B4A" stroke="#A32D2D" stroke-width="1.4"/>` +
+        `<path d="M-15 -48 L-12.7 -42.5 L-7 -40.5 L-12.7 -38.5 L-15 -33 L-17.3 -38.5 L-23 -40.5 L-17.3 -42.5 Z" fill="#F2C14E" opacity="0.9"/></g>`;
+    }},
+    { key: "staff", name: "마법사 지팡이", d: (p) => {
+      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      return `<g transform="translate(${x} ${y}) rotate(26)">` +
+        `<circle cx="0" cy="-46" r="12" fill="#7F77DD" opacity="0.3"/>` +
+        `<rect x="-2.8" y="-38" width="5.6" height="48" rx="2.8" fill="#A97155" stroke="#7A4B33" stroke-width="1.8"/>` +
+        `<circle cx="0" cy="-46" r="8" fill="#7F77DD" stroke="#534AB7" stroke-width="2"/>` +
+        `<circle cx="-2.5" cy="-48.5" r="2.4" fill="#EEEDFE"/></g>`;
+    }},
+  ]},
+  lhand: { label: "왼손 (방패)", items: [
+    { key: "woodshield", name: "나무 원방패", d: (p) => {
+      const x = -p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42 + 4;
+      return `<g transform="translate(${x} ${y}) rotate(-13)">` +
+        `<circle cx="0" cy="0" r="19" fill="#C9A24E" stroke="#8B6B35" stroke-width="2.6"/>` +
+        `<line x1="-17" y1="-6.5" x2="17" y2="-6.5" stroke="#8B6B35" stroke-width="1.4" opacity="0.6"/>` +
+        `<line x1="-17" y1="6.5" x2="17" y2="6.5" stroke="#8B6B35" stroke-width="1.4" opacity="0.6"/>` +
+        `<circle cx="0" cy="0" r="5.5" fill="#888780" stroke="#5F5E5A" stroke-width="1.8"/></g>`;
+    }},
+    { key: "kite", name: "기사의 카이트 실드", d: (p) => {
+      const x = -p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42 + 4;
+      return `<g transform="translate(${x} ${y}) rotate(-13)">` +
+        `<path d="M0 -22 C7 -18 14.5 -16.5 18 -14.5 C18 1 11 14 0 22 C-11 14 -18 1 -18 -14.5 C-14.5 -16.5 -7 -18 0 -22 Z" fill="#378ADD" stroke="#D7DBE0" stroke-width="3"/>` +
+        `<path d="M0 -12 L3 -3.5 L12.5 -3.5 L5 2 L8 10.5 L0 5 L-8 10.5 L-5 2 L-12.5 -3.5 L-3 -3.5 Z" fill="#F2C14E"/></g>`;
+    }},
+    { key: "dragonscale", name: "용비늘 방패", d: (p) => {
+      const x = -p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42 + 4;
+      return `<g transform="translate(${x} ${y}) rotate(-13)">` +
+        `<path d="M0 -23 C8 -19 15.5 -17.5 19 -15.5 C19 2 12 15 0 23 C-12 15 -19 2 -19 -15.5 C-15.5 -17.5 -8 -19 0 -23 Z" fill="#A32D2D" stroke="#F2C14E" stroke-width="3"/>` +
+        `<path d="M-13 -11 Q0 -3.5 13 -11" fill="none" stroke="#E24B4A" stroke-width="2.4"/>` +
+        `<path d="M-11 -1.5 Q0 5.5 11 -1.5" fill="none" stroke="#E24B4A" stroke-width="2.4"/>` +
+        `<path d="M-7.5 7.5 Q0 14 7.5 7.5" fill="none" stroke="#E24B4A" stroke-width="2.4"/></g>`;
+    }},
+    { key: "spellbook", name: "마법서", d: (p) => {
+      const x = -p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42 + 4;
+      return `<g transform="translate(${x} ${y}) rotate(-13)">` +
+        `<rect x="-16" y="-12" width="32" height="24" rx="3" fill="#7F77DD" stroke="#3C3489" stroke-width="2.4"/>` +
+        `<rect x="-16" y="-12" width="6" height="24" rx="3" fill="#534AB7"/>` +
+        `<path d="M2 -6 L3.6 -1.6 L8 0 L3.6 1.6 L2 6 L0.4 1.6 L-4 0 L0.4 -1.6 Z" fill="#F2C14E"/></g>`;
+    }},
+  ]},
+};
+
+const EQUIP_SLOTS = Object.keys(EQUIP);
+
+function equipSvg(slot, p) {
+  const key = equip[slot];
+  if (!key || key === "none") return "";
+  const item = EQUIP[slot].items.find((i) => i.key === key);
+  return item ? item.d(p) : "";
+}
+
+// ============================================================
+// 슬라임 합성
+// ============================================================
+function slimeSVG(attr, width, stageKey, delay) {
+  if (stageKey === "egg") return eggSVG(width, delay);
+  if (styleMode === "pixel") return pixelSvg(attr, width, stageKey, delay);
+  const p = deriveParams(stageKey);
+  const base = colors[attr];
+  const c = styleColors(base);
+  const wearing = stageKey === "teen" || stageKey === "awake";
+  let auraDeco = "";
+  let tip = "";
+  if (stageKey === "baby") tip = antenna(attr, c, p, 1, true);
+  if (stageKey === "teen") tip = antenna(attr, c, p, 1, false);
+  if (stageKey === "awake") {
+    auraDeco = `<g class="sparkle" style="animation-delay:${delay || 0}s">${aura(c, p)}</g>`;
+    tip = antenna(attr, c, p, 1.35, false);
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}">` +
+    `<ellipse cx="0" cy="148" rx="${p.bodyW * 0.8}" ry="6" fill="#000" opacity="0.08"/>` +
+    (stageKey === "awake" ? `<ellipse cx="0" cy="148" rx="${p.bodyW * 0.95}" ry="7" fill="${c.fill}" opacity="0.12"/>` : "") +
+    auraDeco +
+    `<g class="breathe" style="animation-delay:${delay || 0}s">` +
+    tip +
+    renderBody(p, c, base) +
+    face(p, c) +
+    (wearing ? equipSvg("eye", p) : "") +
+    (wearing ? equipSvg("hat", p) + equipSvg("rhand", p) + equipSvg("lhand", p) : "") +
+    `</g></svg>`;
+}
+
+// ============================================================
+// UI
+// ============================================================
+const stageTabs = document.getElementById("stageTabs");
+const faceTabs = document.getElementById("faceTabs");
+const styleTabs = document.getElementById("styleTabs");
+const slimeRow = document.getElementById("slimeRow");
+const slidersEl = document.getElementById("sliders");
+const stageSlidersEl = document.getElementById("stageSliders");
+const equipGrid = document.getElementById("equipGrid");
+const colorList = document.getElementById("colorList");
+const bigPreview = document.getElementById("bigPreview");
+const growthStrip = document.getElementById("growthStrip");
+const selName = document.getElementById("selName");
+
+function buildTabs(el, defs, get, set) {
+  for (const s of defs) {
+    const btn = document.createElement("button");
+    btn.textContent = s.label;
+    btn.dataset.key = s.key;
+    btn.addEventListener("click", () => { set(s.key); save(); renderAll(); });
+    el.appendChild(btn);
+  }
+}
+buildTabs(stageTabs, STAGES, () => selectedStage, (v) => { selectedStage = v; });
+buildTabs(faceTabs, FACES, () => faceMode, (v) => { faceMode = v; });
+buildTabs(styleTabs, STYLES, () => styleMode, (v) => { styleMode = v; });
+
+for (const a of ATTRS) {
+  const btn = document.createElement("button");
+  btn.className = "slime-card";
+  btn.dataset.key = a.key;
+  btn.innerHTML = `<div class="pv"></div><div class="nm">${a.label}</div><div class="tr">${a.trait}</div>`;
+  btn.addEventListener("click", () => { selected = a.key; renderAll(); });
+  slimeRow.appendChild(btn);
+}
+
+// 알 단계 전용 카드 — 속성 구분 없는 미스터리 알
+const eggCard = document.createElement("div");
+eggCard.className = "slime-card";
+eggCard.style.display = "none";
+eggCard.innerHTML = `<div class="pv"></div><div class="nm">???</div><div class="tr">부화해야 속성을 알 수 있어요</div>`;
+slimeRow.appendChild(eggCard);
+
+function buildSlider(el, key, label, min, max, store) {
+  const wrap = document.createElement("div");
+  wrap.className = "ctl";
+  wrap.innerHTML = `<label>${label} <b data-val="${key}"></b></label>` +
+    `<input type="range" min="${min}" max="${max}" step="1" data-key="${key}">`;
+  wrap.querySelector("input").addEventListener("input", (e) => {
+    pushHistory();
+    store[key] = Number(e.target.value);
+    save();
+    renderSlimes();
+    wrap.querySelector("b").textContent = store[key];
+  });
+  el.appendChild(wrap);
+}
+
+for (const [key, label, min, max] of SLIDERS) buildSlider(slidersEl, key, label, min, max, params);
+
+let lastGroup = "";
+for (const [group, key, label, min, max] of STAGE_SLIDERS) {
+  if (group !== lastGroup) {
+    const t = document.createElement("div");
+    t.className = "group-title";
+    t.textContent = group;
+    stageSlidersEl.appendChild(t);
+    lastGroup = group;
+  }
+  buildSlider(stageSlidersEl, key, label, min, max, stages);
+}
+
+for (const slot of EQUIP_SLOTS) {
+  const wrap = document.createElement("div");
+  wrap.className = "eq";
+  const opts = ['<option value="none">없음</option>']
+    .concat(EQUIP[slot].items.map((i) => `<option value="${i.key}">${i.name}</option>`))
+    .join("");
+  wrap.innerHTML = `<label>${EQUIP[slot].label}</label><select data-slot="${slot}">${opts}</select>`;
+  wrap.querySelector("select").addEventListener("change", (e) => {
+    pushHistory();
+    equip[slot] = e.target.value;
+    save();
+    renderSlimes();
+  });
+  equipGrid.appendChild(wrap);
+}
+
+for (const [field, label] of COLOR_FIELDS) {
+  const lab = document.createElement("label");
+  lab.innerHTML = `<input type="color" data-field="${field}"><span>${label}</span><code data-hex="${field}"></code>`;
+  lab.querySelector("input").addEventListener("input", (e) => {
+    pushHistory();
+    colors[selected][field] = e.target.value;
+    save();
+    renderSlimes();
+    lab.querySelector("code").textContent = e.target.value;
+  });
+  colorList.appendChild(lab);
+}
+
+function renderSlimes() {
+  for (const btn of stageTabs.querySelectorAll("button")) btn.classList.toggle("sel", btn.dataset.key === selectedStage);
+  for (const btn of faceTabs.querySelectorAll("button")) btn.classList.toggle("sel", btn.dataset.key === faceMode);
+  for (const btn of styleTabs.querySelectorAll("button")) btn.classList.toggle("sel", btn.dataset.key === styleMode);
+  const isEgg = selectedStage === "egg";
+  eggCard.style.display = isEgg ? "" : "none";
+  if (isEgg) eggCard.querySelector(".pv").innerHTML = eggSVG(140, 0);
+  let idx = 0;
+  for (const btn of slimeRow.children) {
+    if (btn === eggCard) continue;
+    btn.style.display = isEgg ? "none" : "";
+    if (!isEgg) {
+      btn.querySelector(".pv").innerHTML = slimeSVG(btn.dataset.key, 118, selectedStage, -(idx * 0.45));
+      btn.classList.toggle("sel", btn.dataset.key === selected);
+    }
+    idx += 1;
+  }
+  bigPreview.innerHTML = slimeSVG(selected, 165, selectedStage, -0.3);
+  growthStrip.innerHTML = STAGES.map((s, i) =>
+    `<div class="cell">${slimeSVG(selected, 92, s.key, -(i * 0.35))}<div>${s.label}</div></div>`
+  ).join("");
+}
+
+function renderAll() {
+  renderSlimes();
+  selName.textContent = ATTRS.find((a) => a.key === selected).label;
+  for (const input of slidersEl.querySelectorAll("input")) input.value = params[input.dataset.key];
+  for (const b of slidersEl.querySelectorAll("b")) b.textContent = params[b.dataset.val];
+  for (const input of stageSlidersEl.querySelectorAll("input")) input.value = stages[input.dataset.key];
+  for (const b of stageSlidersEl.querySelectorAll("b")) b.textContent = stages[b.dataset.val];
+  for (const input of colorList.querySelectorAll("input")) input.value = colors[selected][input.dataset.field];
+  for (const code of colorList.querySelectorAll("code")) code.textContent = colors[selected][code.dataset.hex];
+  for (const sel of equipGrid.querySelectorAll("select")) sel.value = equip[sel.dataset.slot];
+}
+
+document.getElementById("undoBtn").addEventListener("click", undo);
+
+document.getElementById("copyBtn").addEventListener("click", async (e) => {
+  const json = JSON.stringify({ params, stages, colors, equip, faceMode, styleMode }, null, 2);
+  const btn = e.target;
+  try {
+    await navigator.clipboard.writeText(json);
+    btn.textContent = "복사됨!";
+  } catch (err) {
+    const blob = new Blob([json], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "slime-design.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    btn.textContent = "파일로 저장됨!";
+  }
+  setTimeout(() => { btn.textContent = "디자인 값 JSON 복사"; }, 1500);
+});
+
+document.getElementById("pngBtn").addEventListener("click", () => {
+  const W = 512, H = Math.round(512 * VB_H / VB_W);
+  const svg = slimeSVG(selected, W, selectedStage).replace(`width="${W}"`, `width="${W}" height="${H}"`);
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    canvas.getContext("2d").drawImage(img, 0, 0, W, H);
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `슬라임_${selected}_${selectedStage}.png`;
+    a.click();
+  };
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  pushHistory();
+  applyState({
+    params: DEFAULT_PARAMS,
+    stages: DEFAULT_STAGES,
+    colors: DEFAULT_COLORS,
+    equip: { hat: "none", eye: "none", rhand: "none", lhand: "none" },
+    faceMode: "mini",
+    styleMode: "pixel",
+  });
+  save();
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>

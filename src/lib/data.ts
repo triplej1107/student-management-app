@@ -2,6 +2,7 @@ import "server-only";
 import { supabase } from "./supabase";
 import { toISODate, weekLabel, dayLabelOf, mondayOf, parseISODate, kstToday } from "./weeks";
 import { classKeyFor } from "./classKey";
+import { syncSlimeWeek } from "./slimeXp";
 import { SCHOOL_EXAMS } from "./types";
 import type {
   AttendanceStatus,
@@ -473,6 +474,7 @@ export async function setAttendance(
     },
     { onConflict: "student_id,session_date" }
   );
+  await syncSlimeWeek(studentId, date);
 }
 
 export async function clearAttendance(studentId: number, date: Date) {
@@ -481,6 +483,7 @@ export async function clearAttendance(studentId: number, date: Date) {
     .delete()
     .eq("student_id", studentId)
     .eq("session_date", toISODate(date));
+  await syncSlimeWeek(studentId, date);
 }
 
 /** 2학기 전까지만 쓰는 임시 기능 — 학부모에게 문자를 보냈는지 체크. */
@@ -618,6 +621,7 @@ export async function setClinicHwCheck(
     },
     { onConflict: "student_id,week_start" }
   );
+  await syncSlimeWeek(studentId, weekStart);
 }
 
 export async function setClinicTestScores(
@@ -634,6 +638,7 @@ export async function setClinicTestScores(
     },
     { onConflict: "student_id,week_start" }
   );
+  await syncSlimeWeek(studentId, weekStart);
 }
 
 /** "조교 결재" — a TA signing off on a student's weekly checklist. Tracks

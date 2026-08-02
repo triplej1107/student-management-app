@@ -6,6 +6,7 @@ import { buildAutoAbsentMessage } from "@/lib/attendanceMessages";
 import { getPushSubscriptionsForStudents, sendAttendancePush } from "@/lib/clinicPush";
 import { kstToday, toISODate } from "@/lib/weeks";
 import { isDeployedEnvironment } from "@/lib/env";
+import { syncSlimeWeek } from "@/lib/slimeXp";
 
 /** Vercel Cron이 매일 22:00 KST(vercel.json, "0 13 * * *")에 호출 — 그날
  * 클리닉이 있었는데 결국 오지 않은 학생을 자동으로 결석 처리한다
@@ -63,6 +64,11 @@ export async function GET(req: Request) {
     })),
     { onConflict: "student_id,session_date" }
   );
+
+  // 결석 전환은 그 주의 슬라임 XP(스트릭 판정)에 영향 — 주 단위 재계산
+  for (const r of toConvert) {
+    await syncSlimeWeek(r.student.id, today);
+  }
 
   const subsByStudent = await getPushSubscriptionsForStudents(toConvert.map((r) => r.student.id));
   let pushedTo = 0;

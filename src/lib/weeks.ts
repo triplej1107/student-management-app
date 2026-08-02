@@ -70,7 +70,7 @@ export function rollingClinicWeeks(count: number, today: Date = kstToday()): Dat
  * rollingClinicWeeks는 클리닉이 진행 중인 주차(= 지난주 수업)까지만 준다.
  * 그런데 종주T는 토요일 수업을 마치고 그 주 수업 내용을 바로 정리하고
  * 싶어하므로, 아직 클리닉이 시작되지 않은 이번 주 수업까지 고를 수 있어야
- * 한다. 학생 공개는 lessonPlanVisibility가 따로 막는다. */
+ * 한다. 학생 공개는 weeklyContentVisibility가 따로 막는다. */
 export function rollingLessonWeeks(count: number, today: Date = kstToday()): Date[] {
   return [mondayOf(today), ...rollingClinicWeeks(count - 1, today)];
 }

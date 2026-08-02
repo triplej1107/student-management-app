@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { isLessonPlanPublished } from "./lessonPlanVisibility";
+import { isWeeklyContentPublished } from "./weeklyContentVisibility";
 import { kstToday, nowKST, rollingClinicWeeks, toISODate } from "./weeks";
 import type { Student } from "./types";
 
@@ -31,7 +31,7 @@ function latestPublishedWeekISO(): string | null {
   const hour = nowKST().getUTCHours();
   for (const w of rollingClinicWeeks(8)) {
     const iso = toISODate(w);
-    if (isLessonPlanPublished(iso, todayISO, hour)) return iso;
+    if (isWeeklyContentPublished(iso, todayISO, hour)) return iso;
   }
   return null;
 }

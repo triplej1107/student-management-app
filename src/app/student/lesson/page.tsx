@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
 import { getStudentById, getClassPlan } from "@/lib/data";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate, kstToday, nowKST } from "@/lib/weeks";
-import { isLessonPlanPublished } from "@/lib/lessonPlanVisibility";
+import { isWeeklyContentPublished } from "@/lib/weeklyContentVisibility";
 import { PillLink, ScreenTitle } from "@/components/ui";
 import { LessonPlanReadOnly } from "@/components/LessonPlanReadOnly";
 import { TabSeenBeacon } from "@/components/TabSeenBeacon";
@@ -23,12 +23,12 @@ export default async function StudentLessonPage({
   const todayISO = toISODate(kstToday());
   const kstHour = nowKST().getUTCHours();
   const weeks = rollingClinicWeeks(8).filter((w) =>
-    isLessonPlanPublished(toISODate(w), todayISO, kstHour)
+    isWeeklyContentPublished(toISODate(w), todayISO, kstHour)
   );
   const selectedWeekStart = week ? parseISODate(week) : weeks[0];
   const selectedWeekISO = selectedWeekStart ? toISODate(selectedWeekStart) : "";
   const selectedPublished =
-    !!selectedWeekISO && isLessonPlanPublished(selectedWeekISO, todayISO, kstHour);
+    !!selectedWeekISO && isWeeklyContentPublished(selectedWeekISO, todayISO, kstHour);
 
   const plan =
     selectedPublished && student.class_key

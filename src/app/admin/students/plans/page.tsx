@@ -2,7 +2,7 @@ import { requireZongjuSession } from "@/lib/authz";
 import { getClassPlan } from "@/lib/data";
 import { CLASSES, type ClassKey } from "@/lib/types";
 import { rollingLessonWeeks, weekLabel, toISODate, parseISODate, kstToday, nowKST } from "@/lib/weeks";
-import { isLessonPlanPublished, publishDateISO } from "@/lib/lessonPlanVisibility";
+import { isWeeklyContentPublished, publishDateISO } from "@/lib/weeklyContentVisibility";
 import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink } from "@/components/ui";
 import { LessonPlanEditor } from "@/components/admin/LessonPlanEditor";
@@ -27,7 +27,7 @@ export default async function AdminLessonPlansPage({
 
   const todayISO = toISODate(kstToday());
   const kstHour = nowKST().getUTCHours();
-  const published = isLessonPlanPublished(selectedWeekISO, todayISO, kstHour);
+  const published = isWeeklyContentPublished(selectedWeekISO, todayISO, kstHour);
   const publishOn = publishDateISO(selectedWeekISO);
 
   return (

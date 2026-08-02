@@ -613,10 +613,12 @@ function pixelEquipLayer(p, cell) {
   }
   const hSp = hKey === "none" ? null : equipSprite(hKey, cell);
   if (hSp) {
-    const w = hSp.rows[0].length * hSp.cell;
-    const x0 = snap(-p.bodyW * 0.35) - Math.floor(w / 2 / cell) * cell;
-    const y0 = snap(topY) - (hSp.rows.length - 1) * hSp.cell;
-    s += spriteWithFx(hSp, x0, y0);
+    // 정중앙 + 1.2배 — "왕이다!" (원장 피드백 2026-08-02). 꼭지는 pixelSvg에서 생략됨.
+    const hatSp = { ...hSp, cell: hSp.cell * 1.2 };
+    const w = hatSp.rows[0].length * hatSp.cell;
+    const x0 = -w / 2;
+    const y0 = topY - (hatSp.rows.length - 1.5) * hatSp.cell;
+    s += spriteWithFx(hatSp, x0, y0);
   }
   if (eKey !== "none") s += pixelGlasses(eKey, p, cell);
   return s;
@@ -654,16 +656,19 @@ function pixelSvg(attr, width, stageKey, delay) {
       if (hitPath.isPointInFill(pt)) grid.add(key(x, y));
     }
   }
-  // 꼭지: 줄기 1픽셀 폭 + 방울 2x2
+  // 꼭지: 줄기 1픽셀 폭 + 방울 2x2 — 모자를 쓰면 모자에 덮이므로 생략
   const topY = BASELINE - p.bodyH;
-  const stemX = Math.round(p.tipLean * 0.5 / cell) * cell;
-  const stemCells = Math.max(1, Math.round(p.stemLen / cell));
+  const wearingHat = (stageKey === "teen" || stageKey === "awake") && equip.hat !== "none";
   let rects = "";
-  for (let i = 1; i <= stemCells; i++) rects += `<rect x="${stemX}" y="${topY - i * cell}" width="${cell}" height="${cell}" fill="${c.stroke}"/>`;
-  rects += `<rect x="${stemX - cell / 2}" y="${topY - (stemCells + 1) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
-    `<rect x="${stemX + cell / 2}" y="${topY - (stemCells + 1) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
-    `<rect x="${stemX - cell / 2}" y="${topY - (stemCells + 2) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
-    `<rect x="${stemX + cell / 2}" y="${topY - (stemCells + 2) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>`;
+  if (!wearingHat) {
+    const stemX = Math.round(p.tipLean * 0.5 / cell) * cell;
+    const stemCells = Math.max(1, Math.round(p.stemLen / cell));
+    for (let i = 1; i <= stemCells; i++) rects += `<rect x="${stemX}" y="${topY - i * cell}" width="${cell}" height="${cell}" fill="${c.stroke}"/>`;
+    rects += `<rect x="${stemX - cell / 2}" y="${topY - (stemCells + 1) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
+      `<rect x="${stemX + cell / 2}" y="${topY - (stemCells + 1) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
+      `<rect x="${stemX - cell / 2}" y="${topY - (stemCells + 2) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>` +
+      `<rect x="${stemX + cell / 2}" y="${topY - (stemCells + 2) * cell - 2}" width="${cell}" height="${cell}" fill="${c.stroke}"/>`;
+  }
   const ex = p.eyeGap / 2;
   for (const k of grid) {
     const [x, y] = k.split("_").map(Number);
@@ -836,14 +841,14 @@ const EQUIP = {
   hat: { label: "머리", items: [
     { key: "straw", name: "밀짚모자", d: (p) => {
       const topY = BASELINE - p.bodyH;
-      return `<g transform="translate(${-p.bodyW * 0.34} ${topY + 9}) rotate(-13)">` +
+      return `<g transform="translate(0 ${topY + 4}) rotate(-3) scale(1.3)">` +
         `<ellipse cx="0" cy="1" rx="30" ry="7.5" fill="#EFD489" stroke="#C9A24E" stroke-width="2.4"/>` +
         `<path d="M-17 0 C-17 -16 17 -16 17 0 Z" fill="#EFD489" stroke="#C9A24E" stroke-width="2.4"/>` +
         `<path d="M-16.2 -4.5 L16.2 -4.5 L17 0 L-17 0 Z" fill="#E24B4A"/></g>`;
     }},
     { key: "wizard", name: "마법사 고깔", d: (p) => {
       const topY = BASELINE - p.bodyH;
-      return `<g transform="translate(${-p.bodyW * 0.34} ${topY + 9}) rotate(-13)">` +
+      return `<g transform="translate(0 ${topY + 4}) rotate(-3) scale(1.3)">` +
         `<path d="M-16 0 L-4 -34 C-2 -39 2 -37 3 -33 L16 0 Z" fill="#7F77DD" stroke="#534AB7" stroke-width="2.4"/>` +
         `<circle cx="-5" cy="-13" r="2.4" fill="#EEEDFE"/><circle cx="5" cy="-21" r="1.9" fill="#EEEDFE"/>` +
         `<ellipse cx="0" cy="0" rx="21" ry="5.5" fill="#534AB7"/>` +
@@ -851,7 +856,7 @@ const EQUIP = {
     }},
     { key: "crown", name: "수석의 왕관", d: (p) => {
       const topY = BASELINE - p.bodyH;
-      return `<g transform="translate(${-p.bodyW * 0.34} ${topY + 10}) rotate(-11)">` +
+      return `<g transform="translate(0 ${topY + 5}) rotate(-3) scale(1.3)">` +
         `<path d="M-18 0 L-18 -15 L-9 -6 L0 -18 L9 -6 L18 -15 L18 0 Z" fill="#F2C14E" stroke="#C9922E" stroke-width="2.4" stroke-linejoin="round"/>` +
         `<circle cx="0" cy="-18" r="2.8" fill="#E24B4A"/><circle cx="-18" cy="-15" r="2.4" fill="#378ADD"/><circle cx="18" cy="-15" r="2.4" fill="#378ADD"/>` +
         `<circle cx="-8.5" cy="-3" r="2" fill="#E24B4A"/><circle cx="8.5" cy="-3" r="2" fill="#378ADD"/></g>`;
@@ -978,6 +983,7 @@ function slimeSVG(attr, width, stageKey, delay) {
     auraDeco = `<g class="sparkle" style="animation-delay:${delay || 0}s">${aura(c, p)}</g>`;
     tip = antenna(attr, c, p, 1.35, false);
   }
+  if (wearing && equip.hat !== "none") tip = ""; // 모자가 꼭지를 덮는다
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}">` +
     `<ellipse cx="0" cy="148" rx="${p.bodyW * 0.8}" ry="6" fill="#000" opacity="0.08"/>` +
     (stageKey === "awake" ? `<ellipse cx="0" cy="148" rx="${p.bodyW * 0.95}" ry="7" fill="${c.fill}" opacity="0.12"/>` : "") +

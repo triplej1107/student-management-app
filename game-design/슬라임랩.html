@@ -74,6 +74,11 @@
   g.breathe { animation: breathe 2.4s ease-in-out infinite; transform-box: view-box; transform-origin: 50% 85.5%; }
   g.wobble { animation: wobble 3.2s ease-in-out infinite; transform-box: view-box; transform-origin: 50% 85.5%; }
   g.sparkle { animation: twinkle 2s ease-in-out infinite; }
+  @keyframes flameDance {
+    0%, 100% { opacity: 0.95; transform: translateY(0); }
+    50% { opacity: 0.45; transform: translateY(-4px); }
+  }
+  g.flame { animation: flameDance 0.9s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -412,6 +417,102 @@ const PIXEL_PAL = {
   G: "#F2C14E", g: "#C9922E", W: "#C9A24E", w: "#8B6B35",
   A: "#A97155", a: "#7A4B33", R: "#E24B4A", r: "#A32D2D",
   B: "#378ADD", b: "#185FA5", P: "#7F77DD", p: "#534AB7", Y: "#EFD489",
+  O: "#FF8A3D", L: "#FFD166",
+};
+
+// 레전더리 전용 하이레졸루션 스프라이트 (셀 3.5 = 일반의 2배 해상도) + 전용 이펙트.
+// 원장 지시(2026-08-02): 1% 아이템은 픽셀을 아끼지 말 것.
+const PIXEL_FINE = {
+  holysword: {
+    cls: "flame",
+    body: [
+      "......K......",
+      ".....KGK.....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGFGK....",
+      "....KGGGK....",
+      "...KKGGGKK...",
+      "KGGGgGGGgGGGK",
+      ".KK.KKRKK.KK.",
+      ".....KRK.....",
+      ".....KRK.....",
+      ".....KrK.....",
+      "....KKrKK....",
+      "....KRRRK....",
+      "....KKKKK....",
+    ],
+    fx: [
+      "....L..L.....",
+      "..O......O...",
+      "...L.O..L....",
+      ".O........O..",
+      "..L......L...",
+      ".............",
+      "O..........O.",
+      "..L......L...",
+      ".............",
+      ".O........O..",
+    ],
+  },
+  dragonscale: {
+    cls: "flame",
+    body: [
+      "....KKKKKKK....",
+      "..KKGGGGGGGKK..",
+      ".KGGrrrrrrrGGK.",
+      ".KGrRRrrrRRrGK.",
+      ".KGrrrrrrrrrGK.",
+      ".KGrrRRrRRrrGK.",
+      ".KGrrrrrrrrrGK.",
+      ".KGGrRRrRRrGGK.",
+      "..KGrrrrrrrGK..",
+      "..KGGrRRrRGGK..",
+      "...KGrrrrrGK...",
+      "....KGrrrGK....",
+      ".....KGrGK.....",
+      "......KGK......",
+      ".......K.......",
+    ],
+    fx: [
+      "O.............L",
+      "...............",
+      "L.............O",
+      "...............",
+      "...............",
+      "O.............L",
+      "...............",
+      "...............",
+      ".L...........O.",
+    ],
+  },
+  crown: {
+    cls: "sparkle",
+    body: [
+      ".K.....K.....K.",
+      "KRK...KGK...KBK",
+      "KGK...KGK...KGK",
+      "KGGK.KKGKK.KGGK",
+      "KGGGKKGGGKKGGGK",
+      "KGGGGGGGGGGGGGK",
+      "KGgGGgGGGgGGgGK",
+      "KGGGGGGGGGGGGGK",
+      "KKKKKKKKKKKKKKK",
+    ],
+    fx: [
+      "F.............F",
+      "...............",
+      "......F........",
+      "...............",
+      "F.............F",
+    ],
+  },
 };
 
 const PIXEL_SPRITES = {
@@ -473,31 +574,48 @@ function pixelGlasses(kind, p, cell) {
   return s;
 }
 
+// 키에 맞는 스프라이트를 고른다 — 레전더리는 하이레졸루션(셀 3.5) + 이펙트
+function equipSprite(key, baseCell) {
+  const fine = PIXEL_FINE[key];
+  if (fine) return { rows: fine.body, fx: fine.fx, cls: fine.cls, cell: 3.5 };
+  if (PIXEL_SPRITES[key]) return { rows: PIXEL_SPRITES[key], fx: null, cls: null, cell: baseCell };
+  return null;
+}
+
+function spriteWithFx(sp, x0, y0) {
+  let s = drawSprite(sp.rows, x0, y0, sp.cell);
+  if (sp.fx) s += `<g class="${sp.cls}">` + drawSprite(sp.fx, x0, y0 - 2 * sp.cell, sp.cell) + `</g>`;
+  return s;
+}
+
 function pixelEquipLayer(p, cell) {
   const snap = (v) => Math.round(v / cell) * cell;
   const topY = BASELINE - p.bodyH;
   let s = "";
   const rKey = equip.rhand, lKey = equip.lhand, hKey = equip.hat, eKey = equip.eye;
-  if (rKey !== "none" && PIXEL_SPRITES[rKey]) {
-    const rows = PIXEL_SPRITES[rKey];
-    const x0 = snap(p.bodyW + 11) - Math.floor(rows[0].length / 2) * cell;
-    const y0 = snap(BASELINE - cell) - rows.length * cell;
+  const rSp = rKey === "none" ? null : equipSprite(rKey, cell);
+  if (rSp) {
+    const w = rSp.rows[0].length * rSp.cell;
+    const x0 = snap(p.bodyW + 11) - Math.floor(w / 2 / cell) * cell;
+    const y0 = snap(BASELINE - cell) - rSp.rows.length * rSp.cell;
     // 그립(아래 중앙)을 축으로 바깥쪽으로 기울여 "들고 있는" 느낌을 준다
-    const gx = x0 + (rows[0].length * cell) / 2;
-    const gy = y0 + rows.length * cell - cell;
-    s += `<g transform="rotate(28 ${gx} ${gy})">` + drawSprite(rows, x0, y0, cell) + `</g>`;
+    const gx = x0 + w / 2;
+    const gy = y0 + rSp.rows.length * rSp.cell - cell;
+    s += `<g transform="rotate(28 ${gx} ${gy})">` + spriteWithFx(rSp, x0, y0) + `</g>`;
   }
-  if (lKey !== "none" && PIXEL_SPRITES[lKey]) {
-    const rows = PIXEL_SPRITES[lKey];
-    const x0 = snap(-(p.bodyW + 11)) - Math.floor(rows[0].length / 2) * cell;
-    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor(rows.length / 2) * cell;
-    s += drawSprite(rows, x0, y0, cell);
+  const lSp = lKey === "none" ? null : equipSprite(lKey, cell);
+  if (lSp) {
+    const w = lSp.rows[0].length * lSp.cell;
+    const x0 = snap(-(p.bodyW + 11)) - Math.floor(w / 2 / cell) * cell;
+    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor((lSp.rows.length * lSp.cell) / 2 / cell) * cell;
+    s += spriteWithFx(lSp, x0, y0);
   }
-  if (hKey !== "none" && PIXEL_SPRITES[hKey]) {
-    const rows = PIXEL_SPRITES[hKey];
-    const x0 = snap(-p.bodyW * 0.35) - Math.floor(rows[0].length / 2) * cell;
-    const y0 = snap(topY) - (rows.length - 1) * cell;
-    s += drawSprite(rows, x0, y0, cell);
+  const hSp = hKey === "none" ? null : equipSprite(hKey, cell);
+  if (hSp) {
+    const w = hSp.rows[0].length * hSp.cell;
+    const x0 = snap(-p.bodyW * 0.35) - Math.floor(w / 2 / cell) * cell;
+    const y0 = snap(topY) - (hSp.rows.length - 1) * hSp.cell;
+    s += spriteWithFx(hSp, x0, y0);
   }
   if (eKey !== "none") s += pixelGlasses(eKey, p, cell);
   return s;

@@ -4,9 +4,13 @@
 
 function rand() { return Math.random(); }
 
-const EPIC_SETS = 11, PARTS = 5, LEGEND_SETS = 5, RARE_SETS = 15, MAGIC_SETS = 15, COMMON_POOL = 33;
+// 풀 크기·조각 가격은 env로 덮어쓸 수 있다 (기본값 = v4 전량 출시 기준).
+// 시즌0 축소 출시안을 비교하려면 시뮬레이션-오픈풀.js를 실행할 것.
+const num = (k, d) => Number(process.env[k] ?? d);
+const EPIC_SETS = num("EPIC_SETS", 11), PARTS = num("PARTS", 5), LEGEND_SETS = num("LEGEND_SETS", 5),
+  RARE_SETS = num("RARE_SETS", 15), MAGIC_SETS = num("MAGIC_SETS", 15), COMMON_POOL = num("COMMON_POOL", 33);
 const SHARD = { common: 1, magic: 1, rare: 3, epic: 20, legendary: 100 };
-const EPIC_COST = 100, LEGEND_COST = 500;
+const EPIC_COST = num("EPIC_COST", 100), LEGEND_COST = num("LEGEND_COST", 500);
 let GUARANTEE_TIER = "legendary"; // 100연뽑 확정 파츠 등급
 
 /** UJC를 최적 단위로 쪼개 뽑기 횟수 + 확정 레전더리 파츠 수 계산 */

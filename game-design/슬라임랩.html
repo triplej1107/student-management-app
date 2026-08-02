@@ -596,8 +596,9 @@ function pixelEquipLayer(p, cell) {
   const rSp = rKey === "none" ? null : equipSprite(rKey, cell);
   if (rSp) {
     const w = rSp.rows[0].length * rSp.cell;
-    const x0 = snap(p.bodyW + 11) - Math.floor(w / 2 / cell) * cell;
-    const y0 = snap(BASELINE - cell) - rSp.rows.length * rSp.cell;
+    // 그립이 몸 가장자리에 살짝 겹치게 — 들고 있는 느낌 (원장 피드백 2026-08-02)
+    const x0 = snap(p.bodyW - 6) - Math.floor(w / 2 / cell) * cell;
+    const y0 = snap(BASELINE - cell * 2) - rSp.rows.length * rSp.cell;
     // 그립(아래 중앙)을 축으로 바깥쪽으로 기울여 "들고 있는" 느낌을 준다
     const gx = x0 + w / 2;
     const gy = y0 + rSp.rows.length * rSp.cell - cell;
@@ -881,7 +882,7 @@ const EQUIP = {
   ]},
   rhand: { label: "오른손 (무기)", items: [
     { key: "woodsword", name: "나무 검", d: (p) => {
-      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      const x = p.bodyW * 0.84, y = BASELINE - p.bodyH * 0.42;
       return `<g transform="translate(${x} ${y}) rotate(26)">` +
         `<rect x="-5.5" y="-42" width="11" height="34" rx="5.5" fill="#C9A24E" stroke="#8B6B35" stroke-width="2"/>` +
         `<line x1="0" y1="-38" x2="0" y2="-12" stroke="#8B6B35" stroke-width="1.5" opacity="0.5"/>` +
@@ -889,7 +890,7 @@ const EQUIP = {
         `<rect x="-3.2" y="-3" width="6.4" height="13" rx="3" fill="#A97155" stroke="#7A4B33" stroke-width="1.6"/></g>`;
     }},
     { key: "knightsword", name: "기사의 장검", d: (p) => {
-      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      const x = p.bodyW * 0.84, y = BASELINE - p.bodyH * 0.42;
       return `<g transform="translate(${x} ${y}) rotate(26)">` +
         `<path d="M-5 -12 L-5 -40 L0 -50 L5 -40 L5 -12 Z" fill="#D7DBE0" stroke="#8C93A0" stroke-width="2"/>` +
         `<line x1="0" y1="-44" x2="0" y2="-14" stroke="#AEB4BE" stroke-width="1.8"/>` +
@@ -898,7 +899,7 @@ const EQUIP = {
         `<circle cx="0" cy="10" r="3.5" fill="#378ADD" stroke="#0C447C" stroke-width="1.4"/></g>`;
     }},
     { key: "holysword", name: "성검 유종", d: (p) => {
-      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      const x = p.bodyW * 0.84, y = BASELINE - p.bodyH * 0.42;
       return `<g transform="translate(${x} ${y}) rotate(26)">` +
         `<path d="M0 -60 L8 -47 L5 -12 L-5 -12 L-8 -47 Z" fill="#F5E663" opacity="0.3"/>` +
         `<path d="M-5 -12 L-5 -44 L0 -55 L5 -44 L5 -12 Z" fill="#F2C14E" stroke="#C9922E" stroke-width="2"/>` +
@@ -909,7 +910,7 @@ const EQUIP = {
         `<path d="M-15 -48 L-12.7 -42.5 L-7 -40.5 L-12.7 -38.5 L-15 -33 L-17.3 -38.5 L-23 -40.5 L-17.3 -42.5 Z" fill="#F2C14E" opacity="0.9"/></g>`;
     }},
     { key: "staff", name: "마법사 지팡이", d: (p) => {
-      const x = p.bodyW * 0.95, y = BASELINE - p.bodyH * 0.42;
+      const x = p.bodyW * 0.84, y = BASELINE - p.bodyH * 0.42;
       return `<g transform="translate(${x} ${y}) rotate(26)">` +
         `<circle cx="0" cy="-46" r="12" fill="#7F77DD" opacity="0.3"/>` +
         `<rect x="-2.8" y="-38" width="5.6" height="48" rx="2.8" fill="#A97155" stroke="#7A4B33" stroke-width="1.8"/>` +

@@ -181,6 +181,24 @@ async function doSync(studentId: number, anyDateInWeek: Date): Promise<void> {
   if (!slime) return;
   const { data: sumRows } = await supabase.from("xp_events").select("amount").eq("student_id", studentId).eq("season_id", season.id);
   const totalXp = (sumRows ?? []).reduce((sum, r) => sum + (r.amount as number), 0);
+
+  // 뽑기권 지급 — unique(student_id, source_key)로 멱등. 한번 준 건 회수하지
+  // 않는다(XP가 재계산으로 줄어도 그대로 — 학생에게 관대한 쪽으로).
+  // · 레벨업: 누적 XP 300당 1장 (시즌 네임스페이스)
+  // · 주간 미션: 개근 + 숙제 7/7 완수한 주에 1장
+  const ticketRows: { student_id: number; delta: number; kind: string; source_key: string }[] = [];
+  const level = Math.floor(totalXp / 300);
+  for (let n = 1; n <= level; n++) {
+    ticketRows.push({ student_id: studentId, delta: 1, kind: "levelup", source_key: `s${season.id}|levelup:${n}` });
+  }
+  const perfectThisWeek = countPerfectStreak([weeksDesc[0]]) === 1;
+  const hwFull = events.some((e) => e.sourceKey.endsWith("|hwbonus"));
+  if (perfectThisWeek && hwFull) {
+    ticketRows.push({ student_id: studentId, delta: 1, kind: "mission", source_key: `${weekISO}|mission` });
+  }
+  if (ticketRows.length > 0) {
+    await supabase.from("gacha_tickets").upsert(ticketRows, { onConflict: "student_id,source_key", ignoreDuplicates: true });
+  }
   const currentStage: SlimeStage = slime.stage === "job" ? "awake" : slime.stage;
   const nextStage = stageForXp(totalXp, season.evolve_thresholds, currentStage);
   const update: Record<string, unknown> = { xp: totalXp };

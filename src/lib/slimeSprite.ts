@@ -6,6 +6,17 @@
 
 export type SlimeAttr = "fire" | "water" | "wood" | "gold" | "earth";
 export type SlimeStage = "egg" | "baby" | "teen" | "awake";
+// 표정 — 눈·입 픽셀이 실제로 바뀐다. 행동 연출은 SlimeIdle 컴포넌트가 담당.
+export type SlimeExpression =
+  | "normal"
+  | "laugh"
+  | "yawn"
+  | "cry"
+  | "sleep"
+  | "wink"
+  | "surprised"
+  | "love"
+  | "sing";
 
 export const SLIME_ATTRS: SlimeAttr[] = ["fire", "water", "wood", "gold", "earth"];
 
@@ -141,6 +152,127 @@ function rect(x: number, y: number, cell: number, fill: string, opacity?: number
   return `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="${fill}"${opacity ? ` opacity="${opacity}"` : ""}/>`;
 }
 
+// 미소/울상 곡선을 격자에 스냅해서 그린다 (dir: 1=미소, -1=울상)
+function mouthCurve(p: Derived, c: { eye: string }, cell: number, grid: Set<string>, dir: number): string {
+  let s = "";
+  const seen = new Set<string>();
+  for (let t = 0; t <= 1.001; t += 0.1) {
+    const mx = (1 - t) * (1 - t) * -p.mouthW + t * t * p.mouthW;
+    const my = (1 - t) * (1 - t) * p.mouthY + 2 * t * (1 - t) * (p.mouthY + dir * p.mouthW * 0.7) + t * t * p.mouthY;
+    const gx = Math.floor(mx / cell) * cell;
+    const gy = Math.floor(my / cell) * cell;
+    const key = gx + "_" + gy;
+    if (!seen.has(key) && grid.has(key)) {
+      seen.add(key);
+      s += rect(gx, gy, cell, c.eye);
+    }
+  }
+  return s;
+}
+
+// 표정별 눈·입 픽셀 오버레이
+function faceOverlay(
+  p: Derived,
+  c: { fill: string; stroke: string; eye: string },
+  cell: number,
+  expression: SlimeExpression,
+  grid: Set<string>
+): string {
+  const snap = (v: number) => Math.floor(v / cell) * cell;
+  const eyeY = snap(p.eyeY) - cell;
+  let s = "";
+  const happyEye = (x: number) =>
+    rect(x - cell, eyeY + cell, cell, c.eye) + rect(x, eyeY, cell, c.eye) + rect(x + cell, eyeY + cell, cell, c.eye);
+  const closedEye = (x: number) =>
+    rect(x - cell, eyeY + cell, cell, c.eye) + rect(x, eyeY + cell, cell, c.eye) + rect(x + cell, eyeY + cell, cell, c.eye);
+  const lineEye = (x: number) =>
+    rect(x, eyeY, cell, c.eye) + rect(x, eyeY + cell, cell, c.eye) + rect(x, eyeY + 2 * cell, cell, c.eye);
+  const wideEye = (x: number) => {
+    let e = "";
+    for (let j = 0; j < 3; j++) e += rect(x - cell, eyeY + j * cell, cell, c.eye) + rect(x, eyeY + j * cell, cell, c.eye);
+    e += rect(x - cell, eyeY, cell, "#FFFFFF", 0.65);
+    return e;
+  };
+  const heartEye = (x: number) => {
+    const hc = 5;
+    const rows = ["HH.HH", "HHHHH", ".HHH.", "..H.."];
+    let e = "";
+    rows.forEach((row, j) => {
+      [...row].forEach((ch, i) => {
+        if (ch === ".") return;
+        e += rect(x - 2 * hc + i * hc, eyeY + j * hc, hc, "#E85D8A");
+      });
+    });
+    return e;
+  };
+  for (const side of [-1, 1]) {
+    const x = snap(side * (p.eyeGap / 2));
+    if (expression === "laugh" || expression === "sing") s += happyEye(x);
+    else if (expression === "yawn" || expression === "sleep") s += closedEye(x);
+    else if (expression === "wink") s += side === -1 ? closedEye(x) : lineEye(x);
+    else if (expression === "surprised") s += wideEye(x);
+    else if (expression === "love") s += heartEye(x);
+    else {
+      s += lineEye(x);
+      if (expression === "cry") {
+        s += rect(x, eyeY + 3 * cell, cell, "#85B7EB", 0.95) + rect(x, eyeY + 4 * cell, cell, "#B5D4F4", 0.9);
+      }
+    }
+  }
+  const mx = snap(0);
+  const my = snap(p.mouthY);
+  const topY = BASELINE - p.bodyH;
+  if (expression === "laugh") {
+    s += rect(mx - cell, my, cell, c.eye) + rect(mx, my, cell, c.eye) + rect(mx + cell, my, cell, c.eye) +
+      rect(mx, my + cell, cell, "#E2938F");
+  } else if (expression === "yawn") {
+    for (const dx of [-cell, 0, cell]) {
+      s += rect(mx + dx, my - cell, cell, c.eye) + rect(mx + dx, my, cell, c.eye);
+    }
+    s += rect(mx, my + cell, cell, c.eye) + rect(mx, my, cell, "#E2938F");
+  } else if (expression === "cry") {
+    s += mouthCurve(p, c, cell, grid, -1);
+  } else if (expression === "sleep") {
+    s += rect(mx, my, cell, c.eye);
+    const zTop = topY - p.stemLen - 20;
+    s += pixelZ(p.bodyW * 0.55, zTop, 5) + pixelZ(p.bodyW * 0.75, zTop - 16, 3.5);
+  } else if (expression === "surprised") {
+    s += rect(mx - cell, my, cell, c.eye) + rect(mx, my, cell, c.eye) +
+      rect(mx - cell, my + cell, cell, c.eye) + rect(mx, my + cell, cell, c.eye);
+  } else if (expression === "sing") {
+    s += rect(mx, my, cell, c.eye) + rect(mx, my + cell, cell, "#E2938F");
+    s += pixelNote(p.bodyW * 0.6, topY + 2, 4) + pixelNote(p.bodyW * 0.85, topY - 14, 3);
+  } else {
+    s += mouthCurve(p, c, cell, grid, 1);
+  }
+  return s;
+}
+
+// 8분음표 픽셀 (노래 표정용)
+function pixelNote(x0: number, y0: number, cell: number): string {
+  const rows = ["..NN", "..N.", "..N.", "NNN.", "NNN."];
+  let s = "";
+  rows.forEach((row, j) => {
+    [...row].forEach((ch, i) => {
+      if (ch === ".") return;
+      s += rect(x0 + i * cell, y0 + j * cell, cell, "#534AB7", 0.85);
+    });
+  });
+  return s;
+}
+
+function pixelZ(x0: number, y0: number, cell: number): string {
+  const rows = ["ZZZ", ".Z.", "ZZZ"];
+  let s = "";
+  rows.forEach((row, j) => {
+    [...row].forEach((ch, i) => {
+      if (ch === ".") return;
+      s += rect(x0 + i * cell, y0 + j * cell, cell, "#8C93A0", 0.85);
+    });
+  });
+  return s;
+}
+
 function pixelSparkle(x: number, y: number, col: string, cell: number): string {
   let s = "";
   const arms: Pt[] = [[0, 0], [cell, 0], [-cell, 0], [0, cell], [0, -cell]];
@@ -182,7 +314,12 @@ function eggSvg(): string {
  * 슬라임 한 마리의 SVG 마크업을 돌려준다 (서버/클라이언트 공용).
  * 알 단계는 attr 무관하게 공통 미스터리 알을 그린다.
  */
-export function slimeSvg(attr: SlimeAttr, stage: SlimeStage, width: number): string {
+export function slimeSvg(
+  attr: SlimeAttr,
+  stage: SlimeStage,
+  width: number,
+  expression: SlimeExpression = "normal"
+): string {
   let inner: string;
   if (stage === "egg") {
     inner = eggSvg();
@@ -208,7 +345,6 @@ export function slimeSvg(attr: SlimeAttr, stage: SlimeStage, width: number): str
     for (const [dx, dy] of [[-cell / 2, 1], [cell / 2, 1], [-cell / 2, 2], [cell / 2, 2]] as Pt[]) {
       rects += rect(stemX + dx, topY - (stemCells + dy) * cell - 2, cell, c.stroke);
     }
-    const ex = p.eyeGap / 2;
     for (const k of grid) {
       const [x, y] = k.split("_").map(Number);
       const cx = x + cell / 2;
@@ -219,27 +355,14 @@ export function slimeSvg(attr: SlimeAttr, stage: SlimeStage, width: number): str
         if (cy < BASELINE - p.bodyH * 0.5 && cx < -p.bodyW * 0.1) fill = shade(c.fill, 0.2);
         else if (cy > BASELINE - 18) fill = shade(c.fill, -0.16);
       }
-      // 미니멀 얼굴: 세로선 눈
-      if (Math.abs(Math.abs(cx) - ex) < cell * 0.6 && Math.abs(cy - p.eyeY) < p.eyeSize * 0.85) fill = c.eye;
       rects += rect(x, y, cell, fill);
     }
     // 광택 2셀
     const sx = Math.round((-p.bodyW * 0.5) / cell) * cell;
     const sy = Math.round((BASELINE - p.bodyH * 0.72) / cell) * cell;
     rects += rect(sx, sy, cell, "#FFFFFF", 0.85) + rect(sx + cell, sy + cell, cell, "#FFFFFF", 0.55);
-    // 입: 미소 곡선을 격자에 스냅
-    const seen = new Set<string>();
-    for (let t = 0; t <= 1.001; t += 0.1) {
-      const mx = (1 - t) * (1 - t) * -p.mouthW + t * t * p.mouthW;
-      const my = (1 - t) * (1 - t) * p.mouthY + 2 * t * (1 - t) * (p.mouthY + p.mouthW * 0.7) + t * t * p.mouthY;
-      const gx = Math.floor(mx / cell) * cell;
-      const gy = Math.floor(my / cell) * cell;
-      const key = gx + "_" + gy;
-      if (!seen.has(key) && grid.has(key)) {
-        seen.add(key);
-        rects += rect(gx, gy, cell, c.eye);
-      }
-    }
+    // 얼굴 (표정별 눈·입 오버레이)
+    rects += faceOverlay(p, c, cell, expression, grid);
     let aura = "";
     if (stage === "awake") {
       const snap = (v: number) => Math.round(v / cell) * cell;

@@ -30,4 +30,22 @@ describe("slimeSvg", () => {
     expect(slimeSvg("wood", "awake", 100)).toContain("slime-sparkle");
     expect(slimeSvg("wood", "teen", 100)).not.toContain("slime-sparkle");
   });
+
+  it("표정이 얼굴 픽셀을 실제로 바꾼다", () => {
+    const normal = slimeSvg("water", "teen", 100, "normal");
+    for (const expr of ["laugh", "yawn", "cry", "sleep", "wink", "surprised", "love", "sing"] as const) {
+      expect(slimeSvg("water", "teen", 100, expr)).not.toBe(normal);
+    }
+    // 하트눈 분홍, 노래 음표 보라
+    expect(slimeSvg("water", "teen", 100, "love")).toContain("#E85D8A");
+    expect(slimeSvg("water", "teen", 100, "sing")).toContain("#534AB7");
+    // 하품·웃음은 입 안쪽 분홍, 울음은 눈물색, 졸음은 Z 픽셀
+    expect(slimeSvg("water", "teen", 100, "yawn")).toContain("#E2938F");
+    expect(slimeSvg("fire", "teen", 100, "cry")).toContain("#85B7EB");
+    expect(slimeSvg("water", "teen", 100, "sleep")).toContain("#8C93A0");
+  });
+
+  it("알은 표정 파라미터를 무시한다", () => {
+    expect(slimeSvg("water", "egg", 100, "laugh")).toBe(slimeSvg("water", "egg", 100));
+  });
 });

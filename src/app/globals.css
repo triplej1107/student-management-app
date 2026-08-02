@@ -146,10 +146,47 @@ g.slime-wobble {
 g.slime-sparkle {
   animation: slime-twinkle 2s ease-in-out infinite;
 }
+@keyframes slime-hop {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20% { transform: translateY(0) scale(1.08, 0.9); }
+  45% { transform: translateY(-16px) scale(0.95, 1.06); }
+  70% { transform: translateY(0) scale(1.1, 0.88); }
+  85% { transform: translateY(0) scale(0.98, 1.02); }
+}
+.slime-hop {
+  animation: slime-hop 0.65s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+@keyframes slime-stretch {
+  0%, 100% { transform: scale(1, 1); }
+  35% { transform: scale(0.92, 1.1); }
+  70% { transform: scale(1.05, 0.94); }
+}
+.slime-stretch {
+  animation: slime-stretch 1.5s ease-in-out;
+  transform-origin: 50% 100%;
+}
+@keyframes slime-wiggle-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+.slime-wiggle {
+  animation: slime-wiggle-tilt 1s ease-in-out 2;
+  transform-origin: 50% 90%;
+}
+.slime-sway {
+  animation: slime-wiggle-tilt 1.5s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
 @media (prefers-reduced-motion: reduce) {
   g.slime-breathe,
   g.slime-wobble,
-  g.slime-sparkle {
+  g.slime-sparkle,
+  .slime-hop,
+  .slime-stretch,
+  .slime-wiggle,
+  .slime-sway {
     animation: none;
   }
 }

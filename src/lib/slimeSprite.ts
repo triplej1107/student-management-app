@@ -28,6 +28,14 @@ export const ATTR_LABELS: Record<SlimeAttr, string> = {
   earth: "토 · 바위",
 };
 
+export const STAGE_LABELS: Record<SlimeStage | "job", string> = {
+  egg: "알",
+  baby: "베이비 슬라임",
+  teen: "틴 슬라임",
+  awake: "각성 슬라임",
+  job: "전직 슬라임",
+};
+
 const BASELINE = 145;
 const VIEWBOX = "-96 -26 192 200";
 const CELL = 7;
@@ -329,15 +337,169 @@ function eggSvg(): string {
     `<g class="slime-wobble">` + rects + `</g>`;
 }
 
+// ============================================================
+// 도트 장비 — game-design/슬라임랩.html의 스프라이트를 그대로 이식.
+// 레전더리는 셀 3.5(2배 해상도) + 전용 이펙트 ("1%는 픽셀을 아끼지 말 것").
+// ============================================================
+export type EquipSlot = "weapon" | "shield" | "hat" | "eyewear";
+export type SlimeEquip = Partial<Record<EquipSlot, string>>;
+
+const PIXEL_PAL: Record<string, string> = {
+  K: "#33302B", F: "#FFFFFF", S: "#D7DBE0", s: "#9AA1AC",
+  G: "#F2C14E", g: "#C9922E", W: "#C9A24E", w: "#8B6B35",
+  A: "#A97155", a: "#7A4B33", R: "#E24B4A", r: "#A32D2D",
+  B: "#378ADD", b: "#185FA5", P: "#7F77DD", p: "#534AB7", Y: "#EFD489",
+  O: "#FF8A3D", L: "#FFD166",
+};
+
+const PIXEL_SPRITES: Record<string, string[]> = {
+  woodsword: ["..K..", ".KWK.", ".KWK.", ".KWK.", ".KWK.", "KwwwK", ".KAK.", ".KaK."],
+  knightsword: ["..K..", ".KFK.", ".KSK.", ".KSK.", ".KSK.", ".KSK.", "KGGGK", ".KPK.", ".KPK.", ".KBK."],
+  staff: ["..K..", ".KPK.", "KPFPK", ".KPK.", ".KAK.", ".KAK.", ".KAK.", ".KAK.", ".KaK."],
+  woodshield: ["..KKK..", ".KWWWK.", "KWWwWWK", "KWwswWK", "KWWwWWK", ".KwwwK.", "..KKK.."],
+  kite: [".KKKKK.", "KSBBBSK", "KBBGBBK", "KBGGGBK", "KBBGBBK", ".KBBBK.", "..KBK..", "...K..."],
+  spellbook: ["KKKKKK", "KpPPPK", "KpPGPK", "KpPPPK", "KKKKKK"],
+  straw: ["..KKKKK..", ".KYYYYYK.", "KKRRRRRKK", "KYYYYYYYK"],
+  wizard: ["...G...", "...K...", "..KPK..", ".KPFPK.", ".KPPPK.", "KpPPPpK", "KKKKKKK"],
+};
+
+const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> = {
+  holysword: {
+    cls: "slime-sparkle",
+    body: [
+      "......K......", ".....KGK.....", "....KGFGK....", "....KGFGK....", "....KGFGK....",
+      "....KGFGK....", "....KGFGK....", "....KGFGK....", "....KGFGK....", "....KGFGK....",
+      "....KGFGK....", "....KGGGK....", "...KKGGGKK...", "KGGGgGGGgGGGK", ".KK.KKRKK.KK.",
+      ".....KRK.....", ".....KRK.....", ".....KrK.....", "....KKrKK....", "....KRRRK....", "....KKKKK....",
+    ],
+    fx: [
+      "....L..L.....", "..O......O...", "...L.O..L....", ".O........O..", "..L......L...",
+      ".............", "O..........O.", "..L......L...", ".............", ".O........O..",
+    ],
+  },
+  dragonscale: {
+    cls: "slime-sparkle",
+    body: [
+      "....KKKKKKK....", "..KKGGGGGGGKK..", ".KGGrrrrrrrGGK.", ".KGrRRrrrRRrGK.", ".KGrrrrrrrrrGK.",
+      ".KGrrRRrRRrrGK.", ".KGrrrrrrrrrGK.", ".KGGrRRrRRrGGK.", "..KGrrrrrrrGK..", "..KGGrRRrRGGK..",
+      "...KGrrrrrGK...", "....KGrrrGK....", ".....KGrGK.....", "......KGK......", ".......K.......",
+    ],
+    fx: [
+      "O.............L", "...............", "L.............O", "...............", "...............",
+      "O.............L", "...............", "...............", ".L...........O.",
+    ],
+  },
+  crown: {
+    cls: "slime-sparkle",
+    body: [
+      ".K.....K.....K.", "KRK...KGK...KBK", "KGK...KGK...KGK", "KGGK.KKGKK.KGGK",
+      "KGGGKKGGGKKGGGK", "KGGGGGGGGGGGGGK", "KGgGGgGGGgGGgGK", "KGGGGGGGGGGGGGK", "KKKKKKKKKKKKKKK",
+    ],
+    fx: ["F.............F", "...............", "......F........", "...............", "F.............F"],
+  },
+};
+
+function drawSprite(rows: string[], x0: number, y0: number, cell: number): string {
+  let s = "";
+  rows.forEach((row, j) => {
+    [...row].forEach((ch, i) => {
+      if (ch === ".") return;
+      s += `<rect x="${x0 + i * cell}" y="${y0 + j * cell}" width="${cell}" height="${cell}" fill="${PIXEL_PAL[ch]}"/>`;
+    });
+  });
+  return s;
+}
+
+function equipSpriteFor(code: string, baseCell: number): { rows: string[]; fx: string[] | null; cls: string | null; cell: number } | null {
+  const fine = PIXEL_FINE[code];
+  if (fine) return { rows: fine.body, fx: fine.fx, cls: fine.cls, cell: 3.5 };
+  if (PIXEL_SPRITES[code]) return { rows: PIXEL_SPRITES[code], fx: null, cls: null, cell: baseCell };
+  return null;
+}
+
+function spriteWithFx(sp: { rows: string[]; fx: string[] | null; cls: string | null; cell: number }, x0: number, y0: number): string {
+  let s = drawSprite(sp.rows, x0, y0, sp.cell);
+  if (sp.fx) s += `<g class="${sp.cls}">` + drawSprite(sp.fx, x0, y0 - 2 * sp.cell, sp.cell) + `</g>`;
+  return s;
+}
+
+function pixelGlassesFor(code: string, p: Derived, cell: number): string {
+  const ex = p.eyeGap / 2, y = p.eyeY;
+  const leftOf = (v: number) => Math.floor(v / cell) * cell;
+  let s = "";
+  const sides = code === "monocle" ? [1] : [-1, 1];
+  for (const sd of sides) {
+    const fx = leftOf(sd * ex) - cell, fy = leftOf(y) - cell;
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        const center = i >= 1 && i <= 2 && j >= 1 && j <= 2;
+        let fill: string;
+        if (code === "sun") fill = center ? "#4A4740" : PIXEL_PAL.K;
+        else if (center) continue;
+        else fill = code === "monocle" ? PIXEL_PAL.g : PIXEL_PAL.K;
+        s += `<rect x="${fx + i * cell}" y="${fy + j * cell}" width="${cell}" height="${cell}" fill="${fill}"/>`;
+      }
+    }
+    if (code === "sun") s += `<rect x="${fx + cell}" y="${fy + cell}" width="${cell}" height="${cell}" fill="#FFFFFF" opacity="0.8"/>`;
+  }
+  if (code === "monocle") {
+    const cxL = leftOf(ex), cyT = leftOf(y);
+    s += `<rect x="${cxL + 3 * cell}" y="${cyT + 3 * cell}" width="${cell}" height="${cell}" fill="${PIXEL_PAL.g}"/>` +
+      `<rect x="${cxL + 4 * cell}" y="${cyT + 4 * cell}" width="${cell}" height="${cell}" fill="${PIXEL_PAL.g}"/>`;
+  } else {
+    const cyT = leftOf(y);
+    const bL = leftOf(-ex) + 3 * cell, bR = leftOf(ex) - cell;
+    for (let x = bL; x < bR; x += cell) {
+      s += `<rect x="${x}" y="${cyT}" width="${cell}" height="${cell}" fill="${PIXEL_PAL.K}"/>`;
+    }
+  }
+  return s;
+}
+
+function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
+  const snap = (v: number) => Math.round(v / cell) * cell;
+  const topY = BASELINE - p.bodyH;
+  let s = "";
+  const rSp = equip.weapon ? equipSpriteFor(equip.weapon, cell) : null;
+  if (rSp) {
+    const w = rSp.rows[0].length * rSp.cell;
+    // 그립이 몸 가장자리에 살짝 겹치게 — 들고 있는 느낌
+    const x0 = snap(p.bodyW - 6) - Math.floor(w / 2 / cell) * cell;
+    const y0 = snap(BASELINE - cell * 2) - rSp.rows.length * rSp.cell;
+    const gx = x0 + w / 2;
+    const gy = y0 + rSp.rows.length * rSp.cell - cell;
+    s += `<g transform="rotate(28 ${gx} ${gy})">` + spriteWithFx(rSp, x0, y0) + `</g>`;
+  }
+  const lSp = equip.shield ? equipSpriteFor(equip.shield, cell) : null;
+  if (lSp) {
+    const w = lSp.rows[0].length * lSp.cell;
+    const x0 = snap(-(p.bodyW + 11)) - Math.floor(w / 2 / cell) * cell;
+    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor((lSp.rows.length * lSp.cell) / 2 / cell) * cell;
+    s += spriteWithFx(lSp, x0, y0);
+  }
+  const hSp = equip.hat ? equipSpriteFor(equip.hat, cell) : null;
+  if (hSp) {
+    // 정중앙 + 1.2배 — "왕이다!". 꼭지는 slimeSvg에서 생략된다.
+    const hatSp = { ...hSp, cell: hSp.cell * 1.2 };
+    const w = hatSp.rows[0].length * hatSp.cell;
+    const x0 = -w / 2;
+    const y0 = topY - (hatSp.rows.length - 1.5) * hatSp.cell;
+    s += spriteWithFx(hatSp, x0, y0);
+  }
+  if (equip.eyewear) s += pixelGlassesFor(equip.eyewear, p, cell);
+  return s;
+}
+
 /**
  * 슬라임 한 마리의 SVG 마크업을 돌려준다 (서버/클라이언트 공용).
- * 알 단계는 attr 무관하게 공통 미스터리 알을 그린다.
+ * 알 단계는 attr 무관하게 공통 미스터리 알을 그린다. 장비는 틴부터 표시.
  */
 export function slimeSvg(
   attr: SlimeAttr,
   stage: SlimeStage,
   width: number,
-  expression: SlimeExpression = "normal"
+  expression: SlimeExpression = "normal",
+  equip: SlimeEquip = {}
 ): string {
   let inner: string;
   if (stage === "egg") {
@@ -355,14 +517,17 @@ export function slimeSvg(
         if (pointInPolygon(poly, x + cell / 2, y + cell / 2)) grid.add(x + "_" + y);
       }
     }
-    // 꼭지(안테나): 줄기 + 방울 2x2
+    // 꼭지(안테나): 줄기 + 방울 2x2 — 모자를 쓰면 모자에 덮이므로 생략
     const topY = BASELINE - p.bodyH;
-    const stemX = Math.round((p.tipLean * 0.5) / cell) * cell;
-    const stemCells = Math.max(1, Math.round(p.stemLen / cell));
+    const wearing = stage === "teen" || stage === "awake";
     let rects = "";
-    for (let i = 1; i <= stemCells; i++) rects += rect(stemX, topY - i * cell, cell, c.stroke);
-    for (const [dx, dy] of [[-cell / 2, 1], [cell / 2, 1], [-cell / 2, 2], [cell / 2, 2]] as Pt[]) {
-      rects += rect(stemX + dx, topY - (stemCells + dy) * cell - 2, cell, c.stroke);
+    if (!(wearing && equip.hat)) {
+      const stemX = Math.round((p.tipLean * 0.5) / cell) * cell;
+      const stemCells = Math.max(1, Math.round(p.stemLen / cell));
+      for (let i = 1; i <= stemCells; i++) rects += rect(stemX, topY - i * cell, cell, c.stroke);
+      for (const [dx, dy] of [[-cell / 2, 1], [cell / 2, 1], [-cell / 2, 2], [cell / 2, 2]] as Pt[]) {
+        rects += rect(stemX + dx, topY - (stemCells + dy) * cell - 2, cell, c.stroke);
+      }
     }
     for (const k of grid) {
       const [x, y] = k.split("_").map(Number);
@@ -393,7 +558,7 @@ export function slimeSvg(
     }
     inner = `<ellipse cx="0" cy="148" rx="${p.bodyW * 0.8}" ry="6" fill="#000" opacity="0.08"/>` +
       aura +
-      `<g class="slime-breathe">` + rects + `</g>`;
+      `<g class="slime-breathe">` + rects + (wearing ? equipLayer(equip, p, cell) : "") + `</g>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}" role="img" aria-label="슬라임">` + inner + `</svg>`;
 }

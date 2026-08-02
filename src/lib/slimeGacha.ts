@@ -7,29 +7,11 @@ import { getOrCreateSlime, seasonForWeek } from "./slimeXp";
 // 뽑기 1회 = 뽑기권 1장(우선) 또는 1 UJC. 결제~지급은 slime_gacha_pull
 // Postgres 함수(0034) 안에서 원자적으로 처리되고, advisory lock이
 // 새로고침 연타 이중결제를 막는다.
+// 타입은 클라이언트 공용인 slimeGachaTypes.ts에 있다.
 
-export type ItemRarity = "common" | "magic" | "rare" | "unique" | "legendary";
-export type ItemCategory = "weapon" | "shield" | "hat" | "eyewear" | "background" | "effect";
+import type { GachaResult, InventoryItem, ItemCategory, ItemRarity } from "./slimeGachaTypes";
 
-export const RARITY_LABELS: Record<ItemRarity, string> = {
-  common: "일반",
-  magic: "매직",
-  rare: "레어",
-  unique: "유니크",
-  legendary: "레전더리",
-};
-
-export interface GachaResult {
-  itemCode: string;
-  itemName: string;
-  category: ItemCategory;
-  rarity: ItemRarity;
-  setKey: string | null;
-  dupe: boolean;
-  paidWith: "ujc" | "ticket";
-  shards: number;
-  shardConverted: boolean;
-}
+export type { GachaResult, InventoryItem, ItemCategory, ItemRarity };
 
 export async function gachaPull(studentId: number): Promise<GachaResult> {
   const { data, error } = await supabase.rpc("slime_gacha_pull", { p_student_id: studentId });
@@ -83,18 +65,6 @@ export async function getShardBalance(studentId: number): Promise<number> {
     .eq("student_id", studentId)
     .eq("kind", "shard");
   return (data ?? []).reduce((sum, r) => sum + (r.delta as number), 0);
-}
-
-export interface InventoryItem {
-  inventoryId: number;
-  itemId: number;
-  code: string;
-  name: string;
-  category: ItemCategory;
-  rarity: ItemRarity;
-  setKey: string | null;
-  stats: Record<string, number>;
-  obtainedVia: string;
 }
 
 export async function listInventory(studentId: number): Promise<InventoryItem[]> {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { slimeSvg, type SlimeAttr, type SlimeExpression, type SlimeStage } from "@/lib/slimeSprite";
+import { slimeSvg, type SlimeAttr, type SlimeEquip, type SlimeExpression, type SlimeStage } from "@/lib/slimeSprite";
 
 /**
  * 살아있는 슬라임 — 무대(가로 전체) 위에서 몇 초마다 랜덤 행동을 한다:
@@ -57,11 +57,13 @@ export function SlimeIdle({
   stage,
   width,
   stageHeight,
+  equip,
 }: {
   attr: SlimeAttr;
   stage: SlimeStage;
   width: number;
   stageHeight?: number;
+  equip?: SlimeEquip;
 }) {
   const [x, setX] = useState(50);
   const [motion, setMotion] = useState<string | undefined>(undefined);
@@ -129,7 +131,7 @@ export function SlimeIdle({
         }}
       >
         <div className={motion}>
-          <span dangerouslySetInnerHTML={{ __html: slimeSvg(attr, stage, width, expression) }} />
+          <span dangerouslySetInnerHTML={{ __html: slimeSvg(attr, stage, width, expression, equip ?? {}) }} />
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { mondayOf, toISODate } from "./weeks";
+import { kstToday, mondayOf, toISODate } from "./weeks";
 import type { AttendanceStatus, TestScore } from "./types";
 import { SLIME_ATTRS, type SlimeAttr, type SlimeStage } from "./slimeSprite";
 import {
@@ -43,6 +43,14 @@ async function listSeasons(): Promise<SeasonRow[]> {
   const rows = (data ?? []) as SeasonRow[];
   seasonCache = { at: Date.now(), rows };
   return rows;
+}
+
+/** 오늘이 시즌 기간 안일 때만 시즌을 돌려준다 — 학생 화면 공개 스위치.
+ * 시즌0 시작(2026-08-22) 전에는 null이라 게임 UI가 아예 보이지 않는다. */
+export async function getLiveSeason(): Promise<SeasonRow | null> {
+  const todayISO = toISODate(kstToday());
+  const seasons = await listSeasons();
+  return seasons.find((s) => s.starts_on <= todayISO && s.ends_on >= todayISO) ?? null;
 }
 
 /** 이 주(월~일)와 겹치는 시즌. 없으면 null — XP 없음. */

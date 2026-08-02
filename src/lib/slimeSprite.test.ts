@@ -48,4 +48,14 @@ describe("slimeSvg", () => {
   it("알은 표정 파라미터를 무시한다", () => {
     expect(slimeSvg("water", "egg", 100, "laugh")).toBe(slimeSvg("water", "egg", 100));
   });
+
+  it("장비는 틴부터 표시되고, 레전더리는 이펙트가 붙는다", () => {
+    const bare = slimeSvg("water", "teen", 100);
+    const armed = slimeSvg("water", "teen", 100, "normal", { weapon: "holysword", hat: "crown" });
+    expect(armed).not.toBe(bare);
+    expect(armed).toContain("slime-sparkle"); // 성검 불꽃 + 왕관 성광
+    expect(armed).toContain("#FF8A3D"); // 불꽃 색
+    // 베이비는 장비 미표시
+    expect(slimeSvg("water", "baby", 100, "normal", { weapon: "holysword" })).toBe(slimeSvg("water", "baby", 100));
+  });
 });

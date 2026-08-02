@@ -11,6 +11,10 @@ import { getToday } from "@/lib/today";
 import { weekLabel, toISODate } from "@/lib/weeks";
 import { ClinicChecklistSummaryCard } from "@/components/ClinicChecklistSummaryCard";
 import { UjcWalletCard } from "@/components/UjcWalletCard";
+import { SlimeIdle } from "@/components/SlimeIdle";
+import { getLiveSeason, getOrCreateSlime } from "@/lib/slimeXp";
+import { getEquippedCodes } from "@/lib/slimeGacha";
+import { ATTR_LABELS, STAGE_LABELS, type SlimeAttr, type SlimeStage } from "@/lib/slimeSprite";
 import { ParentQuestionCard } from "@/components/ParentQuestionCard";
 import { HomeModals } from "@/components/HomeModals";
 import { StudentReminderCard } from "@/components/StudentReminderCard";
@@ -51,6 +55,11 @@ export default async function StudentHomePage() {
   const reminders = isStudentOrParent
     ? await getRemindersForStudent(student.id, toISODate(today))
     : [];
+
+  // 슬라임 — 시즌 기간(2026-08-22~)에만 노출. 그 전엔 카드 자체가 없다.
+  const liveSeason = isStudent ? await getLiveSeason() : null;
+  const slime = liveSeason ? await getOrCreateSlime(student.id, liveSeason) : null;
+  const slimeEquipped = slime && slime.stage !== "egg" ? await getEquippedCodes(slime.id) : {};
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
@@ -100,6 +109,43 @@ export default async function StudentHomePage() {
         <div className="mt-4">
           <ParentQuestionCard initialQuestion={parentQuestion} submitAction={submitParentQuestionAction} />
         </div>
+      )}
+
+      {slime && (
+        <Link href="/student/slime" className="mt-4 block">
+          <div className="rounded-2xl border border-line-soft bg-white p-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-[92px] flex-none">
+                <SlimeIdle
+                  attr={(slime.attribute ?? "water") as SlimeAttr}
+                  stage={(slime.stage === "job" ? "awake" : slime.stage) as SlimeStage}
+                  width={80}
+                  stageHeight={96}
+                  equip={{
+                    weapon: slimeEquipped.weapon,
+                    shield: slimeEquipped.shield,
+                    hat: slimeEquipped.hat,
+                    eyewear: slimeEquipped.eyewear,
+                  }}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold text-ink">
+                  {STAGE_LABELS[slime.stage]}
+                  {slime.attribute && (
+                    <span className="ml-1.5 text-[11px] font-bold text-accent">
+                      {ATTR_LABELS[slime.attribute as SlimeAttr]}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-0.5 text-[11px] text-ink-muted">
+                  XP {slime.xp.toLocaleString()} · 클리닉을 하면 자라요
+                </div>
+                <div className="mt-1.5 text-xs font-bold text-accent">슬라임 보러가기 →</div>
+              </div>
+            </div>
+          </div>
+        </Link>
       )}
 
       {isStudent && balance !== null && (

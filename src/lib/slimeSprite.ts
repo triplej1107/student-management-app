@@ -55,9 +55,19 @@ const COLORS: Record<SlimeAttr, { fill: string; stroke: string; eye: string }> =
   earth: { fill: "#A97155", stroke: "#7A4B33", eye: "#3B2114" },
 };
 
-const EGG_SHELL = "#FDF8EF";
-const EGG_LINE = "#B9AD9B";
-const EGG_SPECKLE = "#DACFBC";
+// 알 팔레트 — 연둣빛 껍질 + 큼직한 얼룩무늬 (포켓몬 알 문법, 원장 레퍼런스 2026-08-02)
+const EGG_SHELL = "#F1F6E4";
+const EGG_SHADE = "#DDE8C6";
+const EGG_SPOT = "#9BC26B";
+const EGG_LINE = "#5C7C3A";
+
+// 얼룩 배치 (fx: 폭 비율, fy: 높이 비율(바닥 기준), r: 폭 비율 반지름)
+const EGG_SPOTS = [
+  { fx: -0.5, fy: 0.78, r: 0.42 },
+  { fx: 0.62, fy: 0.4, r: 0.4 },
+  { fx: -0.08, fy: 0.16, r: 0.17 },
+  { fx: 0.12, fy: 0.62, r: 0.1 },
+];
 
 function shade(hex: string, t: number): string {
   const n = parseInt(hex.slice(1), 16);
@@ -295,17 +305,26 @@ function eggSvg(): string {
       if (pointInPolygon(poly, x + cell / 2, y + cell / 2)) grid.add(x + "_" + y);
     }
   }
+  const spots = EGG_SPOTS.map((s) => ({ cx: s.fx * w, cy: BASELINE - s.fy * h, r: s.r * w }));
   let rects = "";
   for (const k of grid) {
     const [x, y] = k.split("_").map(Number);
     const edge = !(grid.has(x - cell + "_" + y) && grid.has(x + cell + "_" + y) && grid.has(x + "_" + (y - cell)) && grid.has(x + "_" + (y + cell)));
-    rects += rect(x, y, cell, edge ? EGG_LINE : EGG_SHELL);
+    const cx = x + cell / 2;
+    const cy = y + cell / 2;
+    let fill: string;
+    if (edge) fill = EGG_LINE;
+    else {
+      fill = cy > BASELINE - h * 0.22 ? EGG_SHADE : EGG_SHELL;
+      for (const s of spots) {
+        if ((cx - s.cx) * (cx - s.cx) + (cy - s.cy) * (cy - s.cy) < s.r * s.r) fill = EGG_SPOT;
+      }
+    }
+    rects += rect(x, y, cell, fill);
   }
   const sp = (fx: number, fy: number, col: string, o?: number) =>
     rect(Math.round(fx / cell) * cell, Math.round(fy / cell) * cell, cell, col, o);
-  rects += sp(-w * 0.34, BASELINE - h * 0.38, EGG_SPECKLE) + sp(w * 0.3, BASELINE - h * 0.24, EGG_SPECKLE) +
-    sp(w * 0.12, BASELINE - h * 0.55, EGG_SPECKLE) +
-    sp(-w * 0.38, BASELINE - h * 0.78, "#FFFFFF", 0.85) + sp(-w * 0.38 + cell, BASELINE - h * 0.78 + cell, "#FFFFFF", 0.55);
+  rects += sp(-w * 0.3, BASELINE - h * 0.88, "#FFFFFF", 0.85) + sp(-w * 0.3 + cell, BASELINE - h * 0.88 + cell, "#FFFFFF", 0.55);
   return `<ellipse cx="0" cy="148" rx="${w * 0.9}" ry="6" fill="#000" opacity="0.08"/>` +
     `<g class="slime-wobble">` + rects + `</g>`;
 }

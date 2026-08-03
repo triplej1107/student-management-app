@@ -351,7 +351,7 @@ const PIXEL_PAL: Record<string, string> = {
   B: "#378ADD", b: "#185FA5", P: "#7F77DD", p: "#534AB7", Y: "#EFD489",
   O: "#FF8A3D", L: "#FFD166",
   N: "#F7A8C1", n: "#E0759B", V: "#79B94C", v: "#557F2E",
-  T: "#5BC8E8", E: "#F3D9A9", H: "#FFF4C9",
+  T: "#5BC8E8", E: "#F3D9A9", H: "#FFF4C9", D: "#7E1717",
 };
 
 const PIXEL_SPRITES: Record<string, string[]> = {
@@ -459,14 +459,14 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
   },
 
   // ---------- 레전더리 — 대천사(archangel) ----------
-  // 성광의 헤일로: 머리 위에 떠서 반짝이는 금빛 고리 (아래 빈 행 = 공중부양 간격)
+  // 성광의 헤일로: 머리 위에 떠서 반짝이는 큼직한 금빛 고리 (아래 빈 행 = 공중부양 간격)
   archangel_head: {
     cls: "slime-sparkle",
     body: [
-      "...LGGGGGL...", "..G.......G..", "...LGGGGGL...",
-      ".............", ".............", ".............",
+      "....KGLGGGLGK....", "..KG.........GK..", "....KGLGGGLGK....",
+      ".................", ".................", ".................",
     ],
-    fx: ["F...........F", ".............", "......F......"],
+    fx: ["F...............F", ".................", "........F........"],
   },
   // 심판의 양손검: 백은 날 + 온빛 코어 + 금 십자 가드
   archangel_right: {
@@ -494,14 +494,14 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
   },
 
   // ---------- 레전더리 — 심연의 대악마(archdemon) ----------
-  // 흑요석 마왕뿔: 용암 줄기가 흐르는 검은 뿔 한 쌍 (크고 높게)
+  // 흑요석 마왕뿔: 용암 줄기가 흐르는 검은 뿔 한 쌍 (마왕급으로 크게)
   archdemon_head: {
     cls: "slime-sparkle",
     body: [
-      "KK...........KK", "KOK.........KOK", "KROK.......KORK", "KKROK.....KORKK",
-      ".KKROK...KORKK.", "..KKOKK.KKOKK..", "...KKKK.KKKK...",
+      "KK.............KK", "KOK...........KOK", "KROK.........KORK", "KRROK.......KORRK",
+      ".KKROK.....KORKK.", "..KKROK...KORKK..", "...KKOKK.KKOKK...", "....KKKK.KKKK....",
     ],
-    fx: ["O.............O", "...............", ".....O...O....."],
+    fx: ["O...............O", ".................", "......O...O......"],
   },
   // 지옥의 삼지창: 보랏빛 세 갈래 창
   archdemon_right: {
@@ -557,12 +557,13 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
 
   // ---- 세트 얼굴 파츠 ----
   if (code === "archangel_face") {
-    // 금빛 눈가리개: 눈을 가로지르는 금빛 천 + 왼쪽 반짝
+    // 금빛 눈가리개: 눈을 가로지르는 금빛 천 — 위아래 윤곽선으로 몸색과 분리
     const fy = leftOf(y) - cell;
     for (let x = leftOf(-ex) - 2 * cell; x <= leftOf(ex) + 3 * cell; x += cell) {
-      s += px(x, fy, PIXEL_PAL.G) + px(x, fy + cell, PIXEL_PAL.g);
+      s += px(x, fy - cell, PIXEL_PAL.K) + px(x, fy, PIXEL_PAL.G) +
+        px(x, fy + cell, PIXEL_PAL.g) + px(x, fy + 2 * cell, PIXEL_PAL.K);
     }
-    s += px(leftOf(-ex), fy, "#FFFFFF", 0.8);
+    s += px(leftOf(-ex), fy, "#FFFFFF", 0.85);
     return s;
   }
   if (code === "archdemon_face") {
@@ -669,16 +670,18 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
 // ============================================================
 
 // 대천사 육익: 중앙에서 바깥으로 뻗는 오른쪽 절반 (왼쪽은 미러)
+// 상익은 머리 위로 솟아오른다 — 웅장하게 (원장 지시 2026-08-03)
 const ANGEL_WING_HALF = [
-  "..............FFF.", "............FFFFF.", "..........FFFFFF..", ".........FFFFF....",
-  "........FFFF......", "..FFFFFFFFF.......", ".FFFFFFFFFFFFF....", ".FFFFFFFFFFFFFFFF.",
-  ".SFFFFFFFFFFFFFFS.", "..SSFFFFFFFFSS....", "...FFFFFFF........", "...SFFFFFF........",
-  "....SFFFF.........", ".....SFFF.........", "......SFF.........", ".......SF.........",
+  "................F.", "..............FFF.", ".............FFFF.", "...........FFFFF..",
+  "..........FFFFF...", ".........FFFFF....", "........FFFF......", "..FFFFFFFFF.......",
+  ".FFFFFFFFFFFFF....", ".FFFFFFFFFFFFFFFF.", ".SFFFFFFFFFFFFFFS.", "..SSFFFFFFFFSS....",
+  "...FFFFFFF........", "...SFFFFFF........", "....SFFFF.........", ".....SFFF.........",
+  "......SFF.........", ".......SF.........",
 ];
 
 // 심연의 화염 기둥: 컬럼별 불꽃 높이 (셀 단위, 좌→우)
-// 중앙(26~28셀)은 머리 위로 한참 솟고, 가장자리 컬럼은 몸통(±55) 밖에서 넘실거린다
-const FLAME_HEIGHTS = [5, 9, 13, 8, 6, 10, 7, 12, 16, 20, 24, 22, 26, 28, 25, 27, 21, 23, 18, 14, 11, 8, 12, 7, 10, 14, 6];
+// 중앙(29~31셀)은 머리 위로 치솟고, 가장자리 컬럼은 몸통(±55) 밖에서 넘실거린다
+const FLAME_HEIGHTS = [6, 11, 15, 9, 7, 12, 8, 14, 18, 23, 27, 25, 29, 31, 28, 30, 24, 26, 20, 16, 12, 9, 14, 8, 11, 16, 7];
 
 function effectBackLayer(code: string, p: Derived): string {
   if (code === "archangel_fx") {
@@ -686,7 +689,7 @@ function effectBackLayer(code: string, p: Derived): string {
     const fc = 5;
     const rows = ANGEL_WING_HALF.map((h) => [...h].reverse().join("") + "." + h);
     const w = rows[0].length * fc;
-    const y0 = BASELINE - p.bodyH;
+    const y0 = BASELINE - p.bodyH - 5 * fc; // 상익이 머리 위로 솟도록
     let s = drawSprite(rows, -w / 2, y0, fc);
     // 깃털 반짝임
     s += `<g class="slime-sparkle">` +
@@ -706,9 +709,10 @@ function effectBackLayer(code: string, p: Derived): string {
       const x = (i - half) * fc - fc / 2;
       for (let j = 0; j < h; j++) {
         const y = BASELINE - 6 - (j + 1) * fc;
-        if (j === h - 1) tips += rect(x, y, fc, PIXEL_PAL.O, 0.95);
+        // 검붉은 심연(D) → 진홍(R) → 주황 불끝(O) — 화 속성 몸색과 분리되도록 어둡게 깔린다
+        if (j >= h - 2) tips += rect(x, y, fc, PIXEL_PAL.O, 0.95);
         else if (j >= h * 0.55) body += rect(x, y, fc, PIXEL_PAL.R);
-        else body += rect(x, y, fc, PIXEL_PAL.r);
+        else body += rect(x, y, fc, PIXEL_PAL.D);
       }
     });
     return body + `<g class="slime-sparkle">` + tips + `</g>`;

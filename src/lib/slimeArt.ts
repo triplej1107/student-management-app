@@ -39,19 +39,21 @@ const STAGE_SCALE: Record<Exclude<SlimeStage, "egg">, number> = {
 export const ART_RATIO = 290 / 332;
 
 /**
- * 속성별로 실제 파일이 있는 표정만 등록한다.
- * 표정 이미지를 추가하면 여기에 이름을 넣어야 렌더러가 쓴다.
+ * 속성별로 실제 파일이 있는 표정.
+ * 2026-08-04 속성별 시트 5장을 받아 5속성 × 17표정 = 85장이 모두 채워졌다.
  * (없는 표정을 요청하면 기본 표정으로 자동 폴백)
- *
- * 2026-08-04 1차 시트: 17종이 5속성에 나뉘어 들어왔다. 속성마다 3~4종씩.
- * 속성별 전체 세트를 받으면 여기만 채우면 된다.
  */
+const ALL_17: ArtExpression[] = [
+  "laugh", "cry", "sleep", "yawn", "wink", "surprised", "sing", "proud", "tired",
+  "teary", "pout", "think", "fired", "dizzy", "eating", "smirk", "halo",
+];
+
 export const ART_EXPRESSIONS: Record<SlimeAttr, ArtExpression[]> = {
-  water: ["laugh", "surprised", "pout", "smirk"],
-  gold: ["cry", "sing", "think", "halo"],
-  fire: ["sleep", "proud", "fired"],
-  wood: ["yawn", "tired", "dizzy"],
-  earth: ["wink", "teary", "eating"],
+  water: ALL_17,
+  gold: ALL_17,
+  fire: ALL_17,
+  wood: ALL_17,
+  earth: ALL_17,
 };
 
 export function hasArtExpression(attr: SlimeAttr, expression: ArtExpression): boolean {

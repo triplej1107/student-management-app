@@ -1,47 +1,48 @@
-// UJC 10배 뻥튀기 안 검증
-// 1 UJC = 1뽑 / 10 UJC = 11뽑 / 100 UJC = 120뽑 + 레전더리 파츠 1개 확정
-// 기존생: 보유 25×10 = 250 UJC. 주간 10 UJC(완벽 수행) + 재량 지급 α
-
+// 1 UJC = 1뽑 유지 · UJC 주 10개(10배안) 유지
+// 조이는 레버: 천장 주기, 조각 비용, 시즌0 에픽 공개 세트 수
+// 목표: 한 학기(신규생 190뽑)에 에픽 세트 1개, 도감은 여유 남기기
 function rand() { return Math.random(); }
 
-const EPIC_SETS = 11, PARTS = 5, LEGEND_SETS = 5, RARE_SETS = 15, MAGIC_SETS = 15, COMMON_POOL = 33;
-const SHARD = { common: 1, magic: 1, rare: 3, epic: 20, legendary: 100 };
-const EPIC_COST = 100, LEGEND_COST = 500;
-let GUARANTEE_TIER = "legendary"; // 100연뽑 확정 파츠 등급
+const PARTS = 5;
+const COMMON_POOL = 33;
+const TIERS = ["common", "magic", "rare", "epic", "legendary"];
 
-/** UJC를 최적 단위로 쪼개 뽑기 횟수 + 확정 레전더리 파츠 수 계산 */
-function spendUjc(ujc) {
-  const hundreds = Math.floor(ujc / 100);
-  let rest = ujc - hundreds * 100;
-  const tens = Math.floor(rest / 10);
-  rest -= tens * 10;
-  return {
-    pulls: hundreds * 120 + tens * 11 + rest,
-    guaranteedLegendParts: hundreds,
-  };
+function weeklyXP() {
+  let xp = 0;
+  const r = rand();
+  if (r < 0.82) xp += 50; else if (r < 0.92) xp += 20; else if (r < 0.97) xp += 30;
+  const hw = Math.round(Math.min(7, Math.max(0, 5.2 + (rand() - 0.5) * 3)));
+  xp += hw * 10 + (hw === 7 ? 30 : 0);
+  for (let t = 0; t < 4; t++) {
+    const rate = Math.min(1, Math.max(0, 0.68 + (rand() - 0.5) * 0.34));
+    xp += Math.round(rate * 15);
+    if (rand() < 0.25) xp += 20;
+  }
+  return { xp, perfect: r < 0.82 && hw === 7 };
 }
 
-function simulate(totalUjc) {
-  const { pulls, guaranteedLegendParts } = spendUjc(totalUjc);
-  const owned = { common: new Set(), magic: new Set(), rare: new Set(), epic: new Set(), legendary: new Set() };
-  let shards = 0, pity = 0;
-  const targetEpic = 0, targetLegend = 0;
-
-  // 100연뽑 확정 파츠 — GUARANTEE_TIER에 따라 에픽/레전더리 결정
-  for (let i = 0; i < guaranteedLegendParts; i++) {
-    const bag = GUARANTEE_TIER === "legendary" ? owned.legendary : owned.epic;
-    const target = GUARANTEE_TIER === "legendary" ? targetLegend : targetEpic;
-    let placed = false;
-    for (let p = 0; p < PARTS; p++) {
-      if (!bag.has(`${target}:${p}`)) { bag.add(`${target}:${p}`); placed = true; break; }
-    }
-    if (!placed) shards += SHARD[GUARANTEE_TIER];
+function pullBudget(weeks, banked) {
+  let cum = 0, pulls = banked;
+  for (let w = 0; w < weeks; w++) {
+    const { xp, perfect } = weeklyXP();
+    const prev = Math.floor(cum / 300);
+    cum += xp;
+    pulls += Math.floor(cum / 300) - prev;
+    if (perfect) pulls += 1;
+    pulls += 10; // 주 10 UJC = 10뽑
   }
+  return pulls;
+}
 
+function simulate(pulls, pityLimit, shardCost, epicSets) {
+  const POOL = { legendary: 2, epic: epicSets, rare: 4, magic: 5 };
+  const owned = {}, shard = {};
+  for (const t of TIERS) { owned[t] = new Set(); shard[t] = 0; }
+  let pity = 0;
   for (let i = 0; i < pulls; i++) {
     pity++;
     let tier;
-    if (pity >= 20) { tier = "epic"; pity = 0; }
+    if (pity >= pityLimit) { tier = "epic"; pity = 0; }
     else {
       const r = rand() * 100;
       if (r < 50) tier = "common";
@@ -50,81 +51,55 @@ function simulate(totalUjc) {
       else if (r < 99) { tier = "epic"; pity = 0; }
       else { tier = "legendary"; pity = 0; }
     }
-    let key;
-    if (tier === "common") key = `${Math.floor(rand() * COMMON_POOL)}`;
-    else if (tier === "magic") key = `${Math.floor(rand() * MAGIC_SETS)}:${Math.floor(rand() * PARTS)}`;
-    else if (tier === "rare") key = `${Math.floor(rand() * RARE_SETS)}:${Math.floor(rand() * PARTS)}`;
-    else if (tier === "epic") key = `${Math.floor(rand() * EPIC_SETS)}:${Math.floor(rand() * PARTS)}`;
-    else key = `${Math.floor(rand() * LEGEND_SETS)}:${Math.floor(rand() * PARTS)}`;
-    if (owned[tier].has(key)) shards += SHARD[tier];
+    const key = tier === "common"
+      ? `${Math.floor(rand() * COMMON_POOL)}`
+      : `${Math.floor(rand() * POOL[tier])}:${Math.floor(rand() * PARTS)}`;
+    if (owned[tier].has(key)) shard[tier]++;
     else owned[tier].add(key);
   }
-
-  let epicHave = 0, legendHave = 0;
-  for (let p = 0; p < PARTS; p++) {
-    if (owned.epic.has(`${targetEpic}:${p}`)) epicHave++;
-    if (owned.legendary.has(`${targetLegend}:${p}`)) legendHave++;
-  }
-  const epicNeed = PARTS - epicHave;
-  const legendNeed = PARTS - legendHave;
-
-  // 조각은 에픽 완성에 먼저 쓰고, 남으면 레전더리에
-  const epicBuy = Math.min(epicNeed, Math.floor(shards / EPIC_COST));
-  const afterEpic = shards - epicBuy * EPIC_COST;
-  const legendBuy = Math.min(legendNeed, Math.floor(afterEpic / LEGEND_COST));
-
+  const have = (t, s) => { let n = 0; for (let p = 0; p < PARTS; p++) if (owned[t].has(`${s}:${p}`)) n++; return n; };
+  // 학생은 '가장 많이 모인 세트'를 목표로 삼는다 (현실적인 행동)
+  let eHave = 0;
+  for (let s = 0; s < POOL.epic; s++) eHave = Math.max(eHave, have("epic", s));
+  const epicShards = shard.epic + shard.legendary * 3;
+  const eBuy = Math.min(PARTS - eHave, Math.floor(epicShards / shardCost));
+  // 완성된 에픽 세트 수(뽑기만으로)
+  let doneSets = 0;
+  for (let s = 0; s < POOL.epic; s++) if (have("epic", s) === PARTS) doneSets++;
+  const collected = TIERS.reduce((n, t) => n + owned[t].size, 0);
+  const total = COMMON_POOL + (POOL.magic + POOL.rare + POOL.epic + POOL.legendary) * PARTS;
   return {
-    pulls,
-    epicDone: epicBuy >= epicNeed,
-    legendDone: legendBuy >= legendNeed,
-    legendParts: legendHave,
-    shards,
+    epicDone: eBuy >= PARTS - eHave,
+    doneSets,
+    epicOwned: owned.epic.size, epicPool: POOL.epic * PARTS,
+    legendAny: owned.legendary.size > 0,
+    shardsLeft: epicShards - eBuy * shardCost,
+    collectPct: collected / total,
   };
 }
 
-function report(label, totalUjc, N = 5000) {
-  let e = 0, l = 0, lp = 0, sh = 0, pl = 0;
+function report(label, weeks, banked, pity, cost, epicSets, N = 5000) {
+  let e = 0, ds = 0, eo = 0, la = 0, sl = 0, cp = 0, pl = 0;
   for (let i = 0; i < N; i++) {
-    const r = simulate(totalUjc);
+    const p = pullBudget(weeks, banked);
+    pl += p;
+    const r = simulate(p, pity, cost, epicSets);
     if (r.epicDone) e++;
-    if (r.legendDone) l++;
-    lp += r.legendParts; sh += r.shards; pl = r.pulls;
+    ds += r.doneSets; eo += r.epicOwned; if (r.legendAny) la++; sl += r.shardsLeft; cp += r.collectPct;
   }
   console.log(
-    `${label} (${totalUjc} UJC → ${pl}뽑) | 에픽세트 ${(e / N * 100).toFixed(1)}% · 레전세트 ${(l / N * 100).toFixed(1)}% · 레전파츠 평균 ${(lp / N).toFixed(1)}/5 · 잔여조각 ${(sh / N).toFixed(0)}`
+    `  ${label} ${(pl / N).toFixed(0)}뽑 | 에픽세트완성 ${(e / N * 100).toFixed(0)}%` +
+    ` · 뽑기만으로 완성 ${(ds / N).toFixed(2)}세트 · 에픽수집 ${(eo / N).toFixed(1)}/${epicSets * 5}` +
+    ` · 남는조각 ${(sl / N).toFixed(1)} · 레전보유 ${(la / N * 100).toFixed(0)}% · 도감 ${(cp / N * 100).toFixed(0)}%`
   );
 }
 
-console.log("=== 연말까지(19주) — 기존생: 보유 250 + 주간 10×19 = 440 UJC ===");
-report("재량지급 0", 440);
-report("재량지급 주3", 440 + 3 * 19);
-report("재량지급 주5", 440 + 5 * 19);
-report("재량+집공부 주10", 440 + 10 * 19);
-
-console.log("\n=== 연말까지 — 신규생: 보유 0 + 주간 10×19 = 190 UJC ===");
-report("재량지급 0", 190);
-report("재량지급 주3", 190 + 3 * 19);
-report("재량+집공부 주10", 190 + 10 * 19);
-
-console.log("\n=== 1년 재원(52주, 보유 0) ===");
-report("주간10만", 520);
-report("주간10+재량3", 520 + 3 * 52);
-
-console.log("\n=== 1년 반 재원(78주, 보유 0) — 레전더리 목표 ===");
-report("주간10만", 780);
-report("주간10+재량3", 780 + 3 * 78);
-
-console.log("\n\n########## [수정안] 100연뽑 확정 파츠를 '에픽'으로 ##########");
-GUARANTEE_TIER = "epic";
-console.log("=== 연말까지(19주) 기존생 ===");
-report("재량지급 0", 440);
-report("재량지급 주3", 440 + 3 * 19);
-report("재량+집공부 주10", 440 + 10 * 19);
-console.log("=== 연말까지 신규생 ===");
-report("재량지급 주3", 190 + 3 * 19);
-console.log("=== 1년 재원 ===");
-report("주간10+재량3", 520 + 3 * 52);
-console.log("=== 1년 반 재원 — 레전더리 목표 ===");
-report("주간10만", 780);
-report("주간10+재량3", 780 + 3 * 78);
-report("주간10+재량5", 780 + 5 * 78);
+console.log("[목표 세트 = 가장 많이 모인 세트로 갈아탐 (현실적 행동)]");
+for (const cost of [3, 4, 5]) {
+  console.log(`\n### 천장 100회 · 조각 ${cost}개=부위1 · 에픽 3세트 ###`);
+  report("한학기 신규생 ", 19, 0, 100, cost, 3);
+  report("연말 기존생   ", 19, 250, 100, cost, 3);
+  report("두학기 신규생 ", 38, 0, 100, cost, 3);
+  report("1년 재원     ", 52, 0, 100, cost, 3);
+  report("1년반 재원   ", 78, 0, 100, cost, 3);
+}

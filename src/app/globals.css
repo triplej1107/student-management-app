@@ -153,6 +153,14 @@ img.slime-art {
   animation: slime-breathe 2.4s ease-in-out infinite;
   transform-origin: 50% 92%;
 }
+/* 바닥 그림자 — 아트에서 그림자를 제거하고 앱이 그린다 (점프해도 땅에 남는다) */
+.slime-ground-shadow {
+  width: 62%;
+  height: 9px;
+  margin: -5px auto 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(20, 18, 14, 0.28), rgba(20, 18, 14, 0) 68%);
+}
 @keyframes slime-hop {
   0%, 100% { transform: translateY(0) scale(1, 1); }
   20% { transform: translateY(0) scale(1.08, 0.9); }

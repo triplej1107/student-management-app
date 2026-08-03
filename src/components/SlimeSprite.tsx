@@ -21,13 +21,16 @@ export function SlimeSprite({
   }
   const w = slimeArtWidth(stage, width);
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      className="slime-art"
-      src={slimeArtSrc(attr)}
-      alt="슬라임"
-      width={w}
-      height={Math.round(w / ART_RATIO)}
-    />
+    <span style={{ display: "inline-block", width: w }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className="slime-art"
+        src={slimeArtSrc(attr)}
+        alt="슬라임"
+        width={w}
+        height={Math.round(w / ART_RATIO)}
+      />
+      <span className="slime-ground-shadow" style={{ display: "block" }} />
+    </span>
   );
 }

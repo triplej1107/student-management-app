@@ -178,6 +178,8 @@ export function SlimeIdle({
             height={Math.round(slimeArtWidth(stage, width) / ART_RATIO)}
           />
         </div>
+        {/* 그림자는 motion 밖 — 점프해도 땅에 남는다 */}
+        <div className="slime-ground-shadow" />
       </div>
     </div>
   );

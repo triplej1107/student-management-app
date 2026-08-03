@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { slimeSvg, type SlimeAttr, type SlimeEquip, type SlimeStage } from "@/lib/slimeSprite";
 import {
-  slimeSvg,
-  type SlimeAttr,
-  type SlimeEquip,
-  type SlimeExpression,
-  type SlimeStage,
-} from "@/lib/slimeSprite";
-import { slimeArtSrc, slimeArtWidth, hasArtExpression, ART_RATIO } from "@/lib/slimeArt";
+  slimeArtSrc,
+  slimeArtWidth,
+  hasArtExpression,
+  ART_RATIO,
+  type ArtExpression,
+} from "@/lib/slimeArt";
 
 /**
  * 살아있는 슬라임 — 무대(가로 전체) 위에서 몇 초마다 랜덤 행동을 한다:
@@ -22,7 +22,7 @@ type Behavior =
   | { kind: "idle"; ms: number }
   | { kind: "hop"; ms: number; to: number }
   | { kind: "move"; ms: number; motion: string }
-  | { kind: "expr"; ms: number; expression: SlimeExpression; motion?: string };
+  | { kind: "expr"; ms: number; expression: ArtExpression; motion?: string };
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
@@ -37,15 +37,24 @@ const MOTION_POOL: { w: number; make: () => Behavior }[] = [
 ];
 
 // 표정별 연출 — 아트 이미지가 있는 것만 실제 후보가 된다.
-const EXPR_POOL: { w: number; expression: SlimeExpression; ms: number; motion?: string }[] = [
-  { w: 10, expression: "laugh", ms: 2400 },
+const EXPR_POOL: { w: number; expression: ArtExpression; ms: number; motion?: string }[] = [
+  { w: 11, expression: "laugh", ms: 2400 },
   { w: 8, expression: "yawn", ms: 2800, motion: "slime-stretch" },
-  { w: 5, expression: "cry", ms: 2800 },
-  { w: 12, expression: "sleep", ms: 4200 },
+  { w: 4, expression: "cry", ms: 2800 },
+  { w: 11, expression: "sleep", ms: 4200 },
   { w: 8, expression: "wink", ms: 1600 },
-  { w: 6, expression: "surprised", ms: 1300 },
-  { w: 7, expression: "love", ms: 2600 },
+  { w: 6, expression: "surprised", ms: 1400 },
   { w: 8, expression: "sing", ms: 3000, motion: "slime-sway" },
+  { w: 8, expression: "proud", ms: 2400 },
+  { w: 6, expression: "tired", ms: 3000 },
+  { w: 4, expression: "teary", ms: 2600 },
+  { w: 6, expression: "pout", ms: 2200 },
+  { w: 6, expression: "think", ms: 3000 },
+  { w: 7, expression: "fired", ms: 2000, motion: "slime-wiggle" },
+  { w: 4, expression: "dizzy", ms: 2600, motion: "slime-sway" },
+  { w: 7, expression: "eating", ms: 2800 },
+  { w: 8, expression: "smirk", ms: 1800 },
+  { w: 5, expression: "halo", ms: 3200 },
 ];
 
 function buildPool(attr: SlimeAttr) {
@@ -89,7 +98,7 @@ export function SlimeIdle({
 }) {
   const [x, setX] = useState(50);
   const [motion, setMotion] = useState<string | undefined>(undefined);
-  const [expression, setExpression] = useState<SlimeExpression>("normal");
+  const [expression, setExpression] = useState<ArtExpression>("normal");
   const xRef = useRef(50);
 
   useEffect(() => {

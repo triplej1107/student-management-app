@@ -350,6 +350,8 @@ const PIXEL_PAL: Record<string, string> = {
   A: "#A97155", a: "#7A4B33", R: "#E24B4A", r: "#A32D2D",
   B: "#378ADD", b: "#185FA5", P: "#7F77DD", p: "#534AB7", Y: "#EFD489",
   O: "#FF8A3D", L: "#FFD166",
+  N: "#F7A8C1", n: "#E0759B", V: "#79B94C", v: "#557F2E",
+  T: "#5BC8E8", E: "#F3D9A9",
 };
 
 const PIXEL_SPRITES: Record<string, string[]> = {
@@ -361,6 +363,56 @@ const PIXEL_SPRITES: Record<string, string[]> = {
   spellbook: ["KKKKKK", "KpPPPK", "KpPGPK", "KpPPPK", "KKKKKK"],
   straw: ["..KKKKK..", ".KYYYYYK.", "KKRRRRRKK", "KYYYYYYYK"],
   wizard: ["...G...", "...K...", "..KPK..", ".KPFPK.", ".KPPPK.", "KpPPPpK", "KKKKKKK"],
+
+  // ---------- 노말 33종 (카탈로그 v5) — 오른손 ----------
+  // 연필: 흑심-나무-노란 몸통-분홍 지우개
+  pencil: ["..K..", ".KWK.", ".KLK.", ".KLK.", ".KLK.", ".KLK.", ".KNK.", ".KnK."],
+  // 샤프: 가는 금속 촉 + 파란 몸통 + 흰 그립
+  sharp: ["..K..", ".KsK.", ".KBK.", ".KBK.", ".KFK.", ".KFK.", ".KBK.", ".KsK."],
+  // 커터칼: 은색 날(눈금) + 노란 손잡이
+  cutter: ["..K..", ".KSK.", ".KsK.", ".KSK.", ".KsK.", "KYYYK", ".KYK.", ".KYK."],
+  // 스마트폰: 검은 베젤 + 밝은 화면
+  smartphone: ["KKKKK", "KBBBK", "KBFBK", "KBBBK", "KBBBK", "KKKKK"],
+  // 볼펜: 국민 흰 몸통 볼펜 — 검은 촉꼭지와 클릭
+  ballpen: ["..K..", ".KKK.", ".KFK.", ".KFK.", ".KFK.", ".KFK.", ".KKK.", ".KsK."],
+  // 만년필: 금촉 + 검은 몸통 + 금 밴드
+  fountain: ["..K..", ".KGK.", ".KgK.", ".KKK.", ".KKK.", ".KGK.", ".KKK.", ".KKK."],
+  // 물총: 주황 배럴 + 하늘색 물탱크 (워터밤 느낌)
+  watergun: ["..KK..", ".KOOK.", ".KOOK.", "..KOK.", "..KOK.", ".KTTK.", ".KTTK.", "..KK.."],
+  // 작은 나뭇가지: 잎 달린 잔가지
+  twig: ["...VV", "..KAV", ".KAK.", ".KAK.", ".KAK.", ".KaK."],
+
+  // ---------- 노말 — 왼손 ----------
+  // 책: 파란 하드커버 + 페이지 단면 (교과서)
+  book: ["KKKKKK", "KBBBSK", "KBBBSK", "KBbBSK", "KBBBSK", "KKKKKK"],
+  // 가방: 빨간 백팩 + 앞주머니 (파란 슬라임에도 묻히지 않게)
+  backpack: ["..KK..", ".KRRK.", "KRRRRK", "KRrrRK", "KRrrRK", "KKKKKK"],
+  // 핸드백: 분홍 + 손잡이 고리
+  handbag: ["..KK..", ".K..K.", "KNNNNK", "KNnNnK", "KNNNNK", ".KKKK."],
+  // 노트북: 파란 화면 + 은색 키보드
+  laptop: ["KKKKKK", "KBFFBK", "KBBFBK", "KKKKKK", "KSSSSK", ".KKKK."],
+  // 아이패드: 흰 화면 태블릿
+  tablet: ["KKKKK", "KFFFK", "KFFFK", "KFFFK", "KFFFK", "KKKKK"],
+  // 핸드폰: 레트로 폴더폰 (오른손 스마트폰과 구분)
+  flipphone: [".KKK.", ".KTK.", ".KTK.", "KKKKK", ".KSK.", ".KsK.", ".KKK."],
+  // 노트: 스프링 노트 (윗줄 스프링 링)
+  note: ["s.s.s.", "KKKKKK", "KYYYYK", "KYYYYK", "KKKKKK"],
+  // 소설책: 보라 표지 + 빨간 책갈피 끈
+  novel: ["KKKKKK", "KPPRSK", "KPPRSK", "KPPPSK", "KPPPSK", "KKKKKK"],
+  // 에코백: 크림 천가방 + 초록 잎 프린트
+  ecobag: [".K..K.", ".K..K.", "KEEEEK", "KEVVEK", "KEEEEK", "KKKKKK"],
+
+  // ---------- 노말 — 머리 ----------
+  // 야구모자: 파란 돔 + 앞챙
+  cap: ["...KKK...", "..KBBBK..", ".KBbBBBK.", ".KKKKKKK.", "..KBBBBBK"],
+  // 챙모자: 크림 챙 넓은 모자 + 분홍 리본
+  sunhat: ["..KKKKK..", ".KFFFFFK.", "KKNNNNNKK", "KFFFFFFFK"],
+  // 비니: 빨간 니트 + 접단
+  beanie: ["..KKK..", ".KRRRK.", "KRRRRRK", "KrRrRrK", "KKKKKKK"],
+  // 메쉬캡: 흰 전면 + 회색 메쉬 + 앞챙
+  meshcap: ["...KKK...", "..KFFsK..", ".KFFFssK.", ".KKKKKKK.", "..KSSSSSK"],
+  // 헤어밴드: 분홍 밴드 + 작은 리본
+  hairband: ["....KNK", ".KKKKK.", "KNNNNNK"],
 };
 
 const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> = {
@@ -426,7 +478,59 @@ function spriteWithFx(sp: { rows: string[]; fx: string[] | null; cls: string | n
 function pixelGlassesFor(code: string, p: Derived, cell: number): string {
   const ex = p.eyeGap / 2, y = p.eyeY;
   const leftOf = (v: number) => Math.floor(v / cell) * cell;
+  const px = (x: number, yy: number, fill: string, o?: number) => rect(x, yy, cell, fill, o);
   let s = "";
+
+  // ---- 노말 얼굴 파츠 (안경 프레임이 아닌 것 포함) ----
+  if (code === "blush") {
+    // 홍조 스티커: 양볼에 분홍 2셀
+    const fy = leftOf(y) + 2 * cell;
+    for (const sd of [-1, 1]) {
+      const x = leftOf(sd * ex) + sd * cell;
+      s += px(x, fy, PIXEL_PAL.N, 0.9) + px(x - sd * cell, fy, PIXEL_PAL.N, 0.55);
+    }
+    return s;
+  }
+  if (code === "bandaid") {
+    // 밴드에이드: 왼뺨에 가로 반창고 (양끝 살구색 + 가운데 흰 패드)
+    const fx = leftOf(-ex) - 2 * cell, fy = leftOf(y) + 2 * cell;
+    s += px(fx, fy, PIXEL_PAL.E) + px(fx + cell, fy, PIXEL_PAL.F) + px(fx + 2 * cell, fy, PIXEL_PAL.E);
+    return s;
+  }
+  if (code === "patch") {
+    // 안대: 오른눈 3x3 가리개 + 머리를 두르는 끈
+    const fx = leftOf(ex) - cell, fy = leftOf(y) - cell;
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) s += px(fx + i * cell, fy + j * cell, PIXEL_PAL.K);
+    for (let x = leftOf(-p.bodyW) + cell; x < fx; x += cell) s += px(x, fy, PIXEL_PAL.K);
+    for (let x = fx + 3 * cell; x < leftOf(p.bodyW); x += cell) s += px(x, fy, PIXEL_PAL.K);
+    return s;
+  }
+  if (code === "tri" || code === "flat" || code === "rimless") {
+    for (const sd of [-1, 1]) {
+      const fx = leftOf(sd * ex) - cell, fy = leftOf(y) - cell;
+      if (code === "tri") {
+        // 세모안경: 아래로 좁아지는 ▽ 렌즈
+        for (let i = 0; i < 4; i++) s += px(fx + i * cell, fy, PIXEL_PAL.K);
+        s += px(fx + cell, fy + cell, PIXEL_PAL.K) + px(fx + 2 * cell, fy + cell, PIXEL_PAL.K);
+        s += px(fx + cell, fy + 2 * cell, PIXEL_PAL.K);
+      } else if (code === "flat") {
+        // 일자안경: 윗선 + 양옆만 있는 하프림
+        for (let i = 0; i < 4; i++) s += px(fx + i * cell, fy, PIXEL_PAL.K);
+        s += px(fx, fy + cell, PIXEL_PAL.K) + px(fx + 3 * cell, fy + cell, PIXEL_PAL.K);
+      } else {
+        // 무테안경: 밝은 렌즈 반사 + 코받침 (프레임 없이도 보이게)
+        for (const [di, dj] of [[1, 1], [2, 1], [1, 2], [2, 2]] as const) {
+          s += px(fx + di * cell, fy + dj * cell, "#EDF4FF", 0.85);
+        }
+        s += px(fx + cell, fy + cell, "#FFFFFF", 0.95);
+      }
+    }
+    const fy = leftOf(y) - cell + (code === "rimless" ? cell : 0);
+    const bL = leftOf(-ex) + 3 * cell, bR = leftOf(ex) - cell;
+    for (let x = bL; x < bR; x += cell) s += px(x, fy, PIXEL_PAL.K);
+    return s;
+  }
+
   const sides = code === "monocle" ? [1] : [-1, 1];
   for (const sd of sides) {
     const fx = leftOf(sd * ex) - cell, fy = leftOf(y) - cell;
@@ -474,16 +578,18 @@ function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
   if (lSp) {
     const w = lSp.rows[0].length * lSp.cell;
     const x0 = snap(-(p.bodyW + 11)) - Math.floor(w / 2 / cell) * cell;
-    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor((lSp.rows.length * lSp.cell) / 2 / cell) * cell;
+    // 오른손(그립이 바닥 근처)과 균형 맞춰 두 칸 아래 (원장 지시 2026-08-03)
+    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor((lSp.rows.length * lSp.cell) / 2 / cell) * cell + 2 * cell;
     s += spriteWithFx(lSp, x0, y0);
   }
   const hSp = equip.hat ? equipSpriteFor(equip.hat, cell) : null;
   if (hSp) {
     // 정중앙 + 1.2배 — "왕이다!". 꼭지는 slimeSvg에서 생략된다.
+    // 한 줄 더 내려 쓴다 — 챙이 이마 위로 보이게 (원장 지시 2026-08-03)
     const hatSp = { ...hSp, cell: hSp.cell * 1.2 };
     const w = hatSp.rows[0].length * hatSp.cell;
     const x0 = -w / 2;
-    const y0 = topY - (hatSp.rows.length - 1.5) * hatSp.cell;
+    const y0 = topY - (hatSp.rows.length - 2.5) * hatSp.cell;
     s += spriteWithFx(hatSp, x0, y0);
   }
   if (equip.eyewear) s += pixelGlassesFor(equip.eyewear, p, cell);

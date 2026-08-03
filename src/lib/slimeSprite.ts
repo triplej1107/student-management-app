@@ -502,15 +502,16 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
   },
 
   // ---------- 레전더리 — 심연의 대악마(archdemon) ----------
-  // 흑요석 마왕뿔: 용암 줄기가 흐르는 두껍고 거대한 뿔 (더듬이 아님 — 3~4셀 두께)
+  // 흑요석 마왕뿔: 바깥으로 벌어졌다가 끝이 안쪽으로 휘어드는 두꺼운 뿔
   archdemon_head: {
     cls: "slime-sparkle",
     body: [
-      "KKKK.............KKKK",
-      "KOOKK...........KKOOK",
-      "KRROOK.........KOORRK",
-      ".KKRROK.......KORRKK.",
-      "..KKRROK.....KORRKK..",
+      "...KKK.........KKK...",
+      "..KKOKK.......KKOKK..",
+      ".KKOK...........KOKK.",
+      ".KROK...........KORK.",
+      ".KKROK.........KORKK.",
+      "..KKROK.......KORKK..",
       "...KKROOK...KOORKK...",
       "....KKKOOK.KOOKKK....",
       "......KKKK.KKKK......",
@@ -529,15 +530,14 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
     ],
     fx: ["P.............O", "...............", ".....P.........", ".............P.", "O.............."],
   },
-  // 지옥불 구슬: 손 위에 떠 도는 커다란 검붉은 화염구
+  // 지옥불: 보랏빛 도깨비불 — 주황 핵 속에 빛나는 눈 (토마토 아님)
   archdemon_left: {
     cls: "slime-sparkle",
     body: [
-      ".....P...P.....", "....KPKPKPK....", "...KOOPPPOOK...", "..KORRRRRRROK..", ".KORRRRRRRRROK.",
-      ".KORRFFRRRRROK.", ".KORRRRRRRRROK.", ".KOORRRRRRROK..", "..KOORRRRROOK..", "...KKOOOOOKK...",
-      ".....KKKKK.....",
+      "......P......", ".....KPK.....", "....KPPPK....", "...KPPPPPK...", "..KPPOOOPPK..",
+      "..KPOFOFOPK..", "..KPOOOOOPK..", "...KPOOOPK...", "....KPPPK....", ".....KKK.....",
     ],
-    fx: ["..O.........P..", "...............", "P...........O.."],
+    fx: ["..P.......O..", ".............", "O.........P.."],
   },
 };
 
@@ -583,17 +583,22 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
     return s;
   }
   if (code === "archdemon_face") {
-    // 불타는 눈: 눈 자리에서 타오르는 화염 (송곳니 마스크 폐기 — 원장 지시 2026-08-03)
+    // 용암 균열 낙인: 이마에서 뺨까지 얼굴을 가로지르는 빛나는 균열 + 타오르는 오른눈
+    const x = leftOf(ex);
     const fy = leftOf(y) - cell;
-    let tips = "";
-    for (const sd of [-1, 1]) {
-      const x = leftOf(sd * ex);
-      tips += px(x, fy - cell, PIXEL_PAL.O, 0.95) + px(x, fy - 2 * cell, PIXEL_PAL.O, 0.6);
-      s += px(x - cell, fy, PIXEL_PAL.D) + px(x, fy, PIXEL_PAL.O);
-      s += px(x - cell, fy + cell, PIXEL_PAL.D) + px(x, fy + cell, PIXEL_PAL.O);
-      s += px(x - cell, fy + 2 * cell, PIXEL_PAL.D) + px(x, fy + 2 * cell, PIXEL_PAL.R);
-    }
-    s += `<g class="slime-sparkle">` + tips + `</g>`;
+    const CRACK: [number, number, string, number?][] = [
+      [0, -4, "D"], [0, -3, "R"], [1, -3, "D"], [1, -2, "O"], [0, -2, "R"], [0, -1, "O"],
+      [0, 3, "R"], [-1, 3, "D"], [-1, 4, "D"],
+    ];
+    for (const [dx, dy, c, o] of CRACK) s += px(x + dx * cell, fy + dy * cell, PIXEL_PAL[c], o);
+    // 균열이 관통한 오른눈은 타오른다
+    s += px(x, fy, PIXEL_PAL.O) + px(x, fy + cell, PIXEL_PAL.O) + px(x, fy + 2 * cell, PIXEL_PAL.R);
+    // 균열에서 새어 나오는 불티
+    s += `<g class="slime-sparkle">` +
+      px(x + 2 * cell, fy - 2 * cell, PIXEL_PAL.O, 0.85) +
+      px(x + cell, fy + cell, PIXEL_PAL.O, 0.7) +
+      px(x - 2 * cell, fy + 4 * cell, PIXEL_PAL.O, 0.6) +
+      `</g>`;
     return s;
   }
   if (code === "doctor_face") {
@@ -744,11 +749,15 @@ function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
   const snap = (v: number) => Math.round(v / cell) * cell;
   const topY = BASELINE - p.bodyH;
   let s = "";
+  // 얼굴 아이템은 반드시 손 아이템보다 뒤 (원장 지시 2026-08-03)
+  if (equip.eyewear) s += pixelGlassesFor(equip.eyewear, p, cell);
   const rSp = equip.weapon ? equipSpriteFor(equip.weapon, cell) : null;
   if (rSp) {
     const w = rSp.rows[0].length * rSp.cell;
     // 그립이 몸 가장자리에 살짝 겹치게 — 들고 있는 느낌
-    const x0 = snap(p.bodyW - 6) - Math.floor(w / 2 / cell) * cell;
+    // 삼지창은 두 칸 안쪽으로 붙인다 (원장 지시 2026-08-03)
+    const inset = equip.weapon === "archdemon_right" ? 2 * cell : 0;
+    const x0 = snap(p.bodyW - 6) - Math.floor(w / 2 / cell) * cell - inset;
     const y0 = snap(BASELINE - cell * 2) - rSp.rows.length * rSp.cell;
     const gx = x0 + w / 2;
     const gy = y0 + rSp.rows.length * rSp.cell - cell;
@@ -775,7 +784,6 @@ function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
     const y0 = topY - (hatSp.rows.length - 2.5 - drop) * hatSp.cell;
     s += spriteWithFx(hatSp, x0, y0);
   }
-  if (equip.eyewear) s += pixelGlassesFor(equip.eyewear, p, cell);
   return s;
 }
 

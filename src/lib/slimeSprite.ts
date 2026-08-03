@@ -423,7 +423,7 @@ const PIXEL_SPRITES: Record<string, string[]> = {
   doctor_left: [".KKK.", "KKSKK", "KFFFK", "KFsFK", "KFFFK", "KFsFK", "KKKKK"],
 };
 
-const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> = {
+const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx?: string[] }> = {
   holysword: {
     cls: "slime-sparkle",
     body: [
@@ -531,6 +531,109 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
     ],
     fx: ["P.............O", "...............", ".....P.........", ".............P.", "O.............."],
   },
+  // ---------- 에픽 — 엔진의 악마(chainsaw) ----------
+  // 핏빛 기계톱 헬름: 머리를 감싸는 핏빛 후드 + 정수리에서 솟은 굵은 톱날
+  chainsaw_head: {
+    cls: "slime-sparkle",
+    body: [
+      ".........KSSSK.......",
+      ".........KSSSKK......",
+      ".........KSSSK.......",
+      ".........KSSSKK......",
+      ".........KSSSK.......",
+      "......KKKKSSSKKKK....",
+      "....KKRRRRRRRRRRKK...",
+      "..KKRRRRRRRRRRRRRRK..",
+      ".KRRRDRRRRRRRRDRRRK..",
+      ".KKKKKKKKKKKKKKKKKKK.",
+    ],
+  },
+  // 미니 기계톱: 굵은 세로 톱날 + 붉은 엔진 몸통 + 시동 손잡이
+  chainsaw_right: {
+    cls: "slime-sparkle",
+    body: [
+      "....KSSSK......", "....KSSSKK.....", "....KSSSK......", "....KSSSKK.....", "....KSSSK......",
+      "....KSSSKK.....", "...KKSSSKK.....", "..KRRRRRRRK....", "..KRRDDRRRKKKK.", "..KRRRRRRRK.KK.",
+      "...KKKKKKK.....",
+    ],
+  },
+  // 엔진 시동 줄: 노란 T자 손잡이 + 늘어진 스타터 코드
+  chainsaw_left: {
+    cls: "slime-sparkle",
+    body: [
+      "KKKKKKK....", "KYYYYYK....", "KKKKKKK....", "......KK...", ".......KK..", "......KK...",
+      ".....KK....", "......KK...", ".....KSK...", ".....KsK...",
+    ],
+  },
+
+  // ---------- 에픽 — 대나무를 문 혈귀(bamboo) ----------
+  // 흑발 분홍 리본: 머리를 폭 감싸는 검은 머리칼 + 길게 흘러내린 옆머리 + 분홍 리본
+  bamboo_head: {
+    cls: "slime-sparkle",
+    body: [
+      "....KKKKKKKKKKKKK....",
+      "..KKKKKKKKKKKKKKKKK..",
+      ".KKKKKKKKKKKKKKKNNNK.",
+      ".KKKKKKKKKKKKKKKNnNK.",
+      "KKKKK...........KKKKK",
+      ".KKKK...........KKKK.",
+      ".KKK.............KKK.",
+      "..KKK...........KKK..",
+      "..KK.............KK..",
+      "...KK...........KK...",
+    ],
+  },
+  // 혈귀의 붉은 손톱: 세 갈래로 길게 뻗은 붉은 손톱
+  bamboo_right: {
+    cls: "slime-sparkle",
+    body: [
+      ".K.....K.....K.", "KRK...KRK...KRK", "KRK...KRK...KRK", "KRK...KRK...KRK",
+      ".KRK..KRK..KRK.", ".KRRK.KRK.KRRK.", "..KRRKKRKKRRK..", "...KRRRRRRRK...",
+      "....KDRRRDK....", ".....KKKKK.....",
+    ],
+  },
+  // 수호의 손톱: 방어 자세로 펼친 손톱 가드
+  bamboo_left: {
+    cls: "slime-sparkle",
+    body: [
+      ".K....K....K.", "KRK..KRK..KRK", "KRRK.KRK.KRRK", ".KRRKKRKKRRK.",
+      "..KRRRRRRRK..", "...KDRRRDK...", "....KKKKK....",
+    ],
+  },
+
+  // ---------- 에픽 — 무한의 주술사(infinity) ----------
+  // 은발 삐죽머리: 하늘로 높이 뻗친 은백색 스파이크
+  infinity_head: {
+    cls: "slime-sparkle",
+    body: [
+      "...K......K......K...",
+      "..KSK....KSK....KSK..",
+      "..KSK....KSK....KSK..",
+      ".KSSSK..KSSSK..KSSSK.",
+      ".KSSSK..KSSSK..KSSSK.",
+      "KSSSSSKKSSSSSKKSSSSSK",
+      "KSSSSSSSSSSSSSSSSSSSK",
+      "KSFSSSSSSSSSSSSSSSSSK",
+      "KKKKKKKKKKKKKKKKKKKKK",
+    ],
+  },
+  // 적색 질량 구슬: 발산 — 붉게 이글거리는 구체
+  infinity_right: {
+    cls: "slime-sparkle",
+    body: [
+      "....KKK....", "..KKRRRKK..", "..KRRRRRK..", ".KRRFRRRRK.", ".KRRRRRRRK.",
+      "..KRRRRRK..", "..KKRRRKK..", "....KKK....",
+    ],
+  },
+  // 청색 질량 구슬: 수렴 — 고요하게 빛나는 구체
+  infinity_left: {
+    cls: "slime-sparkle",
+    body: [
+      "....KKK....", "..KKBBBKK..", "..KBBBBBK..", ".KBBFBBBBK.", ".KBBBBBBBK.",
+      "..KBBBBBK..", "..KKBBBKK..", "....KKK....",
+    ],
+  },
+
   // 심연의 마귀방패: 뿔 돋친 흑요석 방패 — 마귀의 형상, 타오르는 눈과 이빨 자국
   archdemon_left: {
     cls: "slime-sparkle",
@@ -557,7 +660,7 @@ function drawSprite(rows: string[], x0: number, y0: number, cell: number): strin
 
 function equipSpriteFor(code: string, baseCell: number): { rows: string[]; fx: string[] | null; cls: string | null; cell: number } | null {
   const fine = PIXEL_FINE[code];
-  if (fine) return { rows: fine.body, fx: fine.fx, cls: fine.cls, cell: 3.5 };
+  if (fine) return { rows: fine.body, fx: fine.fx ?? null, cls: fine.cls, cell: 3.5 };
   if (PIXEL_SPRITES[code]) return { rows: PIXEL_SPRITES[code], fx: null, cls: null, cell: baseCell };
   return null;
 }
@@ -607,6 +710,41 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
     s += px(-cell, fy - cell, PIXEL_PAL.S) + px(0, fy - cell, PIXEL_PAL.S) +
       px(-cell, fy, PIXEL_PAL.S) + px(0, fy, PIXEL_PAL.S) +
       px(-cell, fy - cell, "#FFFFFF", 0.9);
+    return s;
+  }
+
+  if (code === "chainsaw_face") {
+    // 철창 이빨 마스크: 입가를 넓게 덮는 은색 그릴 — 2단 세로 창살
+    const my = leftOf(p.mouthY) - cell;
+    for (let x = -3 * cell; x <= 3 * cell; x += cell) {
+      const bar = Math.abs(x / cell) % 2 === 0 ? PIXEL_PAL.K : PIXEL_PAL.S;
+      s += px(x, my - 2 * cell, PIXEL_PAL.K);
+      s += px(x, my - cell, bar) + px(x, my, bar);
+      s += px(x, my + cell, PIXEL_PAL.K);
+    }
+    // 양옆 고정 스트랩
+    s += px(-4 * cell, my - 2 * cell, PIXEL_PAL.K) + px(4 * cell, my - 2 * cell, PIXEL_PAL.K);
+    return s;
+  }
+  if (code === "bamboo_face") {
+    // 대나무 재갈: 입에 가로로 문 대나무통 + 마디
+    const my = leftOf(p.mouthY) - cell;
+    for (let x = -3 * cell; x <= 3 * cell; x += cell) {
+      const edge = Math.abs(x) === 3 * cell;
+      const joint = Math.abs(x) === cell;
+      s += px(x, my, edge ? PIXEL_PAL.K : joint ? PIXEL_PAL.v : PIXEL_PAL.V);
+      s += px(x, my - cell, PIXEL_PAL.K, edge ? 1 : 0.9);
+      s += px(x, my + cell, PIXEL_PAL.K, edge ? 1 : 0.9);
+    }
+    return s;
+  }
+  if (code === "infinity_face") {
+    // 칠흑의 안대: 두 눈을 완전히 덮는 검은 천
+    const fy = leftOf(y) - cell;
+    for (let x = leftOf(-ex) - 4 * cell; x <= leftOf(ex) + 4 * cell; x += cell) {
+      s += px(x, fy, PIXEL_PAL.K) + px(x, fy + cell, PIXEL_PAL.K) + px(x, fy + 2 * cell, PIXEL_PAL.K);
+    }
+    s += px(leftOf(-ex) - 2 * cell, fy, "#5A5650", 0.9);
     return s;
   }
 
@@ -721,6 +859,62 @@ function effectBackLayer(code: string, p: Derived): string {
       rect(w / 2 - 3 * fc, y0 + 3 * fc, fc, PIXEL_PAL.H, 0.9) +
       rect(-w / 2 + 5 * fc, y0 + 11 * fc, fc, "#FFFFFF", 0.8) +
       rect(w / 2 - 6 * fc, y0 + 13 * fc, fc, "#FFFFFF", 0.8) +
+      `</g>`;
+    return s;
+  }
+  if (code === "chainsaw_fx") {
+    // 엔진 스파크: 몸 주위로 튀는 노란 불꽃 + 핏빛 파편
+    const bw = p.bodyW;
+    const mid = BASELINE - p.bodyH * 0.55;
+    let s = pixelSparkle(-(bw + 16), mid - 18, PIXEL_PAL.L, 7) +
+      pixelSparkle(bw + 14, mid + 8, PIXEL_PAL.L, 7) +
+      pixelSparkle(-(bw + 26), BASELINE - 26, PIXEL_PAL.L, 5) +
+      rect(-(bw + 24), mid + 20, 6, PIXEL_PAL.D) + rect(bw + 22, mid - 26, 6, PIXEL_PAL.D) +
+      rect(bw + 30, mid + 24, 6, PIXEL_PAL.D) + rect(-(bw + 10), BASELINE - p.bodyH - 8, 6, PIXEL_PAL.D) +
+      rect(-(bw + 8), BASELINE - 16, 6, PIXEL_PAL.R) + rect(bw + 8, BASELINE - 34, 6, PIXEL_PAL.R);
+    s += `<g class="slime-sparkle">` +
+      pixelSparkle(bw + 22, mid - 42, PIXEL_PAL.Y, 6) +
+      pixelSparkle(-(bw + 14), BASELINE - 32, PIXEL_PAL.Y, 6) +
+      pixelSparkle(bw + 32, BASELINE - 14, PIXEL_PAL.Y, 5) +
+      rect(0, BASELINE - p.bodyH - 14, 6, PIXEL_PAL.L, 0.9) +
+      rect(-14, BASELINE - p.bodyH - 8, 5, PIXEL_PAL.L, 0.7) +
+      `</g>`;
+    return s;
+  }
+  if (code === "bamboo_fx") {
+    // 혈귀술 불꽃: 몸 주위로 크게 흩날리는 분홍빛 불꽃잎
+    const bw = p.bodyW;
+    const flame = (x: number, y: number, c: number) =>
+      rect(x + c, y, c, PIXEL_PAL.N, 0.95) +
+      rect(x, y + c, c, PIXEL_PAL.n) + rect(x + c, y + c, c, PIXEL_PAL.N) + rect(x + 2 * c, y + c, c, PIXEL_PAL.n, 0.85) +
+      rect(x + c, y + 2 * c, c, PIXEL_PAL.n);
+    let s = flame(-(bw + 30), BASELINE - p.bodyH * 0.85, 7) +
+      flame(bw + 8, BASELINE - p.bodyH * 0.5, 7) +
+      flame(-(bw + 16), BASELINE - 34, 6) +
+      flame(bw + 18, BASELINE - p.bodyH - 20, 6);
+    s += `<g class="slime-sparkle">` +
+      flame(-(bw + 8), BASELINE - p.bodyH - 26, 5) +
+      flame(bw + 26, BASELINE - 40, 5) +
+      rect(bw + 30, BASELINE - p.bodyH * 0.75, 5, PIXEL_PAL.N, 0.8) +
+      rect(-(bw + 34), BASELINE - 20, 5, PIXEL_PAL.N, 0.8) +
+      `</g>`;
+    return s;
+  }
+  if (code === "infinity_fx") {
+    // 영역 전개: 발밑에 펼쳐지는 보랏빛 공간 타일 + 떠오르는 파편
+    let tiles = "";
+    for (let i = -10; i <= 10; i++) {
+      const x = i * 7 - 3.5;
+      tiles += rect(x, 131, 7, (i % 2 === 0 ? PIXEL_PAL.P : PIXEL_PAL.p), 0.95);
+      tiles += rect(x, 138, 7, (i % 2 === 0 ? PIXEL_PAL.p : PIXEL_PAL.P), 0.95);
+    }
+    const bw = p.bodyW;
+    let s = tiles;
+    s += `<g class="slime-sparkle">` +
+      rect(-(bw + 18), BASELINE - p.bodyH * 0.7, 6, PIXEL_PAL.P, 0.85) +
+      rect(bw + 16, BASELINE - p.bodyH * 0.9, 6, PIXEL_PAL.p, 0.85) +
+      rect(bw + 24, BASELINE - 40, 5, PIXEL_PAL.P, 0.7) +
+      rect(-(bw + 26), BASELINE - 34, 5, PIXEL_PAL.p, 0.7) +
       `</g>`;
     return s;
   }

@@ -37,8 +37,8 @@ const MOTION_POOL: { w: number; make: () => Behavior }[] = [
 ];
 
 // 표정별 연출 — 아트 이미지가 있는 것만 실제 후보가 된다.
+// 'laugh'는 기본(평상시) 얼굴로 쓰이므로 풀에서 제외한다 (바뀌어도 티가 안 남).
 const EXPR_POOL: { w: number; expression: ArtExpression; ms: number; motion?: string }[] = [
-  { w: 11, expression: "laugh", ms: 2400 },
   { w: 8, expression: "yawn", ms: 2800, motion: "slime-stretch" },
   { w: 4, expression: "cry", ms: 2800 },
   { w: 11, expression: "sleep", ms: 4200 },

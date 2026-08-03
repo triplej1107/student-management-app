@@ -361,7 +361,7 @@ const PIXEL_SPRITES: Record<string, string[]> = {
   woodshield: ["..KKK..", ".KWWWK.", "KWWwWWK", "KWwswWK", "KWWwWWK", ".KwwwK.", "..KKK.."],
   kite: [".KKKKK.", "KSBBBSK", "KBBGBBK", "KBGGGBK", "KBBGBBK", ".KBBBK.", "..KBK..", "...K..."],
   spellbook: ["KKKKKK", "KpPPPK", "KpPGPK", "KpPPPK", "KKKKKK"],
-  straw: ["..KKKKK..", ".KYYYYYK.", "KKRRRRRKK", "KYYYYYYYK", "KKKKKKKKK"],
+  straw: ["...KKKKK...", "..KYYYYYK..", ".KKRRRRRKK.", "KYYYYYYYYYK", "KKKKKKKKKKK"],
   wizard: ["...G...", "...K...", "..KPK..", ".KPFPK.", ".KPPPK.", "KpPPPpK", "KKKKKKK"],
 
   // ---------- 노말 33종 (카탈로그 v5) — 오른손 ----------
@@ -391,25 +391,25 @@ const PIXEL_SPRITES: Record<string, string[]> = {
   handbag: ["..KK..", ".K..K.", "KNNNNK", "KNnNnK", "KNNNNK", ".KKKK."],
   // 노트북: 파란 화면 + 은색 키보드
   laptop: ["KKKKKK", "KBFFBK", "KBBFBK", "KKKKKK", "KSSSSK", ".KKKK."],
-  // 아이패드: 흰 화면 태블릿 + 연회색 로고 점 (종이로 안 보이게)
-  tablet: ["KKKKK", "KFFFK", "KFFFK", "KFSFK", "KFFFK", "KKKKK"],
+  // 아이패드: 흰 화면 태블릿 + 위쪽 연회색 로고 점 (사과는 위에 있으니까)
+  tablet: ["KKKKK", "KFFFK", "KFSFK", "KFFFK", "KFFFK", "KKKKK"],
   // 핸드폰: 레트로 폴더폰 (오른손 스마트폰과 구분)
   flipphone: [".KKK.", ".KTK.", ".KTK.", "KKKKK", ".KSK.", ".KsK.", ".KKK."],
   // 노트: 스프링 노트 (윗줄 스프링 링)
   note: ["s.s.s.", "KKKKKK", "KYYYYK", "KYYYYK", "KKKKKK"],
   // 소설책: 보라 표지 + 빨간 책갈피 끈
   novel: ["KKKKKK", "KPPRSK", "KPPRSK", "KPPPSK", "KPPPSK", "KKKKKK"],
-  // 에코백: 크림 천가방 + 초록 잎 프린트 (입구 윗 경계선)
-  ecobag: [".K..K.", ".K..K.", "KKKKKK", "KEEEEK", "KEVVEK", "KEEEEK", "KKKKKK"],
+  // 에코백: 크림 천가방 + 초록 잎 프린트 (손잡이 위를 이어 닫은 아치)
+  ecobag: [".KKKK.", ".K..K.", "KEEEEK", "KEVVEK", "KEEEEK", "KKKKKK"],
 
   // ---------- 노말 — 머리 ----------
-  // 야구모자: 파란 돔 + 앞챙 (마지막 줄 = 챙 아래 경계선)
+  // 야구모자: 파란 돔 + 앞챙 (마지막 줄 = 챙 아래 경계선, HAT_DROP으로 한 칸 하강)
   cap: ["...KKK...", "..KBBBK..", ".KBbBBBK.", ".KKKKKKK.", "..KBBBBBK", "..KKKKKKK"],
-  // 챙모자: 크림 챙 넓은 모자 + 분홍 리본 (챙 아래 경계선)
-  sunhat: ["..KKKKK..", ".KFFFFFK.", "KKNNNNNKK", "KFFFFFFFK", "KKKKKKKKK"],
-  // 비니: 빨간 니트 + 접단 (한 줄 더 깊게 눌러쓴 접단)
-  beanie: ["..KKK..", ".KRRRK.", "KRRRRRK", "KrRrRrK", "KrRrRrK", "KKKKKKK"],
-  // 메쉬캡: 흰 전면 + 회색 메쉬 + 앞챙 (챙 아래 경계선)
+  // 챙모자: 크림 챙 넓은 모자 + 분홍 리본 (챙 양옆 한 픽셀 확장)
+  sunhat: ["...KKKKK...", "..KFFFFFK..", ".KKNNNNNKK.", "KFFFFFFFFFK", "KKKKKKKKKKK"],
+  // 비니: 두상에 딱 붙는 니트 — 옆으로 퍼진 실루엣 + 립 접단 + 경계선
+  beanie: ["..KKKKK..", ".KRRRRRK.", "KRRRRRRRK", "KrRrRrRrK", "KKKKKKKKK"],
+  // 메쉬캡: 흰 전면 + 회색 메쉬 + 앞챙 (HAT_DROP으로 한 칸 하강)
   meshcap: ["...KKK...", "..KFFsK..", ".KFFFssK.", ".KKKKKKK.", "..KSSSSSK", "..KKKKKKK"],
   // 헤어밴드: 분홍 밴드 + 작은 리본 (밴드 아래 경계선)
   hairband: ["....KNK", ".KKKKK.", "KNNNNNK", ".KKKKK."],
@@ -587,10 +587,12 @@ function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
     // 정중앙 + 1.2배 — "왕이다!". 꼭지는 slimeSvg에서 생략된다.
     // 오프셋 2.5행: 모자 스프라이트 마지막 행 = 이마 위 경계선 (원장 지시 2026-08-03,
     // 스프라이트마다 아래 경계 행이 하나씩 있어야 원래 위치에 얹힌다)
+    // HAT_DROP: 캡류는 한 칸 더 눌러쓴다 — 왼쪽 빈 픽셀 때문에 떠 보이는 문제
     const hatSp = { ...hSp, cell: hSp.cell * 1.2 };
     const w = hatSp.rows[0].length * hatSp.cell;
     const x0 = -w / 2;
-    const y0 = topY - (hatSp.rows.length - 2.5) * hatSp.cell;
+    const drop = equip.hat === "cap" || equip.hat === "meshcap" ? 1 : 0;
+    const y0 = topY - (hatSp.rows.length - 2.5 - drop) * hatSp.cell;
     s += spriteWithFx(hatSp, x0, y0);
   }
   if (equip.eyewear) s += pixelGlassesFor(equip.eyewear, p, cell);

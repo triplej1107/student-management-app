@@ -459,69 +459,85 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
   },
 
   // ---------- 레전더리 — 대천사(archangel) ----------
-  // 성광의 헤일로: 머리 위에 떠서 반짝이는 큼직한 금빛 고리 (아래 빈 행 = 공중부양 간격)
+  // 성광의 헤일로: 머리 위를 덮는 초대형 금빛 고리 (아래 빈 행 = 공중부양 간격)
   archangel_head: {
     cls: "slime-sparkle",
     body: [
-      "....KGLGGGLGK....", "..KG.........GK..", "....KGLGGGLGK....",
-      ".................", ".................", ".................",
+      "......KGLGGGGGLGK......",
+      "...KGG...........GGK...",
+      "..KG...............GK..",
+      "...KGG...........GGK...",
+      "......KGGGGGGGGGK......",
+      ".......................",
+      ".......................",
+      ".......................",
     ],
-    fx: ["F...............F", ".................", "........F........"],
+    fx: ["F.....................F", ".......................", "...........F..........."],
   },
-  // 심판의 양손검: 백은 날 + 온빛 코어 + 금 십자 가드
+  // 심판의 양손검: 길고 넓은 백은 날 + 온빛 코어 + 대형 금 십자 가드
   archangel_right: {
     cls: "slime-sparkle",
     body: [
-      "......K......", ".....KFK.....", "....KFHFK....", "....KFHFK....", "....KFHFK....",
-      "....KFHFK....", "....KFHFK....", "....KFHFK....", "....KFHFK....", "....KFHFK....",
-      "....KFHFK....", "....KFFFK....", "...KKFFFKK...", "KGGGgGGGgGGGK", ".KK.KGLGK.KK.",
-      ".....KGK.....", ".....KGK.....", ".....KgK.....", "....KKgKK....", "....KGGGK....", "....KKKKK....",
+      ".......K.......", "......KFK......", ".....KFHFK.....", ".....KFHFK.....", ".....KFHFK.....",
+      ".....KFHFK.....", ".....KFHFK.....", ".....KFHFK.....", ".....KFHFK.....", ".....KFHFK.....",
+      ".....KFHFK.....", ".....KFHFK.....", ".....KFHFK.....", ".....KFHFK.....", ".....KFFFK.....",
+      "....KKFFFKK....", "KGGGGgGGGgGGGGK", ".KK..KGLGK..KK.", "......KGK......", "......KGK......",
+      "......KgK......", "......KGK......", "......KgK......", ".....KKgKK.....", ".....KGLGK.....", ".....KKKKK.....",
     ],
     fx: [
-      "....L...F....", "..F.......L..", ".L....F......", "...........F.", ".F...L.......",
-      ".............", "L...........L", "..F......F...", ".............", "..L........F.",
+      "....L....F.....", "..F.........L..", ".L....F........", "............F..", ".F....L........",
+      "...............", "L.............L", "..F........F...", "...............", "...L........F..",
     ],
   },
-  // 성광 방패: 빛으로 짜인 반투명 방패 + 금빛 문양
+  // 성광 방패: 빛으로 짜인 대형 방패 + 금빛 문양 코어
   archangel_left: {
     cls: "slime-sparkle",
     body: [
-      "....KKKKKKK....", "..KKHHHHHHHKK..", ".KHHHHGGGHHHHK.", ".KHHGGFFFGGHHK.",
-      ".KHHGFFFFFGHHK.", ".KHHGGFFFGGHHK.", "..KHHHGGGHHHK..", "..KHHHHHHHHHK..",
-      "...KHHHHHHHK...", "....KHHHHHK....", ".....KHHHK.....", "......KHK......", ".......K.......",
+      "......KKKKKKK......", "....KKHHHHHHHKK....", "...KHHHHHHHHHHHK...", "..KHHHHGGGGGHHHHK..",
+      "..KHHHGGFFFGGHHHK..", "..KHHGGFFFFFGGHHK..", "..KHHGFFFFFFFGHHK..", "..KHHGGFFFFFGGHHK..",
+      "..KHHHGGFFFGGHHHK..", "...KHHHGGGGGHHHK...", "...KHHHHHHHHHHHK...", "....KHHHHHHHHHK....",
+      ".....KHHHHHHHK.....", "......KHHHHHK......", ".......KHHHK.......", "........KHK........", ".........K.........",
     ],
-    fx: ["F.............L", "...............", "......F........", "L.............F", "..............."],
+    fx: ["F.................L", "...................", ".........F.........", "L.................F", "..................."],
   },
 
   // ---------- 레전더리 — 심연의 대악마(archdemon) ----------
-  // 흑요석 마왕뿔: 용암 줄기가 흐르는 검은 뿔 한 쌍 (마왕급으로 크게)
+  // 흑요석 마왕뿔: 용암 줄기가 흐르는 두껍고 거대한 뿔 (더듬이 아님 — 3~4셀 두께)
   archdemon_head: {
     cls: "slime-sparkle",
     body: [
-      "KK.............KK", "KOK...........KOK", "KROK.........KORK", "KRROK.......KORRK",
-      ".KKROK.....KORKK.", "..KKROK...KORKK..", "...KKOKK.KKOKK...", "....KKKK.KKKK....",
+      "KKKK.............KKKK",
+      "KOOKK...........KKOOK",
+      "KRROOK.........KOORRK",
+      ".KKRROK.......KORRKK.",
+      "..KKRROK.....KORRKK..",
+      "...KKROOK...KOORKK...",
+      "....KKKOOK.KOOKKK....",
+      "......KKKK.KKKK......",
     ],
-    fx: ["O...............O", ".................", "......O...O......"],
+    fx: ["O...................O", ".....................", "......O.......O......"],
   },
-  // 지옥의 삼지창: 보랏빛 세 갈래 창
+  // 지옥의 삼지창: 길고 날 선 보랏빛 세 갈래 창
   archdemon_right: {
     cls: "slime-sparkle",
     body: [
-      ".K....K....K.", "KPK..KPK..KPK", "KPK..KPK..KPK", "KPK..KPK..KPK", ".KPKKKPKKKPK.",
-      "..KPPPPPPPK..", ".....KPK.....", ".....KpK.....", ".....KPK.....", ".....KpK.....",
-      ".....KPK.....", ".....KpK.....", ".....KPK.....", ".....KpK.....", ".....KPK.....",
-      ".....KpK.....", ".....KPK.....", ".....KpK.....", "....KKpKK....", "....KPPPK....", "....KKKKK....",
+      ".K.....K.....K.", "KPK...KPK...KPK", "KPK...KPK...KPK", "KPK...KPK...KPK", "KPK...KPK...KPK",
+      ".KPK.KKPKK.KPK.", "..KPPPPPPPPPK..", "......KPK......", "......KpK......", "......KPK......",
+      "......KpK......", "......KPK......", "......KpK......", "......KPK......", "......KpK......",
+      "......KPK......", "......KpK......", "......KPK......", "......KpK......", "......KPK......",
+      ".....KKpKK.....", ".....KPPPK.....", ".....KKKKK.....",
     ],
-    fx: ["P...........O", ".............", "....P........", "...........P.", "O............"],
+    fx: ["P.............O", "...............", ".....P.........", ".............P.", "O.............."],
   },
-  // 지옥불 구슬: 손 위에 떠 도는 검붉은 화염구
+  // 지옥불 구슬: 손 위에 떠 도는 커다란 검붉은 화염구
   archdemon_left: {
     cls: "slime-sparkle",
     body: [
-      "....P..P.....", "...KPKPPK....", "..KOOPPOOK...", ".KORRRRRROK..", ".KORRFRRROK..",
-      ".KORRRRRROK..", ".KOORRRROOK..", "..KOORROOK...", "...KKOOKK....", ".....KK......",
+      ".....P...P.....", "....KPKPKPK....", "...KOOPPPOOK...", "..KORRRRRRROK..", ".KORRRRRRRRROK.",
+      ".KORRFFRRRRROK.", ".KORRRRRRRRROK.", ".KOORRRRRRROK..", "..KOORRRRROOK..", "...KKOOOOOKK...",
+      ".....KKKKK.....",
     ],
-    fx: ["..O........P.", ".............", "P..........O."],
+    fx: ["..O.........P..", "...............", "P...........O.."],
   },
 };
 
@@ -557,9 +573,9 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
 
   // ---- 세트 얼굴 파츠 ----
   if (code === "archangel_face") {
-    // 금빛 눈가리개: 눈을 가로지르는 금빛 천 — 위아래 윤곽선으로 몸색과 분리
+    // 금빛 눈가리개: 얼굴을 넓게 가로지르는 금빛 천 — 위아래 윤곽선으로 몸색과 분리
     const fy = leftOf(y) - cell;
-    for (let x = leftOf(-ex) - 2 * cell; x <= leftOf(ex) + 3 * cell; x += cell) {
+    for (let x = leftOf(-ex) - 3 * cell; x <= leftOf(ex) + 4 * cell; x += cell) {
       s += px(x, fy - cell, PIXEL_PAL.K) + px(x, fy, PIXEL_PAL.G) +
         px(x, fy + cell, PIXEL_PAL.g) + px(x, fy + 2 * cell, PIXEL_PAL.K);
     }
@@ -567,13 +583,17 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
     return s;
   }
   if (code === "archdemon_face") {
-    // 그림자 송곳니 마스크: 입가를 덮는 그림자 + 흰 송곳니
-    const my = leftOf(p.mouthY) - cell;
-    const xL = leftOf(-ex) - cell, xR = leftOf(ex) + 2 * cell;
-    for (let x = xL; x <= xR; x += cell) {
-      for (let j = 0; j < 3; j++) s += px(x, my + j * cell, PIXEL_PAL.K, j === 0 ? 0.92 : 1);
+    // 불타는 눈: 눈 자리에서 타오르는 화염 (송곳니 마스크 폐기 — 원장 지시 2026-08-03)
+    const fy = leftOf(y) - cell;
+    let tips = "";
+    for (const sd of [-1, 1]) {
+      const x = leftOf(sd * ex);
+      tips += px(x, fy - cell, PIXEL_PAL.O, 0.95) + px(x, fy - 2 * cell, PIXEL_PAL.O, 0.6);
+      s += px(x - cell, fy, PIXEL_PAL.D) + px(x, fy, PIXEL_PAL.O);
+      s += px(x - cell, fy + cell, PIXEL_PAL.D) + px(x, fy + cell, PIXEL_PAL.O);
+      s += px(x - cell, fy + 2 * cell, PIXEL_PAL.D) + px(x, fy + 2 * cell, PIXEL_PAL.R);
     }
-    s += px(leftOf(-ex), my + 2 * cell, "#FFFFFF") + px(leftOf(ex) + cell, my + 2 * cell, "#FFFFFF");
+    s += `<g class="slime-sparkle">` + tips + `</g>`;
     return s;
   }
   if (code === "doctor_face") {

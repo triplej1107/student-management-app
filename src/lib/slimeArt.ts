@@ -13,19 +13,20 @@ import type { SlimeAttr, SlimeStage } from "./slimeSprite";
  * 아트 표정 — 코드 렌더러의 SlimeExpression과 별개다.
  * (코드 렌더러는 알 단계에만 쓰이고, 아트는 확정 일러스트 파일 목록을 따른다)
  */
+// '후광 뿌듯(halo)'은 폐기 (2026-08-04 원장 결정) — 아트가 과해서 뺐다.
 export type ArtExpression =
   | "normal"
   | "laugh" | "cry" | "sleep" | "yawn" | "wink"
   | "surprised" | "sing" | "proud" | "tired" | "teary"
   | "pout" | "think" | "fired" | "dizzy" | "eating"
-  | "smirk" | "halo";
+  | "smirk";
 
 /** 표정별 한글 이름 — 도감·디버그 표시에 쓴다. */
 export const ART_EXPRESSION_LABELS: Record<ArtExpression, string> = {
   normal: "기본", laugh: "웃기", cry: "울기", sleep: "졸기", yawn: "하품",
   wink: "윙크", surprised: "놀람", sing: "노래", proud: "뿌듯", tired: "지침",
   teary: "눈물 글썽", pout: "뽀로통", think: "골똘히", fired: "씩씩",
-  dizzy: "어질어질", eating: "먹는 중", smirk: "찡긋", halo: "후광 뿌듯",
+  dizzy: "어질어질", eating: "먹는 중", smirk: "찡긋",
 };
 
 /** 성장 단계별 표시 배율 — 같은 아트를 크기로 구분한다. */
@@ -43,17 +44,17 @@ export const ART_RATIO = 290 / 332;
  * 2026-08-04 속성별 시트 5장을 받아 5속성 × 17표정 = 85장이 모두 채워졌다.
  * (없는 표정을 요청하면 기본 표정으로 자동 폴백)
  */
-const ALL_17: ArtExpression[] = [
+const ALL: ArtExpression[] = [
   "laugh", "cry", "sleep", "yawn", "wink", "surprised", "sing", "proud", "tired",
-  "teary", "pout", "think", "fired", "dizzy", "eating", "smirk", "halo",
+  "teary", "pout", "think", "fired", "dizzy", "eating", "smirk",
 ];
 
 export const ART_EXPRESSIONS: Record<SlimeAttr, ArtExpression[]> = {
-  water: ALL_17,
-  gold: ALL_17,
-  fire: ALL_17,
-  wood: ALL_17,
-  earth: ALL_17,
+  water: ALL,
+  gold: ALL,
+  fire: ALL,
+  wood: ALL,
+  earth: ALL,
 };
 
 export function hasArtExpression(attr: SlimeAttr, expression: ArtExpression): boolean {

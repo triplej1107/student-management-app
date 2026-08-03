@@ -54,7 +54,6 @@ const EXPR_POOL: { w: number; expression: ArtExpression; ms: number; motion?: st
   { w: 4, expression: "dizzy", ms: 2600, motion: "slime-sway" },
   { w: 7, expression: "eating", ms: 2800 },
   { w: 8, expression: "smirk", ms: 1800 },
-  { w: 5, expression: "halo", ms: 3200 },
 ];
 
 function buildPool(attr: SlimeAttr) {

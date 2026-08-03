@@ -341,7 +341,7 @@ function eggSvg(): string {
 // 도트 장비 — game-design/슬라임랩.html의 스프라이트를 그대로 이식.
 // 레전더리는 셀 3.5(2배 해상도) + 전용 이펙트 ("1%는 픽셀을 아끼지 말 것").
 // ============================================================
-export type EquipSlot = "weapon" | "shield" | "hat" | "eyewear";
+export type EquipSlot = "weapon" | "shield" | "hat" | "eyewear" | "effect";
 export type SlimeEquip = Partial<Record<EquipSlot, string>>;
 
 const PIXEL_PAL: Record<string, string> = {
@@ -351,7 +351,7 @@ const PIXEL_PAL: Record<string, string> = {
   B: "#378ADD", b: "#185FA5", P: "#7F77DD", p: "#534AB7", Y: "#EFD489",
   O: "#FF8A3D", L: "#FFD166",
   N: "#F7A8C1", n: "#E0759B", V: "#79B94C", v: "#557F2E",
-  T: "#5BC8E8", E: "#F3D9A9",
+  T: "#5BC8E8", E: "#F3D9A9", H: "#FFF4C9",
 };
 
 const PIXEL_SPRITES: Record<string, string[]> = {
@@ -413,6 +413,14 @@ const PIXEL_SPRITES: Record<string, string[]> = {
   meshcap: ["...KKK...", "..KFFsK..", ".KFFFssK.", ".KKKKKKK.", "..KSSSSSK", "..KKKKKKK"],
   // 헤어밴드: 분홍 밴드 + 작은 리본 (밴드 아래 경계선)
   hairband: ["....KNK", ".KKKKK.", "KNNNNNK", ".KKKKK."],
+
+  // ---------- 매직 — 명의(doctor) 세트 ----------
+  // 수술 캡: 두상 밀착 흰 캡 + 초록 십자
+  doctor_head: ["..KKKKK..", ".KFFFFFK.", "KFFFVFFFK", "KKKKKKKKK"],
+  // 청진기: 귀꽂이 두 갈래 + 은색 체스트피스
+  doctor_right: ["K...K", ".K.K.", "..K..", "..K..", ".KSK.", ".KsK."],
+  // 진료 차트: 클립 달린 화이트보드 + 기록 줄
+  doctor_left: [".KKK.", "KKSKK", "KFFFK", "KFsFK", "KFFFK", "KFsFK", "KKKKK"],
 };
 
 const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> = {
@@ -449,6 +457,72 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
     ],
     fx: ["F.............F", "...............", "......F........", "...............", "F.............F"],
   },
+
+  // ---------- 레전더리 — 대천사(archangel) ----------
+  // 성광의 헤일로: 머리 위에 떠서 반짝이는 금빛 고리 (아래 빈 행 = 공중부양 간격)
+  archangel_head: {
+    cls: "slime-sparkle",
+    body: [
+      "...LGGGGGL...", "..G.......G..", "...LGGGGGL...",
+      ".............", ".............", ".............",
+    ],
+    fx: ["F...........F", ".............", "......F......"],
+  },
+  // 심판의 양손검: 백은 날 + 온빛 코어 + 금 십자 가드
+  archangel_right: {
+    cls: "slime-sparkle",
+    body: [
+      "......K......", ".....KFK.....", "....KFHFK....", "....KFHFK....", "....KFHFK....",
+      "....KFHFK....", "....KFHFK....", "....KFHFK....", "....KFHFK....", "....KFHFK....",
+      "....KFHFK....", "....KFFFK....", "...KKFFFKK...", "KGGGgGGGgGGGK", ".KK.KGLGK.KK.",
+      ".....KGK.....", ".....KGK.....", ".....KgK.....", "....KKgKK....", "....KGGGK....", "....KKKKK....",
+    ],
+    fx: [
+      "....L...F....", "..F.......L..", ".L....F......", "...........F.", ".F...L.......",
+      ".............", "L...........L", "..F......F...", ".............", "..L........F.",
+    ],
+  },
+  // 성광 방패: 빛으로 짜인 반투명 방패 + 금빛 문양
+  archangel_left: {
+    cls: "slime-sparkle",
+    body: [
+      "....KKKKKKK....", "..KKHHHHHHHKK..", ".KHHHHGGGHHHHK.", ".KHHGGFFFGGHHK.",
+      ".KHHGFFFFFGHHK.", ".KHHGGFFFGGHHK.", "..KHHHGGGHHHK..", "..KHHHHHHHHHK..",
+      "...KHHHHHHHK...", "....KHHHHHK....", ".....KHHHK.....", "......KHK......", ".......K.......",
+    ],
+    fx: ["F.............L", "...............", "......F........", "L.............F", "..............."],
+  },
+
+  // ---------- 레전더리 — 심연의 대악마(archdemon) ----------
+  // 흑요석 마왕뿔: 용암 줄기가 흐르는 검은 뿔 한 쌍 (크고 높게)
+  archdemon_head: {
+    cls: "slime-sparkle",
+    body: [
+      "KK...........KK", "KOK.........KOK", "KROK.......KORK", "KKROK.....KORKK",
+      ".KKROK...KORKK.", "..KKOKK.KKOKK..", "...KKKK.KKKK...",
+    ],
+    fx: ["O.............O", "...............", ".....O...O....."],
+  },
+  // 지옥의 삼지창: 보랏빛 세 갈래 창
+  archdemon_right: {
+    cls: "slime-sparkle",
+    body: [
+      ".K....K....K.", "KPK..KPK..KPK", "KPK..KPK..KPK", "KPK..KPK..KPK", ".KPKKKPKKKPK.",
+      "..KPPPPPPPK..", ".....KPK.....", ".....KpK.....", ".....KPK.....", ".....KpK.....",
+      ".....KPK.....", ".....KpK.....", ".....KPK.....", ".....KpK.....", ".....KPK.....",
+      ".....KpK.....", ".....KPK.....", ".....KpK.....", "....KKpKK....", "....KPPPK....", "....KKKKK....",
+    ],
+    fx: ["P...........O", ".............", "....P........", "...........P.", "O............"],
+  },
+  // 지옥불 구슬: 손 위에 떠 도는 검붉은 화염구
+  archdemon_left: {
+    cls: "slime-sparkle",
+    body: [
+      "....P..P.....", "...KPKPPK....", "..KOOPPOOK...", ".KORRRRRROK..", ".KORRFRRROK..",
+      ".KORRRRRROK..", ".KOORRRROOK..", "..KOORROOK...", "...KKOOKK....", ".....KK......",
+    ],
+    fx: ["..O........P.", ".............", "P..........O."],
+  },
 };
 
 function drawSprite(rows: string[], x0: number, y0: number, cell: number): string {
@@ -480,6 +554,36 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
   const leftOf = (v: number) => Math.floor(v / cell) * cell;
   const px = (x: number, yy: number, fill: string, o?: number) => rect(x, yy, cell, fill, o);
   let s = "";
+
+  // ---- 세트 얼굴 파츠 ----
+  if (code === "archangel_face") {
+    // 금빛 눈가리개: 눈을 가로지르는 금빛 천 + 왼쪽 반짝
+    const fy = leftOf(y) - cell;
+    for (let x = leftOf(-ex) - 2 * cell; x <= leftOf(ex) + 3 * cell; x += cell) {
+      s += px(x, fy, PIXEL_PAL.G) + px(x, fy + cell, PIXEL_PAL.g);
+    }
+    s += px(leftOf(-ex), fy, "#FFFFFF", 0.8);
+    return s;
+  }
+  if (code === "archdemon_face") {
+    // 그림자 송곳니 마스크: 입가를 덮는 그림자 + 흰 송곳니
+    const my = leftOf(p.mouthY) - cell;
+    const xL = leftOf(-ex) - cell, xR = leftOf(ex) + 2 * cell;
+    for (let x = xL; x <= xR; x += cell) {
+      for (let j = 0; j < 3; j++) s += px(x, my + j * cell, PIXEL_PAL.K, j === 0 ? 0.92 : 1);
+    }
+    s += px(leftOf(-ex), my + 2 * cell, "#FFFFFF") + px(leftOf(ex) + cell, my + 2 * cell, "#FFFFFF");
+    return s;
+  }
+  if (code === "doctor_face") {
+    // 이마 반사경: 머리띠 + 은색 원판 (한가운데 반짝)
+    const fy = leftOf(y) - 3 * cell;
+    for (let x = leftOf(-ex) - cell; x <= leftOf(ex) + cell; x += cell) s += px(x, fy, PIXEL_PAL.K);
+    s += px(-cell, fy - cell, PIXEL_PAL.S) + px(0, fy - cell, PIXEL_PAL.S) +
+      px(-cell, fy, PIXEL_PAL.S) + px(0, fy, PIXEL_PAL.S) +
+      px(-cell, fy - cell, "#FFFFFF", 0.9);
+    return s;
+  }
 
   // ---- 노말 얼굴 파츠 (안경 프레임이 아닌 것 포함) ----
   if (code === "blush") {
@@ -558,6 +662,58 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
     }
   }
   return s;
+}
+
+// ============================================================
+// 이펙트 슬롯 — 몸 뒤에 깔리는 전신 연출 (레전더리 전용 아트 규칙)
+// ============================================================
+
+// 대천사 육익: 중앙에서 바깥으로 뻗는 오른쪽 절반 (왼쪽은 미러)
+const ANGEL_WING_HALF = [
+  "..............FFF.", "............FFFFF.", "..........FFFFFF..", ".........FFFFF....",
+  "........FFFF......", "..FFFFFFFFF.......", ".FFFFFFFFFFFFF....", ".FFFFFFFFFFFFFFFF.",
+  ".SFFFFFFFFFFFFFFS.", "..SSFFFFFFFFSS....", "...FFFFFFF........", "...SFFFFFF........",
+  "....SFFFF.........", ".....SFFF.........", "......SFF.........", ".......SF.........",
+];
+
+// 심연의 화염 기둥: 컬럼별 불꽃 높이 (셀 단위, 좌→우)
+// 중앙(26~28셀)은 머리 위로 한참 솟고, 가장자리 컬럼은 몸통(±55) 밖에서 넘실거린다
+const FLAME_HEIGHTS = [5, 9, 13, 8, 6, 10, 7, 12, 16, 20, 24, 22, 26, 28, 25, 27, 21, 23, 18, 14, 11, 8, 12, 7, 10, 14, 6];
+
+function effectBackLayer(code: string, p: Derived): string {
+  if (code === "archangel_fx") {
+    // 셀 5 — 각성체(±55) 옆으로 날개가 확실히 뻗도록 (±92)
+    const fc = 5;
+    const rows = ANGEL_WING_HALF.map((h) => [...h].reverse().join("") + "." + h);
+    const w = rows[0].length * fc;
+    const y0 = BASELINE - p.bodyH;
+    let s = drawSprite(rows, -w / 2, y0, fc);
+    // 깃털 반짝임
+    s += `<g class="slime-sparkle">` +
+      rect(-w / 2 + 2 * fc, y0 + fc, fc, PIXEL_PAL.H, 0.9) +
+      rect(w / 2 - 3 * fc, y0 + 3 * fc, fc, PIXEL_PAL.H, 0.9) +
+      rect(-w / 2 + 5 * fc, y0 + 11 * fc, fc, "#FFFFFF", 0.8) +
+      rect(w / 2 - 6 * fc, y0 + 13 * fc, fc, "#FFFFFF", 0.8) +
+      `</g>`;
+    return s;
+  }
+  if (code === "archdemon_fx") {
+    const fc = 5;
+    const half = Math.floor(FLAME_HEIGHTS.length / 2);
+    let body = "";
+    let tips = "";
+    FLAME_HEIGHTS.forEach((h, i) => {
+      const x = (i - half) * fc - fc / 2;
+      for (let j = 0; j < h; j++) {
+        const y = BASELINE - 6 - (j + 1) * fc;
+        if (j === h - 1) tips += rect(x, y, fc, PIXEL_PAL.O, 0.95);
+        else if (j >= h * 0.55) body += rect(x, y, fc, PIXEL_PAL.R);
+        else body += rect(x, y, fc, PIXEL_PAL.r);
+      }
+    });
+    return body + `<g class="slime-sparkle">` + tips + `</g>`;
+  }
+  return "";
 }
 
 function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
@@ -665,9 +821,10 @@ export function slimeSvg(
         pixelSparkle(snap(p.bodyW + 22), snap(BASELINE - 18), c.stroke, cell) +
         `</g>`;
     }
+    const fxBack = wearing && equip.effect ? effectBackLayer(equip.effect, p) : "";
     inner = `<ellipse cx="0" cy="148" rx="${p.bodyW * 0.8}" ry="6" fill="#000" opacity="0.08"/>` +
       aura +
-      `<g class="slime-breathe">` + rects + (wearing ? equipLayer(equip, p, cell) : "") + `</g>`;
+      `<g class="slime-breathe">` + fxBack + rects + (wearing ? equipLayer(equip, p, cell) : "") + `</g>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}" role="img" aria-label="슬라임">` + inner + `</svg>`;
 }

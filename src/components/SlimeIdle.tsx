@@ -1,38 +1,65 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { slimeSvg, type SlimeAttr, type SlimeEquip, type SlimeStage } from "@/lib/slimeSprite";
-import { slimeArtSrc, slimeArtWidth, ART_RATIO } from "@/lib/slimeArt";
+import {
+  slimeSvg,
+  type SlimeAttr,
+  type SlimeEquip,
+  type SlimeExpression,
+  type SlimeStage,
+} from "@/lib/slimeSprite";
+import { slimeArtSrc, slimeArtWidth, hasArtExpression, ART_RATIO } from "@/lib/slimeArt";
 
 /**
  * 살아있는 슬라임 — 무대(가로 전체) 위에서 몇 초마다 랜덤 행동을 한다:
- * 통통 뛰어 이동, 기지개, 갸웃, 몸 흔들기. 알은 갸웃거리기만.
+ * 통통 뛰어 이동, 기지개, 갸웃, 몸 흔들기, 그리고 표정 짓기.
  *
- * 몸통이 확정 아트 이미지로 바뀌면서 표정 교체는 빠졌다(이미지 얼굴 고정).
- * 표정을 되살리려면 속성×표정 이미지가 더 필요하다.
+ * 표정은 아트 이미지가 있는 것만 후보에 오른다(ART_EXPRESSIONS). 이미지를
+ * 추가하면 별도 수정 없이 이 풀에 자동으로 합류한다.
  */
 
 type Behavior =
   | { kind: "idle"; ms: number }
   | { kind: "hop"; ms: number; to: number }
-  | { kind: "move"; ms: number; motion: string };
+  | { kind: "move"; ms: number; motion: string }
+  | { kind: "expr"; ms: number; expression: SlimeExpression; motion?: string };
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
 // 가중치 행동 풀 — 여기만 고치면 성격이 바뀐다.
 // 추후 상태 연동 아이디어: 밀림 있으면 cry↑, 밤 10시 이후 sleep↑, 시험 주간 surprised↑
-const POOL: { w: number; make: () => Behavior }[] = [
+const MOTION_POOL: { w: number; make: () => Behavior }[] = [
   { w: 34, make: () => ({ kind: "hop", ms: 1300, to: 0 }) },
-  { w: 16, make: () => ({ kind: "move", ms: 1500, motion: "slime-stretch" }) },
-  { w: 16, make: () => ({ kind: "move", ms: 2000, motion: "slime-wiggle" }) },
-  { w: 14, make: () => ({ kind: "move", ms: 3000, motion: "slime-sway" }) },
-  { w: 20, make: () => ({ kind: "idle", ms: rand(2200, 4200) }) },
+  { w: 12, make: () => ({ kind: "move", ms: 1500, motion: "slime-stretch" }) },
+  { w: 12, make: () => ({ kind: "move", ms: 2000, motion: "slime-wiggle" }) },
+  { w: 10, make: () => ({ kind: "move", ms: 3000, motion: "slime-sway" }) },
+  { w: 16, make: () => ({ kind: "idle", ms: rand(2200, 4200) }) },
 ];
-const POOL_TOTAL = POOL.reduce((sum, b) => sum + b.w, 0);
 
-function nextBehavior(currentX: number): Behavior {
-  let roll = Math.random() * POOL_TOTAL;
-  for (const entry of POOL) {
+// 표정별 연출 — 아트 이미지가 있는 것만 실제 후보가 된다.
+const EXPR_POOL: { w: number; expression: SlimeExpression; ms: number; motion?: string }[] = [
+  { w: 10, expression: "laugh", ms: 2400 },
+  { w: 8, expression: "yawn", ms: 2800, motion: "slime-stretch" },
+  { w: 5, expression: "cry", ms: 2800 },
+  { w: 12, expression: "sleep", ms: 4200 },
+  { w: 8, expression: "wink", ms: 1600 },
+  { w: 6, expression: "surprised", ms: 1300 },
+  { w: 7, expression: "love", ms: 2600 },
+  { w: 8, expression: "sing", ms: 3000, motion: "slime-sway" },
+];
+
+function buildPool(attr: SlimeAttr) {
+  const pool = [...MOTION_POOL];
+  for (const e of EXPR_POOL) {
+    if (!hasArtExpression(attr, e.expression)) continue;
+    pool.push({ w: e.w, make: () => ({ kind: "expr", ms: e.ms, expression: e.expression, motion: e.motion }) });
+  }
+  return { pool, total: pool.reduce((s, b) => s + b.w, 0) };
+}
+
+function nextBehavior(pool: ReturnType<typeof buildPool>, currentX: number): Behavior {
+  let roll = Math.random() * pool.total;
+  for (const entry of pool.pool) {
     roll -= entry.w;
     if (roll <= 0) {
       const b = entry.make();
@@ -62,22 +89,35 @@ export function SlimeIdle({
 }) {
   const [x, setX] = useState(50);
   const [motion, setMotion] = useState<string | undefined>(undefined);
+  const [expression, setExpression] = useState<SlimeExpression>("normal");
   const xRef = useRef(50);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let cancelled = false;
+    const pool = buildPool(attr);
 
     const tick = () => {
       if (cancelled) return;
-      const b = nextBehavior(xRef.current);
+      const b = nextBehavior(pool, xRef.current);
       if (b.kind === "hop") {
         xRef.current = b.to;
         setX(b.to);
         setMotion("slime-hop");
+        setExpression("normal");
         timer = setTimeout(() => {
           setMotion(undefined);
           timer = setTimeout(tick, rand(1200, 2600));
+        }, b.ms);
+        return;
+      }
+      if (b.kind === "expr") {
+        setExpression(b.expression);
+        setMotion(b.motion);
+        timer = setTimeout(() => {
+          setExpression("normal");
+          setMotion(undefined);
+          timer = setTimeout(tick, rand(1000, 2400));
         }, b.ms);
         return;
       }
@@ -98,7 +138,7 @@ export function SlimeIdle({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, []);
+  }, [attr]);
 
   // 알은 이동·표정 없이 제자리 갸웃(렌더러 내장 wobble)만
   if (stage === "egg") {
@@ -124,7 +164,7 @@ export function SlimeIdle({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className="slime-art"
-            src={slimeArtSrc(attr)}
+            src={slimeArtSrc(attr, expression)}
             alt="슬라임"
             width={slimeArtWidth(stage, width)}
             height={Math.round(slimeArtWidth(stage, width) / ART_RATIO)}

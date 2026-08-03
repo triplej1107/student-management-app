@@ -578,7 +578,7 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
   if (code === "archangel_face") {
     // 금빛 눈가리개: 얼굴을 넓게 가로지르는 금빛 천 — 위아래 윤곽선으로 몸색과 분리
     const fy = leftOf(y) - cell;
-    for (let x = leftOf(-ex) - 3 * cell; x <= leftOf(ex) + 4 * cell; x += cell) {
+    for (let x = leftOf(-ex) - 4 * cell; x <= leftOf(ex) + 4 * cell; x += cell) {
       s += px(x, fy - cell, PIXEL_PAL.K) + px(x, fy, PIXEL_PAL.G) +
         px(x, fy + cell, PIXEL_PAL.g) + px(x, fy + 2 * cell, PIXEL_PAL.K);
     }

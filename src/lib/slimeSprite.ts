@@ -587,15 +587,16 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
   }
   if (code === "archdemon_face") {
     // 심연의 제3의 눈: 이마에 세로로 열린 심연의 눈 — 주황 홍채 + 검은 세로 동공
+    // 한 칸 아래로 — 양눈에 가깝게 (원장 지시 2026-08-03)
     const fy = leftOf(y) - cell;
-    s += px(0, fy - 5 * cell, PIXEL_PAL.K);
-    s += px(-cell, fy - 4 * cell, PIXEL_PAL.K) + px(0, fy - 4 * cell, PIXEL_PAL.O) + px(cell, fy - 4 * cell, PIXEL_PAL.K);
-    s += px(-cell, fy - 3 * cell, PIXEL_PAL.K) + px(0, fy - 3 * cell, PIXEL_PAL.D) + px(cell, fy - 3 * cell, PIXEL_PAL.K);
-    s += px(0, fy - 2 * cell, PIXEL_PAL.K);
+    s += px(0, fy - 4 * cell, PIXEL_PAL.K);
+    s += px(-cell, fy - 3 * cell, PIXEL_PAL.K) + px(0, fy - 3 * cell, PIXEL_PAL.O) + px(cell, fy - 3 * cell, PIXEL_PAL.K);
+    s += px(-cell, fy - 2 * cell, PIXEL_PAL.K) + px(0, fy - 2 * cell, PIXEL_PAL.D) + px(cell, fy - 2 * cell, PIXEL_PAL.K);
+    s += px(0, fy - cell, PIXEL_PAL.K);
     // 눈가에서 배어 나오는 심연의 기운
     s += `<g class="slime-sparkle">` +
-      px(-2 * cell, fy - 4 * cell, PIXEL_PAL.O, 0.7) +
-      px(2 * cell, fy - 3 * cell, PIXEL_PAL.O, 0.7) +
+      px(-2 * cell, fy - 3 * cell, PIXEL_PAL.O, 0.7) +
+      px(2 * cell, fy - 2 * cell, PIXEL_PAL.O, 0.7) +
       `</g>`;
     return s;
   }

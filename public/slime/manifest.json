@@ -1,0 +1,27 @@
+[
+  {
+    "attr": "water",
+    "width": 290,
+    "height": 334
+  },
+  {
+    "attr": "gold",
+    "width": 306,
+    "height": 335
+  },
+  {
+    "attr": "fire",
+    "width": 273,
+    "height": 335
+  },
+  {
+    "attr": "wood",
+    "width": 290,
+    "height": 335
+  },
+  {
+    "attr": "earth",
+    "width": 282,
+    "height": 318
+  }
+]

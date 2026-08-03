@@ -146,6 +146,13 @@ g.slime-wobble {
 g.slime-sparkle {
   animation: slime-twinkle 2s ease-in-out infinite;
 }
+/* 이미지 스프라이트용 — SVG가 아니라 <img>에 직접 건다 */
+img.slime-art {
+  display: block;
+  image-rendering: pixelated;
+  animation: slime-breathe 2.4s ease-in-out infinite;
+  transform-origin: 50% 92%;
+}
 @keyframes slime-hop {
   0%, 100% { transform: translateY(0) scale(1, 1); }
   20% { transform: translateY(0) scale(1.08, 0.9); }
@@ -183,6 +190,7 @@ g.slime-sparkle {
   g.slime-breathe,
   g.slime-wobble,
   g.slime-sparkle,
+  img.slime-art,
   .slime-hop,
   .slime-stretch,
   .slime-wiggle,

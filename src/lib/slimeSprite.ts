@@ -414,6 +414,58 @@ const PIXEL_SPRITES: Record<string, string[]> = {
   // 헤어밴드: 분홍 밴드 + 작은 리본 (밴드 아래 경계선)
   hairband: ["....KNK", ".KKKKK.", "KNNNNNK", ".KKKKK."],
 
+  // ---------- 레어 — 전설의 용사(hero): 검=knightsword, 방패=kite 재사용 ----------
+  // 푸른 깃털 투구
+  hero_head: ["..KB.....", ".KBB.....", "..KKKKK..", ".KSSSSSK.", "KSSFSSSSK", "KKKKKKKKK"],
+
+  // ---------- 레어 — 정령술사(spirit) ----------
+  // 꽃잎 화관
+  spirit_head: ["..N.P.Y..", ".KVVVVVK.", "..KKKKK.."],
+  // 이슬 나뭇가지 (이슬방울 T)
+  spirit_right: ["...VV", "..KAV", ".KAKT", ".KAK.", ".KAK.", ".KaK."],
+  // 요정 램프
+  spirit_left: [".KK..", ".KK..", "KLLLK", "KLFLK", "KLLLK", ".KKK."],
+
+  // ---------- 레어 — 엘프 레인저(ranger) ----------
+  // 잎사귀 후드
+  ranger_head: ["..KKK..", ".KVvVK.", "KVVVVVK", "KvVvVvK", "KKKKKKK"],
+  // 요정의 활
+  ranger_right: [".KK..", "KWKK.", "KW.K.", "KW.K.", "KW.K.", "KWKK.", ".KK.."],
+  // 깃털 화살통
+  ranger_left: ["Y.Y..", "K.K..", "KAAK.", "KAAK.", "KAAK.", "KKKK."],
+
+  // ---------- 매직 — 정의의 변호사(lawyer) ----------
+  // 단정한 가르마 머리
+  lawyer_head: ["...KKKK..", ".KKKKKKK.", "KKKKsKKKK", "KKKKKKKKK"],
+  // 정의의 법봉
+  lawyer_right: ["KKKKK", "KAAAK", "KKKKK", ".KAK.", ".KAK.", ".KaK."],
+  // 육법전서 (금박 문양)
+  lawyer_left: ["KKKKKK", "KbGbSK", "KbbbSK", "KbGbSK", "KbbbSK", "KKKKKK"],
+
+  // ---------- 매직 — 천재 과학자(scientist) ----------
+  // 폭탄 머리
+  scientist_head: ["K.K.K.K.K", "KKKKKKKKK", ".KKKKKKK.", "KKKKKKKKK"],
+  // 형광 플라스크
+  scientist_right: ["..K..", ".KFK.", ".KFK.", "KFVVK", "KVVVK", "KKKKK"],
+  // 설계도 클립보드
+  scientist_left: [".KKK.", "KKSKK", "KFBFK", "KFFBK", "KFBFK", "KKKKK"],
+
+  // ---------- 매직 — 여행 유튜버(youtuber) ----------
+  // 버킷햇
+  youtuber_head: ["..KKKKK..", ".KTTTTTK.", ".KTTTTTK.", "KKKKKKKKK", "KTTTTTTTK", "KKKKKKKKK"],
+  // 셀카봉
+  youtuber_right: ["KKKKK", "KBFBK", "KKKKK", "..K..", "..K..", "..K..", ".KsK."],
+  // 여행 캐리어 (스티커)
+  youtuber_left: [".K..K.", "KKKKKK", "KTTNTK", "KTYTTK", "KTTTVK", "KKKKKK"],
+
+  // ---------- 매직 — 군인(soldier) ----------
+  // 위장 철모
+  soldier_head: ["..KKK..", ".KVVVK.", "KVvVvVK", "KVVvVVK", "KKKKKKK"],
+  // 야전삽 (밈 파워)
+  soldier_right: [".KSK.", "KSSSK", "KSSSK", ".KAK.", ".KAK.", ".KAK.", "KAAAK"],
+  // 위장 방패
+  soldier_left: ["..KKK..", ".KVVVK.", "KVvVvVK", "KVVvVVK", "KVvVvVK", ".KVVVK.", "..KKK.."],
+
   // ---------- 매직 — 명의(doctor) 세트 ----------
   // 수술 캡: 두상 밀착 흰 캡 + 초록 십자
   doctor_head: ["..KKKKK..", ".KFFFFFK.", "KFFFVFFFK", "KKKKKKKKK"],
@@ -677,6 +729,65 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
   const px = (x: number, yy: number, fill: string, o?: number) => rect(x, yy, cell, fill, o);
   let s = "";
 
+  if (code === "youtuber_face") code = "sun"; // 힙한 선글라스 = 기존 선글라스 렌더
+
+  if (code === "hero_face") {
+    // 역전의 흉터: 왼뺨의 X자 흉터
+    const fx = leftOf(-ex) - cell, fy = leftOf(y) + 2 * cell;
+    for (const [dx, dy] of [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]] as const) {
+      s += px(fx + dx * cell, fy + dy * cell, PIXEL_PAL.a, 0.85);
+    }
+    return s;
+  }
+  if (code === "spirit_face") {
+    // 요정의 귀: 양옆으로 뾰족 솟은 귀
+    const fy = leftOf(y);
+    for (const sd of [-1, 1]) {
+      const bx = leftOf(sd * (p.bodyW - 2));
+      s += px(bx, fy, PIXEL_PAL.K) + px(bx + sd * cell, fy - cell, PIXEL_PAL.K) +
+        px(bx + sd * cell, fy, PIXEL_PAL.N, 0.9);
+    }
+    return s;
+  }
+  if (code === "ranger_face") {
+    // 숲의 페인트: 양뺨의 초록 나뭇잎 줄무늬
+    const fy = leftOf(y) + 2 * cell;
+    for (const sd of [-1, 1]) {
+      const x = leftOf(sd * ex) + sd * cell;
+      s += px(x, fy, PIXEL_PAL.V, 0.95) + px(x - sd * cell, fy + cell, PIXEL_PAL.v, 0.9);
+    }
+    return s;
+  }
+  if (code === "soldier_face") {
+    // 위장 크림: 양뺨의 위장 줄
+    const fy = leftOf(y) + 2 * cell;
+    for (const sd of [-1, 1]) {
+      const x = leftOf(sd * ex) + sd * cell;
+      s += px(x, fy, PIXEL_PAL.v, 0.95) + px(x - sd * cell, fy, PIXEL_PAL.A, 0.85);
+    }
+    return s;
+  }
+  if (code === "archmage_face" || code === "lawyer_face" || code === "scientist_face") {
+    // 지혜의 뿔테(금빛 반짝) / 금테 안경 / 투명 보안경 — 4x4 프레임 변형
+    const frameCol = code === "lawyer_face" ? PIXEL_PAL.G : code === "scientist_face" ? PIXEL_PAL.S : PIXEL_PAL.K;
+    for (const sd of [-1, 1]) {
+      const fx = leftOf(sd * ex) - cell, fy = leftOf(y) - cell;
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          const center = i >= 1 && i <= 2 && j >= 1 && j <= 2;
+          if (center) continue;
+          s += px(fx + i * cell, fy + j * cell, frameCol);
+        }
+      }
+      if (code === "scientist_face") s += px(fx + cell, fy + cell, "#EAF6FF", 0.75);
+    }
+    const cyT = leftOf(y);
+    const bL = leftOf(-ex) + 3 * cell, bR = leftOf(ex) - cell;
+    for (let x = bL; x < bR; x += cell) s += px(x, cyT, frameCol);
+    if (code === "archmage_face") s += px(leftOf(ex) + 2 * cell, leftOf(y) - cell, PIXEL_PAL.G, 0.9);
+    return s;
+  }
+
   // ---- 세트 얼굴 파츠 ----
   if (code === "archangel_face") {
     // 금빛 눈가리개: 얼굴을 넓게 가로지르는 금빛 천 — 위아래 윤곽선으로 몸색과 분리
@@ -846,6 +957,117 @@ const ANGEL_WING_HALF = [
 const FLAME_HEIGHTS = [6, 11, 15, 9, 7, 12, 8, 14, 18, 23, 27, 25, 29, 31, 28, 30, 24, 26, 20, 16, 12, 9, 14, 8, 11, 16, 7];
 
 function effectBackLayer(code: string, p: Derived): string {
+  const bw = p.bodyW;
+  const topY = BASELINE - p.bodyH;
+  const plus = (x: number, y: number, col: string, c: number) => {
+    let t = "";
+    for (const [dx, dy] of [[0, 0], [c, 0], [-c, 0], [0, c], [0, -c]] as const) t += rect(x + dx, y + dy, c, col, 0.92);
+    return t;
+  };
+
+  if (code === "archmage_fx") {
+    // 오행 마법진: 발밑을 도는 5속성 링
+    const ring: [number, number, string][] = [
+      [-(bw + 18), 136, "R"], [-(bw * 0.5), 141, "B"], [4, 143, "V"],
+      [bw * 0.55, 141, "G"], [bw + 14, 136, "A"],
+    ];
+    let s = "";
+    for (const [x, yy, c] of ring) s += rect(x, yy, 7, PIXEL_PAL[c], 0.95);
+    s += `<g class="slime-sparkle">` +
+      rect(-(bw + 6), 131, 5, PIXEL_PAL.P, 0.8) + rect(bw + 2, 131, 5, PIXEL_PAL.P, 0.8) +
+      rect(-bw * 0.2, 138, 5, PIXEL_PAL.L, 0.8) + `</g>`;
+    return s;
+  }
+  if (code === "hero_fx") {
+    // 황금 투기: 몸을 감싸고 솟는 금빛 오라
+    let body = "";
+    let tips = "";
+    for (const [x, h] of [[-(bw + 10), 7], [-(bw + 17), 4], [bw + 4, 8], [bw + 11, 5], [bw + 18, 3], [-(bw + 3), 5]] as const) {
+      for (let j = 0; j < h; j++) {
+        const yy = BASELINE - 10 - j * 7;
+        if (j >= h - 2) tips += rect(x, yy, 7, PIXEL_PAL.L, 0.9);
+        else body += rect(x, yy, 7, PIXEL_PAL.G, 0.9);
+      }
+    }
+    return body + `<g class="slime-sparkle">` + tips + rect(0, topY - 16, 6, PIXEL_PAL.L, 0.9) + `</g>`;
+  }
+  if (code === "spirit_fx") {
+    // 정령 세 마리: 주위를 맴도는 픽셀 요정
+    const fairy = (x: number, yy: number, col: string) =>
+      rect(x, yy, 6, col) + rect(x - 6, yy - 6, 6, "#FFFFFF", 0.75) + rect(x + 6, yy - 6, 6, "#FFFFFF", 0.75);
+    let s = fairy(-(bw + 16), BASELINE - p.bodyH * 0.75, PIXEL_PAL.N);
+    s += `<g class="slime-sparkle">` +
+      fairy(bw + 14, BASELINE - p.bodyH * 0.5, PIXEL_PAL.T) +
+      fairy(bw + 20, BASELINE - 26, PIXEL_PAL.Y) + `</g>`;
+    return s;
+  }
+  if (code === "ranger_fx") {
+    // 숲의 오라: 흩날리는 나뭇잎 + 반딧불
+    let s = rect(-(bw + 20), BASELINE - p.bodyH * 0.8, 6, PIXEL_PAL.V, 0.95) +
+      rect(-(bw + 12), BASELINE - 30, 6, PIXEL_PAL.v, 0.9) +
+      rect(bw + 10, BASELINE - p.bodyH * 0.55, 6, PIXEL_PAL.V, 0.95) +
+      rect(bw + 20, BASELINE - 20, 6, PIXEL_PAL.v, 0.9);
+    s += `<g class="slime-sparkle">` +
+      rect(bw + 16, topY - 8, 5, PIXEL_PAL.L, 0.95) +
+      rect(-(bw + 18), BASELINE - 44, 5, PIXEL_PAL.L, 0.95) +
+      rect(bw + 26, BASELINE - 38, 4, PIXEL_PAL.L, 0.85) + `</g>`;
+    return s;
+  }
+  if (code === "doctor_fx") {
+    // 힐링 십자: 흩날리는 초록 십자
+    let s = plus(-(bw + 16), BASELINE - p.bodyH * 0.7, PIXEL_PAL.V, 6);
+    s += `<g class="slime-sparkle">` +
+      plus(bw + 14, BASELINE - p.bodyH * 0.45, PIXEL_PAL.V, 5) +
+      plus(bw + 20, topY - 6, PIXEL_PAL.V, 4) + `</g>`;
+    return s;
+  }
+  if (code === "lawyer_fx") {
+    // 이의있음!: 머리 위 말풍선
+    const bx = bw * 0.55, by = topY - 34;
+    let bubble = "";
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 3; j++) {
+        const edge = i === 0 || i === 4 || j === 0 || j === 2;
+        bubble += rect(bx + i * 6, by + j * 6, 6, edge ? PIXEL_PAL.K : "#FFFFFF");
+      }
+    }
+    bubble += rect(bx + 6, by + 18, 6, PIXEL_PAL.K); // 꼬리
+    bubble += rect(bx + 12, by + 6, 6, PIXEL_PAL.R); // !
+    return `<g class="slime-sparkle">` + bubble + `</g>`;
+  }
+  if (code === "scientist_fx") {
+    // 화학 기포: 뽀글뽀글 초록 거품
+    let s = rect(bw + 10, BASELINE - p.bodyH * 0.6, 6, PIXEL_PAL.V, 0.9) +
+      rect(-(bw + 14), BASELINE - 34, 5, PIXEL_PAL.T, 0.9);
+    s += `<g class="slime-sparkle">` +
+      rect(bw + 18, BASELINE - p.bodyH * 0.85, 5, PIXEL_PAL.V, 0.85) +
+      rect(bw + 12, topY - 10, 4, PIXEL_PAL.T, 0.85) +
+      rect(-(bw + 8), topY - 4, 5, PIXEL_PAL.V, 0.8) + `</g>`;
+    return s;
+  }
+  if (code === "youtuber_fx") {
+    // 좋아요 세례: 팡팡 터지는 빨간 하트
+    const heart = (x: number, yy: number, c: number) =>
+      rect(x, yy, c, PIXEL_PAL.R) + rect(x + 2 * c, yy, c, PIXEL_PAL.R) +
+      rect(x, yy + c, c, PIXEL_PAL.R) + rect(x + c, yy + c, c, PIXEL_PAL.R) + rect(x + 2 * c, yy + c, c, PIXEL_PAL.R) +
+      rect(x + c, yy + 2 * c, c, PIXEL_PAL.R);
+    let s = heart(-(bw + 22), BASELINE - p.bodyH * 0.8, 5);
+    s += `<g class="slime-sparkle">` +
+      heart(bw + 10, BASELINE - p.bodyH * 0.55, 5) +
+      heart(bw + 18, topY - 14, 4) + `</g>`;
+    return s;
+  }
+  if (code === "soldier_fx") {
+    // 연막: 발밑에 깔리는 초록 연기
+    let s = "";
+    for (const [x, yy, c, o] of [
+      [-(bw + 20), 132, 8, 0.85], [-(bw + 6), 137, 7, 0.9], [bw + 2, 134, 8, 0.85],
+      [bw + 16, 138, 7, 0.9], [-(bw * 0.3), 139, 8, 0.8],
+    ] as const) s += rect(x, yy, c, PIXEL_PAL.v, o);
+    s += `<g class="slime-sparkle">` +
+      rect(-(bw + 26), 126, 6, PIXEL_PAL.V, 0.7) + rect(bw + 24, 128, 6, PIXEL_PAL.V, 0.7) + `</g>`;
+    return s;
+  }
   if (code === "archangel_fx") {
     // 셀 5 — 각성체(±55) 옆으로 날개가 확실히 뻗도록 (±92)
     const fc = 5;

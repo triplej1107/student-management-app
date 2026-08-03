@@ -459,14 +459,15 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
   },
 
   // ---------- 레전더리 — 대천사(archangel) ----------
-  // 성광의 헤일로: 머리 위를 덮는 초대형 금빛 고리 (아래 빈 행 = 공중부양 간격)
+  // 성광의 헤일로: 머리 위를 덮는 초대형 금빛 고리 — 두꺼운 2셀 밴드
   archangel_head: {
     cls: "slime-sparkle",
     body: [
-      "......KGLGGGGGLGK......",
-      "...KGG...........GGK...",
-      "..KG...............GK..",
-      "...KGG...........GGK...",
+      "......KGGGGGGGGGK......",
+      "...KGGGGLLLLLLLGGGGK...",
+      ".KGG...............GGK.",
+      "..KGG.............GGK..",
+      "...KGGGGLLLLLLLGGGGK...",
       "......KGGGGGGGGGK......",
       ".......................",
       ".......................",
@@ -530,14 +531,16 @@ const PIXEL_FINE: Record<string, { cls: string; body: string[]; fx: string[] }> 
     ],
     fx: ["P.............O", "...............", ".....P.........", ".............P.", "O.............."],
   },
-  // 지옥불: 보랏빛 도깨비불 — 주황 핵 속에 빛나는 눈 (토마토 아님)
+  // 심연의 마귀방패: 뿔 돋친 흑요석 방패 — 마귀의 형상, 타오르는 눈과 이빨 자국
   archdemon_left: {
     cls: "slime-sparkle",
     body: [
-      "......P......", ".....KPK.....", "....KPPPK....", "...KPPPPPK...", "..KPPOOOPPK..",
-      "..KPOFOFOPK..", "..KPOOOOOPK..", "...KPOOOPK...", "....KPPPK....", ".....KKK.....",
+      ".KK....K....KK.", "KDDK..KDK..KDDK", "KDDDKKDDDKKDDDK", "KDDDDDDDDDDDDDK",
+      "KDDODDDDDDDODDK", "KDDODDDDDDDODDK", "KDDDDDDDDDDDDDK", ".KDDDDDDDDDDDK.",
+      ".KDDDKKKKKDDDK.", "..KDDDDDDDDDK..", "...KDDDDDDDK...", "....KDDDDDK....",
+      ".....KDDDK.....", "......KDK......", ".......K.......",
     ],
-    fx: ["..P.......O..", ".............", "O.........P.."],
+    fx: ["O.............P", "...............", ".......O.......", "P.............O", "..............."],
   },
 };
 
@@ -583,21 +586,16 @@ function pixelGlassesFor(code: string, p: Derived, cell: number): string {
     return s;
   }
   if (code === "archdemon_face") {
-    // 용암 균열 낙인: 이마에서 뺨까지 얼굴을 가로지르는 빛나는 균열 + 타오르는 오른눈
-    const x = leftOf(ex);
+    // 심연의 제3의 눈: 이마에 세로로 열린 심연의 눈 — 주황 홍채 + 검은 세로 동공
     const fy = leftOf(y) - cell;
-    const CRACK: [number, number, string, number?][] = [
-      [0, -4, "D"], [0, -3, "R"], [1, -3, "D"], [1, -2, "O"], [0, -2, "R"], [0, -1, "O"],
-      [0, 3, "R"], [-1, 3, "D"], [-1, 4, "D"],
-    ];
-    for (const [dx, dy, c, o] of CRACK) s += px(x + dx * cell, fy + dy * cell, PIXEL_PAL[c], o);
-    // 균열이 관통한 오른눈은 타오른다
-    s += px(x, fy, PIXEL_PAL.O) + px(x, fy + cell, PIXEL_PAL.O) + px(x, fy + 2 * cell, PIXEL_PAL.R);
-    // 균열에서 새어 나오는 불티
+    s += px(0, fy - 5 * cell, PIXEL_PAL.K);
+    s += px(-cell, fy - 4 * cell, PIXEL_PAL.K) + px(0, fy - 4 * cell, PIXEL_PAL.O) + px(cell, fy - 4 * cell, PIXEL_PAL.K);
+    s += px(-cell, fy - 3 * cell, PIXEL_PAL.K) + px(0, fy - 3 * cell, PIXEL_PAL.D) + px(cell, fy - 3 * cell, PIXEL_PAL.K);
+    s += px(0, fy - 2 * cell, PIXEL_PAL.K);
+    // 눈가에서 배어 나오는 심연의 기운
     s += `<g class="slime-sparkle">` +
-      px(x + 2 * cell, fy - 2 * cell, PIXEL_PAL.O, 0.85) +
-      px(x + cell, fy + cell, PIXEL_PAL.O, 0.7) +
-      px(x - 2 * cell, fy + 4 * cell, PIXEL_PAL.O, 0.6) +
+      px(-2 * cell, fy - 4 * cell, PIXEL_PAL.O, 0.7) +
+      px(2 * cell, fy - 3 * cell, PIXEL_PAL.O, 0.7) +
       `</g>`;
     return s;
   }

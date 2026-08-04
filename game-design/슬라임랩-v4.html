@@ -500,6 +500,9 @@
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
+        <input type="checkbox" id="impOne" style="accent-color:#f0a33c;vertical-align:-2px">
+        쪼개지 말 것 <span style="color:#7d776b">— 홍조처럼 떨어진 두 조각이 한 아이템일 때</span></label>
+      <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impGhost" style="accent-color:#f0a33c;vertical-align:-2px">
         반투명으로 보기 <span style="color:#7d776b">— 가려진 눈·얼굴 자리를 확인한다</span></label>
     </div>
@@ -2524,7 +2527,7 @@ function resampleTo(d, w, h, b, CW, CH) {
 }
 
 /* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
-function readPng(img, fix, force, slot, want, mode, cw) {
+function readPng(img, fix, force, slot, want, mode, cw, one) {
   const cv = document.createElement("canvas");
   cv.width = img.naturalWidth; cv.height = img.naturalHeight;
   const cx = cv.getContext("2d", { willReadFrequently: true });
@@ -2543,7 +2546,13 @@ function readPng(img, fix, force, slot, want, mode, cw) {
        (예전엔 여기서 그대로 밀고 나가 100만 칸짜리 격자를 돌려 브라우저가 굳었다.) */
     const cells = g ? (cv.width / g.kx) * (cv.height / g.ky) : Infinity;
     if (!g || cells > 40000) {
-      const raw = blobsRaw(d, cv.width, cv.height).slice(0, 3);
+      let raw = blobsRaw(d, cv.width, cv.height);
+      if (one && raw.length) {                 // 전부 한 덩어리로 본다
+        raw = [{ x0: Math.min(...raw.map((b) => b.x0)), y0: Math.min(...raw.map((b) => b.y0)),
+                 x1: Math.max(...raw.map((b) => b.x1)), y1: Math.max(...raw.map((b) => b.y1)),
+                 n: raw.reduce((a, b) => a + b.n, 0) }];
+      }
+      raw = raw.slice(0, 3);
       if (!raw.length) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, k: g ? g.kx : 0, sc: 0, ...(g ? {} : auto) } };
       const order = raw.length === 3 ? ["awake", "teen", "baby"] : null;   // 세 벌이면 큰 것부터
       const parts = raw.map((b, i) => {
@@ -2558,7 +2567,9 @@ function readPng(img, fix, force, slot, want, mode, cw) {
       return { fixed: true, byCount: true, bg, parts };
     }
     const down = downscale(d, cv.width, cv.height, g);
-    const blobs = splitBlobs(down.px, down.w, down.h);
+    // 「쪼개지 말 것」 — 홍조 스티커처럼 좌우로 떨어진 두 조각이 한 아이템인 경우.
+    // 이때는 한 장에 한 벌만 담아 와야 한다 (셋을 한 장에 넣으면 다 이어 붙는다).
+    const blobs = one ? (down.px.size ? [down.px] : []) : splitBlobs(down.px, down.w, down.h);
     const parts = blobs.map((cell) => {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const key of cell.keys()) { const [x, y] = key.split(",").map(Number);
@@ -2668,7 +2679,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
                             document.getElementById("impMode").value,
                             { baby: +document.getElementById("impCWb").value || 0,
                               teen: +document.getElementById("impCWt").value || 0,
-                              awake: +document.getElementById("impCWa").value || 0 });
+                              awake: +document.getElementById("impCWa").value || 0 },
+                            document.getElementById("impOne").checked);
         if (res.stuck) {                     // 되돌리기 실패 — 밀고 나가면 브라우저가 굳는다
           const s = res.stuck, gw = Math.round(s.w / s.k), gh = Math.round(s.h / s.k);
           report.insertAdjacentHTML("beforeend",
@@ -2770,6 +2782,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
   document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);
   document.getElementById("impGhost").addEventListener("change", run);
+  document.getElementById("impOne").addEventListener("change", run);
   ["impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"]
     .forEach((id) => document.getElementById(id).addEventListener("input", run));
 

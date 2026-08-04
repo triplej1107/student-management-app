@@ -488,6 +488,14 @@
           <option value="grid">격자 먼저 (기본)</option>
           <option value="count">규격 칸 수로 맞추기</option>
         </select></label>
+      <label style="font-size:12px;color:#9a9488">가로 칸 수
+        <input type="number" id="impCWb" min="0" max="64" step="1" placeholder="베"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+        <input type="number" id="impCWt" min="0" max="64" step="1" placeholder="틴"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+        <input type="number" id="impCWa" min="0" max="64" step="1" placeholder="각"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+        <span style="color:#7d776b">비우면 권장값 · 칸 수로 맞출 때만</span></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
@@ -2172,9 +2180,9 @@ function render() {
    검사에서 걸리면 넣지 않는다 — 어중간하게 들어가 103종을 나중에 다시 손대는 것보다 낫다.
    ============================================================ */
 const IMP_LIMIT = {                      // 단계 × 슬롯 크기 상한 (칸) · 규격서 §2
-  baby:  { head: [28, 15], face: [29, 11], right: [13, 24], left: [16, 21], fx: [48, 18] },
-  teen:  { head: [30, 16], face: [32, 12], right: [14, 26], left: [17, 23], fx: [52, 20] },
-  awake: { head: [38, 20], face: [40, 15], right: [18, 33], left: [21, 29], fx: [65, 25] },
+  baby:  { head: [30, 16], face: [29, 11], right: [13, 24], left: [16, 21], fx: [48, 18] },
+  teen:  { head: [36, 19], face: [32, 12], right: [14, 26], left: [17, 23], fx: [52, 20] },
+  awake: { head: [44, 23], face: [40, 15], right: [18, 33], left: [21, 29], fx: [65, 25] },
 };
 /* 권장 크기 (칸) · 규격서 §2 — 단계 자동 판별과 칸 수로 맞추기에 쓴다.
    머리는 **몸통 가로와 같게** 잡는다 (베이비 24 · 틴 28 · 각성 34).
@@ -2182,8 +2190,8 @@ const IMP_LIMIT = {                      // 단계 × 슬롯 크기 상한 (칸)
    재 보니 베이비만 몸통 폭의 100%, 나머지는 93~94% 였다 — 비율이 안 맞았던 것이다. */
 const IMP_REC = {
   baby:  { head: [24, 11], face: [24, 7], right: [8, 18], left: [11, 16], fx: [41, 14] },
-  teen:  { head: [28, 13], face: [26, 8], right: [9, 20], left: [12, 17], fx: [45, 15] },
-  awake: { head: [34, 16], face: [32, 10], right: [11, 25], left: [15, 21], fx: [56, 19] },
+  teen:  { head: [30, 14], face: [26, 8], right: [9, 20], left: [12, 17], fx: [45, 15] },
+  awake: { head: [36, 17], face: [32, 10], right: [11, 25], left: [15, 21], fx: [56, 19] },
 };
 const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
 const IMP_COLORS = 12;
@@ -2440,7 +2448,7 @@ function resampleTo(d, w, h, b, CW, CH) {
 }
 
 /* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
-function readPng(img, fix, force, slot, want, mode) {
+function readPng(img, fix, force, slot, want, mode, cw) {
   const cv = document.createElement("canvas");
   cv.width = img.naturalWidth; cv.height = img.naturalHeight;
   const cx = cv.getContext("2d", { willReadFrequently: true });
@@ -2465,7 +2473,8 @@ function readPng(img, fix, force, slot, want, mode) {
       const parts = raw.map((b, i) => {
         const st = order ? order[i] : want && want !== "auto" ? want : "teen";
         const rec = IMP_REC[st][slot || "head"];
-        const CW = rec[0], CH = Math.max(1, Math.round(CW * (b.y1 - b.y0 + 1) / (b.x1 - b.x0 + 1)));
+        const CW = (cw && cw[st]) || rec[0];           // 손으로 준 가로 칸 수가 있으면 그걸 쓴다
+        const CH = Math.max(1, Math.round(CW * (b.y1 - b.y0 + 1) / (b.x1 - b.x0 + 1)));
         const px = resampleTo(d, cv.width, cv.height, b, CW, CH);
         const n = quantize(px, IMP_COLORS);
         return { px, colors: new Set(px.values()), soft: 0, w: CW, h: CH, quantized: n, stage: order ? st : null };
@@ -2557,7 +2566,10 @@ function impSvg(r, slot, anchor, a, shade) {
       img.onload = () => {
         const res = readPng(img, document.getElementById("impFix").checked,
                             +document.getElementById("impBlock").value || 0, slot, stage,
-                            document.getElementById("impMode").value);
+                            document.getElementById("impMode").value,
+                            { baby: +document.getElementById("impCWb").value || 0,
+                              teen: +document.getElementById("impCWt").value || 0,
+                              awake: +document.getElementById("impCWa").value || 0 });
         if (res.stuck) {                     // 되돌리기 실패 — 밀고 나가면 브라우저가 굳는다
           const s = res.stuck, gw = Math.round(s.w / s.k), gh = Math.round(s.h / s.k);
           report.insertAdjacentHTML("beforeend",
@@ -2655,6 +2667,7 @@ function impSvg(r, slot, anchor, a, shade) {
   document.getElementById("impFix").addEventListener("change", run);
   document.getElementById("impBlock").addEventListener("change", run);
   document.getElementById("impMode").addEventListener("change", run);
+  ["impCWb", "impCWt", "impCWa"].forEach((id) => document.getElementById(id).addEventListener("input", run));
   document.getElementById("impDX").addEventListener("input", run);
   document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);

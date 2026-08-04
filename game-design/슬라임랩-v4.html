@@ -145,6 +145,20 @@
                               animation: fxTwink 1.6s ease-in-out infinite; }
   .fx-tw2 { animation-duration: 2.1s; animation-delay: -.6s; }
   .fx-tw3 { animation-duration: 1.3s; animation-delay: -1.0s; }
+  /* 물방울 — 몸에서 바깥으로 튀어 날아가며 사라진다. 방향은 --dx/--dy 로 개별 지정. */
+  .fx-sp {
+    transform-box: fill-box; transform-origin: 50% 50%;
+    animation-name: fxSplash; animation-timing-function: cubic-bezier(.2, .7, .4, 1);
+    animation-iteration-count: infinite;
+  }
+  @keyframes fxSplash {
+      0% { transform: translate(0, 0) scale(.55);    opacity: 0; }
+     18% { transform: translate(calc(var(--dx) * .22), calc(var(--dy) * .22)) scale(1); opacity: 1; }
+     70% { opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(.92); opacity: 0; }
+  }
+  body.nomo .fx-sp { animation: none; }
+
   /* 나뭇잎 — 떠오르면서 살랑 돈다 */
   @keyframes fxDrift { 0%,100% { transform: translateY(0)    rotate(-9deg); }
                         50%    { transform: translateY(-11px) rotate(11deg); } }
@@ -928,7 +942,9 @@ function ringPaint(buf, layers, reachFn, colorFn) {
    불꽃 오라 / 꽃 / 골렘 갑주는 폐기 — 몸에 붙는 큰 조형은 다 후졌다는 판단.
    line=외곽선 · fill=본색 · hi=하이라이트                                     */
 const AURA = {
-  water: { rim: "#7FE9FF", line: "#2FA8D8", fill: "#B8F2FF", hi: "#FFFFFF", fx: "float" },
+  // 수 = 꼬리 뾰족한 물방울이 바깥으로 튄다. 화와 같은 띠 문법 (레퍼런스 도트 물방울)
+  water: { rim: "#7FE9FF", line: "#2A8FD0", fill: "#45C4EC", hi: "#EAFCFF",
+           w1: "#2A8FD0", w2: "#45C4EC", w3: "#8FE6FA", w4: "#EAFCFF", fx: "splash" },
   gold:  { rim: "#FFE894", line: "#E0A81A", fill: "#FFF6C8", hi: "#FFFFFF", fx: "twink" },
   // 화 = 겹겹이 두른 띠. 레퍼런스(도트 불꽃 아이콘) 문법: 빨강 → 주황 → 노랑 → 흰 심지
   fire:  { rim: "#FFB03A", line: "#E8321C", fill: "#F97A16", hi: "#FFF3C4",
@@ -967,15 +983,26 @@ function awakeBack(attr, g) {
 function awakeFront() { return ""; }   // 몸에 붙는 큰 조형은 쓰지 않는다
 
 /* 속성 상징물 한 개 — 수=물방울 금=반짝임 화=불티 목=나뭇잎 토=돌덩어리 */
-function fxGlyph(attr, cx, cy, s) {
+function fxGlyph(attr, cx, cy, s, ang) {
   const buf = new Buf();
   const A = AURA[attr];
 
   if (attr === "water") {
-    const r = 11 * s;
-    disk(buf, cx, cy, r, A.line);
-    disk(buf, cx, cy, r - CELL, A.fill);
-    disk(buf, cx - r * 0.32, cy - r * 0.32, r * 0.3, A.hi);
+    // 물방울 — 둥근 머리 + 뾰족한 꼬리. ang 방향으로 머리가 향한다(= 날아가는 쪽).
+    // 색은 화와 같은 띠 문법: 바깥부터 진파랑 → 하늘 → 옅은 하늘, 머리에 흰 심지.
+    // 머리가 크고 꼬리가 짧아야 물방울이다. 꼬리가 길면 다트로 읽힌다.
+    const r = 8.5 * s, L = 15 * s, a = ang || 0;
+    const co = Math.cos(a), si = Math.sin(a);
+    const at = (x, y) => [cx + x * co - y * si, cy + x * si + y * co];
+    const al = Math.acos(Math.min(0.98, r / L));
+    const pts = [at(-L, 0)];
+    for (let t = Math.PI - al; t >= -(Math.PI - al); t -= 0.14)
+      pts.push(at(r * Math.cos(t), r * Math.sin(t)));
+    const set = cellsInPolyLocal(pts);
+    const d1 = rimSet(set, 1), d3 = rimSet(set, 3);
+    for (const k of set) buf.m.set(k, d1.has(k) ? A.w1 : d3.has(k) ? A.w2 : A.w3);
+    const head = at(r * 0.22, -r * 0.18);
+    disk(buf, head[0], head[1], r * 0.40, A.w4, set);
 
   } else if (attr === "gold") {
     // 4갈래 십자 반짝임 — 폴리곤으로 그리면 작아질 때 오목이 격자에서 뭉개져
@@ -1077,21 +1104,47 @@ function fxGlyph(attr, cx, cy, s) {
 }
 
 /* 떠다니는 상징물 3개 — 몸 변형과 분리해 각자 주기로 움직인다 */
+/* 상징물 배치는 5속성이 공유한다 — 속성마다 다른 좌표를 쓰면 어떤 슬라임은
+   상징물이 몸에 붙고 어떤 슬라임은 멀리 떠서 "범위"가 달라 보인다.
+   몸 중심 기준 방향벡터 + 공통 반경계수로 잡아 다섯이 같은 자리에 놓이게 한다. */
+const FX_DIRS = [
+  [-0.74, -0.67],   // 좌상
+  [ 0.62, -0.79],   // 우상
+  [ 0.88,  0.40],   // 우측 아래
+];
+// 몸 반지름이 아니라 "몸 + 오라" 바깥선을 기준으로 잰다.
+// 몸 기준으로 잡으면 오라가 두꺼워질수록 상징물이 오라에 파묻힌다.
+const FX_REACH = 1.06;
+
 function awakeFx(attr, g) {
   const { rx, ry } = g;
-  const top = B - 2 * ry;
-  const pre = { float: "fx-float", twink: "fx-tw", drift: "fx-dr" }[AURA[attr].fx];
+  const mid = B - ry;                       // 몸 중심
+  const F = P.fxScale;
   // 금 십자는 너무 작아지면 갈래가 안 읽힌다 → 크기 편차를 좁게 준다
   const sc = attr === "gold" ? [1.00, 0.86, 0.76] : [1.00, 0.78, 0.62];
-  const F = P.fxScale;   // 아이템 5파츠를 끼우면 묻히므로 전체 배율을 따로 둔다
-  // 커진 상징물이 화면 위로 넘치지 않도록 배치를 낮춰 잡는다 (부유 애니메이션 11 여유 포함)
-  const spots = [
-    [-rx * 0.72, top - 8,  sc[0] * F],
-    [ rx * 0.66, top - 22, sc[1] * F],
-    [ rx * 0.98, top + ry * 0.62, sc[2] * F],
-  ];
-  return spots.map(([x, y, s], i) =>
-    `<g class="${pre}${i + 1}">${fxGlyph(attr, snap(x), snap(y), s)}</g>`).join("");
+  const rimU = P.awRim * CELL;              // 오라 두께
+  const anchor = (i) => {
+    const [ux, uy] = FX_DIRS[i];
+    return [snap(ux * (rx + rimU) * FX_REACH), snap(mid + uy * (ry + rimU) * FX_REACH)];
+  };
+
+  // 수 — 같은 자리에서 출발해 바깥으로 튄다. 머리를 날아가는 쪽으로 돌린다.
+  if (AURA[attr].fx === "splash") {
+    const timing = [{ dur: 1.9, delay: 0 }, { dur: 2.4, delay: -0.9 }, { dur: 1.6, delay: -1.3 }];
+    return FX_DIRS.map(([ux, uy], i) => {
+      const [px, py] = anchor(i);
+      const tx = Math.round(ux * 14), ty = Math.round(uy * 14);
+      return `<g class="fx-sp" style="--dx:${tx}px;--dy:${ty}px;` +
+        `animation-duration:${timing[i].dur}s;animation-delay:${timing[i].delay}s">` +
+        fxGlyph(attr, px, py, sc[i] * F, Math.atan2(uy, ux)) + `</g>`;
+    }).join("");
+  }
+
+  const pre = { float: "fx-float", twink: "fx-tw", drift: "fx-dr" }[AURA[attr].fx];
+  return FX_DIRS.map((_, i) => {
+    const [px, py] = anchor(i);
+    return `<g class="${pre}${i + 1}">${fxGlyph(attr, px, py, sc[i] * F)}</g>`;
+  }).join("");
 }
 
 // 폴리곤 → 격자 (레퍼런스 재현 때 정리됐던 스캔라인을 각성 부착물용으로 되살린다)

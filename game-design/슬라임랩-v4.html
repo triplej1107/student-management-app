@@ -496,6 +496,10 @@
         <input type="number" id="impCWa" min="0" max="64" step="1" placeholder="각"
                style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
         <span style="color:#7d776b">비우면 권장값 · 칸 수로 맞출 때만</span></label>
+      <label style="font-size:12px;color:#9a9488">쥐는 높이
+        <input type="range" id="impGrip" min="0" max="100" step="2" value="78"
+               style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impGripv" style="color:#e8e4dc">78</b>%
+        <span style="color:#7d776b">손 슬롯만 — 가방은 낮게</span></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
@@ -2605,6 +2609,7 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
 }
 
 /* 앵커를 안 준 경우의 기본값 — 슬롯이 몸에 닿는 쪽을 잡는다 */
+let GRIP = 0.78;                              // 손 슬롯에서 쥐는 자리의 높이 비율
 function guessAnchor(r, slot) {
   const xs = [...r.px.keys()].map((k) => +k.split(",")[0]);
   const ys = [...r.px.keys()].map((k) => +k.split(",")[1]);
@@ -2632,7 +2637,9 @@ function guessAnchor(r, slot) {
     const rows = [...byRow].filter(([, n]) => n >= best * 0.6).map(([y]) => y);
     return [cx, Math.round((Math.min(...rows) + Math.max(...rows)) / 2)];
   }
-  return [cx, Math.round(Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * 0.78)];  // 쥐는 자리
+  /* 손 — 그림에서 "쥐는 자리"의 높이. 연필·검은 아래에서 1/4(=78%)을 쥐지만
+     가방·핸드백은 맨 위 손잡이를 든다. 물건마다 달라서 슬라이더로 준다. */
+  return [cx, Math.round(Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * GRIP)];
 }
 
 /* 격자를 앵커에 맞춰 몸 좌표로 옮겨 그린다 */
@@ -2668,6 +2675,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
     const stage = document.getElementById("impStage").value;
     const shade = document.getElementById("impShade").checked;
     const ghost = document.getElementById("impGhost").checked;
+    GRIP = (+document.getElementById("impGrip").value || 0) / 100;
+    document.getElementById("impGripv").textContent = document.getElementById("impGrip").value;
     const nudge = [+document.getElementById("impDX").value, +document.getElementById("impDY").value];
     document.getElementById("impDXv").textContent = nudge[0];
     document.getElementById("impDYv").textContent = nudge[1];
@@ -2792,6 +2801,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
   document.getElementById("impShade").addEventListener("change", run);
   document.getElementById("impGhost").addEventListener("change", run);
   document.getElementById("impOne").addEventListener("change", run);
+  document.getElementById("impGrip").addEventListener("input", run);
   ["impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"]
     .forEach((id) => document.getElementById(id).addEventListener("input", run));
 

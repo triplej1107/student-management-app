@@ -2471,7 +2471,10 @@ function guessAnchor(r, slot) {
     const top = Math.min(...ys), bot = Math.max(...ys), mid = top + (bot - top) * 0.5;
     const dom = [...r.px.keys()].map((k) => k.split(",").map(Number)).filter(([, y]) => y <= mid);
     const dxs = dom.length ? dom.map(([x]) => x) : xs;
-    return [Math.round((Math.min(...dxs) + Math.max(...dxs)) / 2), bot];
+    // 밑동을 머리선에 딱 맞추면 머리 위에 얹어 놓은 것처럼 뜬다. 쓴 것처럼 보이려면
+    // 조금 눌러써야 한다 — 아이템 높이의 15%만큼 앵커를 올려 그만큼 내려 앉힌다.
+    const sink = Math.max(1, Math.round((bot - top + 1) * 0.15));
+    return [Math.round((Math.min(...dxs) + Math.max(...dxs)) / 2), bot - sink];
   }
   if (slot === "fx") return [cx, Math.max(...ys)];
   if (slot === "face") return [cx, Math.round((Math.min(...ys) + Math.max(...ys)) / 2)];

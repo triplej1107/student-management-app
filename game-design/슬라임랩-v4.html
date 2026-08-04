@@ -1042,7 +1042,7 @@ const AURA = {
            f1: "#E8321C", f2: "#F97A16", f3: "#FFC81E", f4: "#FFF3C4", fx: "float" },
   // 목 = 양끝이 뾰족한 잎 하나. 곁맥 없이 어두운 중앙맥 하나로 가른 두 면 (레퍼런스 도트 잎)
   wood:  { rim: "#A8F06A", line: "#2E7A22", fill: "#63C13C", hi: "#C6F58E",
-           l1: "#245E1A", l2: "#4FA92E", l3: "#8ADD57", l4: "#357F24", fx: "fall" },
+           l1: "#245E1A", l2: "#4FA92E", l3: "#8ADD57", l4: "#2F7420", fx: "fall" },
   // 토 = 둥근 자갈. 계단식 대각 경계로 나뉜 세 면 (레퍼런스 도트 돌)
   earth: { rim: "#D6B98A", line: "#4A3A26", fill: "#8A7157", hi: "#C2A87E",
            r1: "#2E2418", r2: "#D9C4A2", r3: "#A2856A", r4: "#6B5140", fx: "float" },
@@ -1125,29 +1125,48 @@ function fxGlyph(attr, cx, cy, s, ang) {
 
   } else if (attr === "wood") {
     // 나뭇잎 — 양끝이 뾰족한 통통한 잎. 레퍼런스 도트 잎의 문법은 세 가지뿐이다:
-    // 진초록 외곽선 / 중앙맥 하나로 갈린 두 면 / 짧은 잎자루.
-    // 곁맥을 점으로 찍으면 잎이 아니라 고사리로 읽혀서 뺐다.
+    // 진초록 외곽선 / 잎맥으로 갈린 두 면 / 짧은 잎자루.
     // 잎맥은 블레이드보다 밝은 게 아니라 어두워야 잎맥이다 (밝으면 접힌 자국이 된다).
-    const L = 32 * s, w = 9.5 * s, ang = -0.5;
+    // 축은 잎자루가 좌상단, 잎몸이 우하단 (원장 지시 2026-08-04) — 무거운 잎몸이
+    // 아래를 향해야 떨어지는 중으로 읽힌다. 각도 부호만 뒤집으면 축이 통째로 돈다.
+    const L = 36 * s, w = 11.5 * s, ang = 0.5;
     const co = Math.cos(ang), si = Math.sin(ang);
     const at = (u, v) => [cx + u * co - v * si, cy + u * si + v * co];
+    const half = (t) => w * Math.pow(Math.sin(Math.PI * t), 0.72);   // t: 0 잎자루 → 1 잎끝
     const pts = [];
-    for (let i = 0; i <= 20; i++) { const t = i / 20;
-      pts.push(at((t - 0.5) * L, w * Math.pow(Math.sin(Math.PI * t), 0.72))); }
-    for (let i = 20; i >= 0; i--) { const t = i / 20;
-      pts.push(at((t - 0.5) * L, -w * Math.pow(Math.sin(Math.PI * t), 0.72))); }
+    for (let i = 0; i <= 20; i++) { const t = i / 20; pts.push(at((t - 0.5) * L,  half(t))); }
+    for (let i = 20; i >= 0; i--) { const t = i / 20; pts.push(at((t - 0.5) * L, -half(t))); }
     const set = cellsInPolyLocal(pts);
-    const rim = rimSet(set, 1);
-    const vein = CELL * 0.9;
+    const rim = rimSet(set, 1), rim2 = rimSet(set, 2);
+    /* 곁맥 — 중앙맥에서 갈라져 잎끝 쪽으로 비스듬히 뻗는다.
+       점으로 흩뿌리면 고사리가 되므로 선으로 긋고, 외곽선 한 칸 안쪽에서 멈춘다.
+       개수는 크기가 정한다: 잎 반폭이 몇 칸이냐가 곧 그릴 수 있는 획 수다.
+       작은 잎에까지 세 쌍을 욱여넣으면 잎맥이 잎몸을 다 먹어 덩어리로 뭉갠다. */
+    const hwCells = w / CELL;
+    const BRANCH = (hwCells >= 8 ? [-0.30, -0.10, 0.10] : hwCells >= 5.2 ? [-0.20, 0.04]
+      : hwCells >= 3.4 ? [-0.14] : []).map((f) => f * L);
+    const SLOPE = 0.62, VLEN = 0.30 * L, VD = Math.sqrt(1 + SLOPE * SLOPE);
     for (const k of set) {
       if (rim.has(k)) { buf.m.set(k, A.l1); continue; }
       const i = k.indexOf("_");
       const dx = +k.slice(0, i) + CELL / 2 - cx, dy = +k.slice(i + 1) + CELL / 2 - cy;
-      const v = -dx * si + dy * co;                 // 잎맥 축에서 잰 수직 거리
-      buf.m.set(k, Math.abs(v) <= vein ? A.l4 : v < 0 ? A.l3 : A.l2);   // 위가 밝다
+      const u = dx * co + dy * si;                  // 잎자루(-) → 잎끝(+)
+      const v = -dx * si + dy * co;                 // 중앙맥에서 잰 수직 거리
+      // 중앙맥 — 잎자루 쪽이 굵고 잎끝으로 갈수록 가늘어진다
+      if (Math.abs(v) <= Math.max(0.5, 1.2 - 0.9 * (u / L + 0.5)) * CELL) {
+        buf.m.set(k, A.l4); continue;
+      }
+      let side = false;
+      if (!rim2.has(k)) {
+        for (const u0 of BRANCH) {
+          if (u < u0 || u > u0 + VLEN) continue;
+          if (Math.abs(Math.abs(v) - SLOPE * (u - u0)) / VD <= 0.58 * CELL) { side = true; break; }
+        }
+      }
+      buf.m.set(k, side ? A.l4 : v < 0 ? A.l3 : A.l2);   // 위가 밝다
     }
-    // 잎자루
-    for (let d = 0; d < 7 * s; d += CELL * 0.7) {
+    // 잎자루 — 성기게 찍으면 작은 잎에서 점 하나가 떨어져 때처럼 보인다
+    for (let d = 0; d <= 5 * s; d += CELL * 0.5) {
       const p = at(-L * 0.5 - d, 0);
       buf.m.set(snap(p[0]) + "_" + snap(p[1]), A.l1);
     }

@@ -1216,6 +1216,7 @@ const DEF = {
   shadeY: 0.16,                              // 아래 그림자 높이
   hiX: -0.54, hiY: 0.83, hiK: 3,             // 하이라이트 위치·배수
   eyeGap: 0.32, eyeY: 0.45, eyeW: 3, eyeH: 6,
+  itemCell: 3,                               // 아이템 픽셀 크기 (3=몸과 같음 · 1.5=두 배 촘촘)
   jumpMs: 900,                               // 점프 한 바퀴
   // ---- 베이비 (언덕형 돔 · 꼬물 모션 · 노말 아이템만) ----
   babyRx: 37, babyH: 50, babyShoulder: 2.0, babyCrown: 2.8,
@@ -1691,7 +1692,10 @@ function gearSvg(a) { return gearSoft(a) + gearRigid(a); }
    모든 아이템은 앵커에서 자리를 받고, 앵커의 머리 폭으로 배율을 잡는다.
    그래서 한 번 그린 아이템이 베이비·틴·각성 세 단계에 자동으로 맞는다.
    ============================================================ */
-const ICELL = CELL / 2;
+// 아이템 격자는 등급이 정한다. 노말은 몸과 같은 굵은 픽셀 — 잘게 쓰면 도트 맛이
+// 죽는다(원장 지적 2026-08-04). 촘촘한 격자는 대천사 홀·여우 가면·거미줄처럼
+// 디테일이 실제로 필요한 고등급에 남겨 둔다. 슬라이더로 갈아 끼우며 비교한다.
+let ICELL = CELL;
 const isnap = (v) => Math.round(v / ICELL) * ICELL;
 
 function IBuf() { this.m = new Map(); }
@@ -2080,6 +2084,7 @@ const SLIDERS = [
   ["hiX", "하이라이트 X", -0.8, 0.2, 0.02], ["hiY", "하이라이트 Y", 0.4, 0.92, 0.01], ["hiK", "하이라이트 크기", 1, 3, 1],
   ["eyeGap", "눈 간격", 0.1, 0.6, 0.01], ["eyeY", "눈 높이", 0.25, 0.7, 0.01],
   ["eyeW", "눈 폭(칸)", 1, 3, 1], ["eyeH", "눈 길이(칸)", 2, 6, 1],
+  ["itemCell", "아이템 픽셀 크기", 1.5, 3, 1.5],
   ["jumpMs", "점프 한 바퀴(ms)", 400, 2000, 50],
 ];
 const SLIDERS_BABY = [
@@ -2126,6 +2131,7 @@ function buildSliders(hostId, list) {
 }
 
 function render() {
+  ICELL = P.itemCell;                  // 아이템 격자 — 슬라이더로 굵기를 바꾼다
   const skin = SKINS[sel];
 
   // 5속성 시트

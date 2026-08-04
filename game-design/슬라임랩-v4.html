@@ -1007,7 +1007,7 @@ const FACES = [
   { key: "pout",     ko: "뽀로통",   eye: "slantSoft", sign: "broken", babyEye: "slantB" },       // 레퍼런스 뾰족눈 + 깨진 하트
   { key: "fierce",   ko: "씩씩",     eye: "slantHard", sign: "flame",  babyEye: "slantHardB" },
   { key: "think",    ko: "골똘히",   eye: "narrow",    sign: "quest",  babyEye: "narrowB" },
-  { key: "dizzy",    ko: "어질어질", eye: "spiral",    sign: "swirl",  babyEye: "ringB" },
+  { key: "dizzy",    ko: "어질어질", eye: "spiral",    sign: "swirl",  babyEye: "dashB" },
   { key: "eating",   ko: "먹는중",   eye: "arch",      cookie: 1, mouth: 1 },
   { key: "proud",    ko: "뿌듯",     eye: "arch",      sign: "thumb",  babyEye: "archB" },   // 레퍼런스 따봉
 ];
@@ -1052,9 +1052,10 @@ const BABY_EYE_ART = {
   slantB:    [".....", "KK...", ".KKKK", "....."],   // 뽀로통
   slantHardB:["KK...", ".KKK.", "..KKK", "....."],   // 씩씩 — 뽀로통보다 가파르게
   narrowB:   [".....", "KKKKK", "KKKKK", "....."],   // 골똘히
-  // 어질어질 — 5칸에서는 나선이 한 바퀴도 못 감긴다. 초점 풀린 고리눈으로 대신하고
-  // 머리 위 소용돌이가 뜻을 확정한다.
-  ringB:     [".KKK.", "K.K.K", ".KKK.", "....."],
+  // 어질어질 — 5칸에서는 나선이 한 바퀴도 못 감긴다. 초점이 아예 풀린 一 자 눈으로
+  // 대신하고 머리 위 소용돌이가 뜻을 확정한다 (원장 지시). 골똘히보다 짧고 얇아야
+  // "가늘게 뜬 눈"이 아니라 "풀린 눈"으로 읽힌다.
+  dashB:     [".....", ".KKK.", "....."],
 };
 
 /* 베이비 얼굴. rx·H 는 몸통 실루엣 치수. */

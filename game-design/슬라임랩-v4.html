@@ -920,19 +920,30 @@ const TEAR = "#6FD0F2";     // 눈물 — 얼굴에 흐르는 것이라 입과 �
 
 // 눈 — 5칸 × 6줄. K 진한색 · W 흰 하이라이트
 const EYE_ART = {
-  arch:      [".....", ".....", ".KKK.", "KK.KK", "K...K", "....."],  // 감고 웃는 눈
-  round:     [".KKK.", "KWWKK", "KWWKK", "KKKKK", "KKKKK", ".KKK."],  // 크게 뜬 눈
-  shiny:     [".KKK.", "KWWWK", "KWWWK", "KKWKK", "KKKKK", ".KKK."],  // 글썽이는 눈
+  // 획은 두 칸 두께가 기본이다. 한 칸으로 그리면 몸통 음영에 묻혀 눈이 얇아 보인다
+  // (원장 지시 2026-08-04). 레퍼런스 눈도 전부 두 칸이다.
+  arch:      [".......", "..KKK..", ".KKKKK.", "KKK.KKK", "KK...KK", "......."],  // 감고 웃는 눈
+  round:     [".KKKK.", "KWWKKK", "KWWKKK", "KKKKKK", "KKKKKK", ".KKKK."],        // 크게 뜬 눈
+  // 윙크는 한쪽만 뜬 장난스러운 눈이라 흰자를 넣으면 놀란 눈으로 읽힌다 → 통짜
+  roundFlat: [".KKKK.", "KKKKKK", "KKKKKK", "KKKKKK", "KKKKKK", ".KKKK."],
+  shiny:     [".KKKK.", "KWWWWK", "KWWWWK", "KKWWKK", "KKKKKK", ".KKKK."],        // 글썽이는 눈
   // 감은 눈이 안쪽에서 바깥으로 처진다. 각지게 기울이면 화난 눈이 된다.
-  droop:     [".....", ".....", ".....", ".KKKK", "KK...", "....."],  // 졸기
-  // 윗눈꺼풀 한 줄 + 아래 작은 눈동자. 삼각형으로 채우면 선글라스가 된다.
-  half:      [".....", ".....", "KKKKK", "..K..", ".....", "....."],  // 지침
-  squint:    [".....", "K....", ".K...", "..K..", ".K...", "K...."],  // 꽉 감은 > 눈
-  slantSoft: [".....", "KK...", "KKK..", ".KKK.", "..KK.", "....."],  // 뽀로통
-  slantHard: ["KK...", "KKK..", ".KKK.", "..KKK", "..KK.", "....."],  // 씩씩
-  narrow:    [".....", ".....", "KKKKK", ".....", ".....", "....."],  // 골똘히 — 가늘게 뜬 한 줄
-  spiral:    [".KKK.", "K...K", "K.KK.", "K..K.", ".KK..", "....."],  // 어질어질
+  droop:     [".......", ".......", "....KKK", "..KKKK.", "KKKK...", "......."],  // 졸기
+  // 윗눈꺼풀 + 아래 작은 눈동자. 삼각형으로 채우면 선글라스가 된다.
+  half:      [".......", "KKKKKKK", "KKKKKKK", "..KKK..", ".......", "......."],  // 지침
+  squint:    ["KK.....", ".KK....", "..KK...", "..KK...", ".KK....", "KK....."],  // 꽉 감은 > 눈
+  slantSoft: [".......", "KKK....", ".KKKK..", "..KKKK.", "...KKK.", "......."],  // 뽀로통
+  slantHard: ["KKK....", "KKKKK..", ".KKKKK.", "..KKKKK", "...KKK.", "......."],  // 씩씩
+  narrow:    [".......", ".......", "KKKKKKK", "KKKKKKK", ".......", "......."],  // 골똘히
+  spiral:    [".KKKKK.", "KK...KK", "KK.KKKK", "KK.KK..", ".KKKK..", "......."],  // 어질어질
 };
+
+/* 입은 하품 하나에만 있다 (원장 지시 2026-08-04).
+   입이 없으면 졸기와 하품이 눈으로는 구분되지 않아서, 크게 벌린 입이 유일한 단서다. */
+// 하품은 크게 벌린 입이 전부다. 작으면 점 하나로 보여 졸기와 다시 붙는다.
+const YAWN_ART = ["...KKKKK...", "..KRRRRRK..", ".KRRRRRRRK.", "KRRRRRRRRRK",
+                  "KRRRRRRRRRK", ".KRRRRRRRK.", "..KRRRRRK..", "...KKKKK..."];
+const M_IN = "#B03048";
 /* 머리 위 기호 — 레퍼런스가 감정을 나르는 진짜 수단. 입이 없으니 여기가 다 한다.
    K 외곽선 · R 본색 · W 밝은 톤 */
 const SIGN_ART = {
@@ -971,8 +982,8 @@ const FACES = [
   { key: "smile",    ko: "웃기",     eye: "arch",      sign: "heart" },        // 레퍼런스 ^^ + 하트
   { key: "cry",      ko: "울기",     eye: "arch",      tear: 1 },
   { key: "sleepy",   ko: "졸기",     eye: "droop",     sign: "zzz" },
-  { key: "yawn",     ko: "하품",     eye: "squint",    sign: "zzz2" },
-  { key: "wink",     ko: "윙크",     eye: "round", eyeR: "arch", sign: "spark" },
+  { key: "yawn",     ko: "하품",     eye: "arch",      sign: "zzz2", mouth: 1 },
+  { key: "wink",     ko: "윙크",     eye: "roundFlat", eyeR: "arch", sign: "spark" },
   { key: "surprise", ko: "놀람",     eye: "round",     sign: "bang" },
   { key: "sing",     ko: "노래",     eye: "arch",      sign: "phone" },        // 레퍼런스 헤드폰
   { key: "wince",    ko: "찡긋",     eye: "squint",    sign: "star" },
@@ -1013,7 +1024,7 @@ function facePixels(buf, set, skin, rx, ry, key, signY) {
   const eyeCX = P.eyeGap * rx;
   const eyeTop = snap(B - P.eyeY * 2 * ry);
   const eyeCY = eyeTop + P.eyeH * CELL / 2;
-  const pal = { K: EYE, W: WHITE };
+  const pal = { K: EYE, W: WHITE, R: M_IN };
 
   // 기본 = 지금까지의 세로 막대. 슬라이더(눈 폭·길이)가 그대로 먹는다.
   if (!f || !f.eye) {
@@ -1027,6 +1038,7 @@ function facePixels(buf, set, skin, rx, ry, key, signY) {
 
   stamp(buf, EYE_ART[f.eye], -eyeCX, eyeCY, pal, set);
   stamp(buf, flipArt(EYE_ART[f.eyeR || f.eye]), eyeCX, eyeCY, pal, set);
+  if (f.mouth) stamp(buf, YAWN_ART, 0, eyeCY + 6 * CELL, pal, set);
 
   // 눈물 — 눈 아래로 흘러내린다. 볼을 타고 내려가므로 몸 안쪽에 클립한다.
   if (f.tear) {

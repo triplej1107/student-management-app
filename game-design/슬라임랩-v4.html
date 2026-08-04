@@ -1229,38 +1229,42 @@ const SWEAT_ART = ["K.K.K", "K.K.K"];   // 관자놀이에 흐르는 땀 — 지
 const COOKIE_ART = [".KKK..", "KWWKK.", "KWDWWK", "KWWDWK", "KWWWDK", ".KKKK."];
 
 /* 얼굴 한 장. signY = 기호가 뜨는 높이(정수리 위, 각성이면 오라 바깥). */
-function facePixels(buf, set, skin, rx, ry, key, signY) {
+function facePixels(buf, set, skin, rx, ry, key, signY, aw) {
   const f = FACES.find((x) => x.key === key);
-  const eyeCX = P.eyeGap * rx;
-  const eyeTop = snap(B - P.eyeY * 2 * ry);
-  const eyeCY = eyeTop + P.eyeH * CELL / 2;
+  // 눈은 칸 수로 그리니 몸이 커진다고 따라 커지지 않는다. 각성은 제 값을 쓴다.
+  const E = aw ? { gap: P.awEyeGap, y: P.awEyeY, w: P.awEyeW, h: P.awEyeH, k: Math.max(1, Math.round(P.awEyeK)) }
+               : { gap: P.eyeGap, y: P.eyeY, w: P.eyeW, h: P.eyeH, k: 1 };
+  const eyeCX = E.gap * rx;
+  const eyeTop = snap(B - E.y * 2 * ry);
+  const eyeCY = eyeTop + E.h * CELL / 2;
   const pal = { K: EYE, W: WHITE, R: M_IN };
 
   // "basic" = 지금까지의 세로 막대. 슬라이더(눈 폭·길이)가 그대로 먹는다.
   // 윙크에서 뜬 쪽 눈이 이걸 쓴다 — 평소 얼굴과 같은 눈이어야 한쪽만 감은 게 된다.
   const drawEye = (art, sd) => {
-    if (art === "spiral") { spiralAt(buf, sd * eyeCX, eyeCY, 5.5 * CELL, EYE, set); return; }
-    if (art !== "basic") { stamp(buf, sd < 0 ? EYE_ART[art] : flipArt(EYE_ART[art]), sd * eyeCX, eyeCY, pal, set); return; }
-    const ex = snap(sd * eyeCX - P.eyeW * CELL / 2);
-    for (let a = 0; a < P.eyeW; a++)
-      for (let b = 0; b < P.eyeH; b++) buf.setIn(set, ex + a * CELL, eyeTop + b * CELL, EYE);
+    if (art === "spiral") { spiralAt(buf, sd * eyeCX, eyeCY, 5.5 * E.k * CELL, EYE, set); return; }
+    if (art !== "basic") { stamp(buf, sd < 0 ? EYE_ART[art] : flipArt(EYE_ART[art]), sd * eyeCX, eyeCY, pal, set, E.k); return; }
+    const ex = snap(sd * eyeCX - E.w * CELL / 2);
+    for (let a = 0; a < E.w; a++)
+      for (let b = 0; b < E.h; b++) buf.setIn(set, ex + a * CELL, eyeTop + b * CELL, EYE);
   };
 
   if (!f || !f.eye) { drawEye("basic", -1); drawEye("basic", 1); return; }
 
   drawEye(f.eye, -1);
   drawEye(f.eyeR || f.eye, 1);
-  if (f.mouth) stamp(buf, OPEN_ART, 0, eyeCY + 6 * CELL, pal, set);
+  // 입·눈물·땀도 눈 배수를 따라간다 — 눈만 커지면 얼굴이 따로 논다
+  if (f.mouth) stamp(buf, OPEN_ART, 0, eyeCY + 6 * E.k * CELL, pal, set, E.k);
 
   // 눈물 — 눈 아래로 흘러내린다. 볼을 타고 내려가므로 몸 안쪽에 클립한다.
   if (f.tear) {
     for (const sd of [-1, 1]) {
       const tx = snap(sd * eyeCX);
-      for (let b = 0; b < 5; b++) buf.setIn(set, tx, eyeCY + (3 + b) * CELL, TEAR);
-      disk(buf, tx + CELL / 2, eyeCY + 8 * CELL, 1.6 * CELL, TEAR, set);
+      for (let b = 0; b < 5 * E.k; b++) buf.setIn(set, tx, eyeCY + (3 * E.k + b) * CELL, TEAR);
+      disk(buf, tx + CELL / 2, eyeCY + 8 * E.k * CELL, 1.6 * E.k * CELL, TEAR, set);
     }
   }
-  if (f.sweat) stamp(buf, SWEAT_ART, -eyeCX - 6 * CELL, eyeCY - 5 * CELL, pal, set);
+  if (f.sweat) stamp(buf, SWEAT_ART, -eyeCX - 6 * E.k * CELL, eyeCY - 5 * E.k * CELL, pal, set, E.k);
 
   // 머리 위 기호 — 정수리 바로 위 가운데. 각성 상징물은 이 자리를 안 쓴다.
   if (f.sign === "swirl") {
@@ -1313,6 +1317,10 @@ const DEF = {
   // 두껍게 둘러야 속성이 계속 읽힌다 (원장 지시 2026-08-04).
   awRim: 5,                                  // 오라 테두리 두께(칸)
   fxScale: 1.4,                              // 떠다니는 상징물 크기 배율
+  awEyeK: 1,                                 // 표정 눈(그림 눈) 배수
+  // 눈은 칸 수로 그리므로 몸이 커져도 저절로 안 커진다 — 각성용을 따로 둔다.
+  // 기본값은 틴과 같게 두어, 슬라이더를 안 만지면 지금까지와 똑같이 나온다.
+  awEyeGap: 0.32, awEyeY: 0.45, awEyeW: 3, awEyeH: 6,
 };
 let P = Object.assign({}, DEF);
 
@@ -1359,10 +1367,12 @@ function slimeParts(skin, opts) {
 
   // ③ 얼굴 — 기호는 정수리 위. 각성이면 오라 바깥으로 밀어 오라에 안 파묻히게 한다.
   if (build >= 3) facePixels(buf, set, skin, rx, ry, opts.face || "basic",
-    B - 2 * ry - (opts.awake ? P.awRim * CELL : 0) - 3 * CELL);
+    B - 2 * ry - (opts.awake ? P.awRim * CELL : 0) - 3 * CELL, opts.awake);
 
   const r = toRects(buf);
-  const anchors = anchorsOf(set, snap(B - P.eyeY * 2 * ry) + P.eyeH * CELL / 2, P.eyeGap * rx);
+  const eY = opts.awake ? P.awEyeY : P.eyeY, eH = opts.awake ? P.awEyeH : P.eyeH;
+  const eG = opts.awake ? P.awEyeGap : P.eyeGap;
+  const anchors = anchorsOf(set, snap(B - eY * 2 * ry) + eH * CELL / 2, eG * rx);
   return { inner: r.out, n: r.n, raw: r.raw, cells: Math.round((2 * rx) / CELL), top: B - 2 * ry, set, rx, ry, cy, anchors };
 }
 function wrap(inner, width, extra) {
@@ -1924,6 +1934,9 @@ const SLIDERS_BABY = [
 const SLIDERS_AWAKE = [
   ["awRx", "각성 반폭", 46, 84, 1], ["awRy", "각성 반높이", 38, 72, 1],
   ["awRim", "오라 두께(칸)", 1, 6, 1], ["fxScale", "상징물 크기", 0.8, 2.4, 0.05],
+  ["awEyeGap", "눈 간격", 0.1, 0.6, 0.01], ["awEyeY", "눈 높이", 0.25, 0.7, 0.01],
+  ["awEyeW", "눈 폭(칸)", 1, 6, 1], ["awEyeH", "눈 길이(칸)", 2, 12, 1],
+  ["awEyeK", "표정 눈 배수", 1, 3, 1],
 ];
 const SLIDERS_EGG = [
   ["eggRx", "알 반폭", 16, 46, 1], ["eggRy", "알 반높이", 20, 56, 1],

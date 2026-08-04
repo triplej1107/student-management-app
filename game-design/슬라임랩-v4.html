@@ -453,6 +453,10 @@
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       <input type="file" id="impFile" accept="image/png" multiple
              style="font-family:inherit;font-size:12px;color:#9a9488">
+      <label style="font-size:12px;color:#9a9488">단계
+        <select id="impStage" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+          <option value="teen">틴</option><option value="baby">베이비</option><option value="awake">각성</option>
+        </select></label>
       <label style="font-size:12px;color:#9a9488">슬롯
         <select id="impSlot" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
           <option value="head">머리</option><option value="face">얼굴</option>
@@ -2422,9 +2426,12 @@ function render() {
    규격은 game-design/아이템-반입-규격.md. 이미지 1픽셀 = 게임 1칸이 전제다.
    검사에서 걸리면 넣지 않는다 — 어중간하게 들어가 103종을 나중에 다시 손대는 것보다 낫다.
    ============================================================ */
-const IMP_LIMIT = {                      // 슬롯별 크기 상한 (칸) · 규격서 §2
-  head:  [30, 16], face: [32, 12], right: [14, 26], left: [17, 23], fx: [52, 20],
+const IMP_LIMIT = {                      // 단계 × 슬롯 크기 상한 (칸) · 규격서 §2
+  baby:  { head: [28, 15], face: [29, 11], right: [13, 24], left: [16, 21], fx: [48, 18] },
+  teen:  { head: [30, 16], face: [32, 12], right: [14, 26], left: [17, 23], fx: [52, 20] },
+  awake: { head: [38, 20], face: [40, 15], right: [18, 33], left: [21, 29], fx: [65, 25] },
 };
+const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
 const IMP_COLORS = 12;
 
 /* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
@@ -2479,8 +2486,9 @@ function impSvg(r, slot, anchor, a, shade) {
     const files = [...fileEl.files];
     if (!files.length) return;
     const slot = document.getElementById("impSlot").value;
+    const stage = document.getElementById("impStage").value;
     const shade = document.getElementById("impShade").checked;
-    const lim = IMP_LIMIT[slot];
+    const lim = IMP_LIMIT[stage][slot];
     report.innerHTML = "";
     wear.innerHTML = ""; wear.style.display = "none";
     files.forEach((f) => {
@@ -2490,25 +2498,26 @@ function impSvg(r, slot, anchor, a, shade) {
         const bad = [];
         if (r.soft) bad.push(`안티앨리어싱 <b style="color:#f5785c">${r.soft}픽셀</b> — 알파가 0·255 가 아니다`);
         if (r.colors.size > IMP_COLORS) bad.push(`색 <b style="color:#f5785c">${r.colors.size}</b>가지 — ${IMP_COLORS} 이하로`);
-        if (r.w > lim[0] || r.h > lim[1]) bad.push(`크기 <b style="color:#f5785c">${r.w}×${r.h}</b> — 상한 ${lim[0]}×${lim[1]}`);
+        if (r.w > lim[0] || r.h > lim[1]) bad.push(`크기 <b style="color:#f5785c">${r.w}×${r.h}</b> — ${IMP_KO[stage]} 상한 ${lim[0]}×${lim[1]}`);
         const line = document.createElement("div");
         line.innerHTML = bad.length
           ? `<b style="color:#f5785c">✕ ${f.name}</b> — ${bad.join(" · ")}`
-          : `<b style="color:#9BD468">✓ ${f.name}</b> — ${r.w}×${r.h}칸 · ${r.colors.size}색 · 그대로 들어간다` +
-            (r.w < 2 * slimeParts(SKINS[0], { awake: true }).anchors.headHw / CELL * 0.85
-              ? ` <span style="color:#E8C98A">· 각성엔 작다 → 각성용 별도 PNG 필요 (틴의 1.25배)</span>` : "");
+          : `<b style="color:#9BD468">✓ ${f.name}</b> — ${IMP_KO[stage]}용 ${r.w}×${r.h}칸 · ${r.colors.size}색 · 그대로 들어간다`;
         report.appendChild(line);
         if (bad.length) return;
         const anchor = guessAnchor(r, slot);
         wear.style.display = "";
+        const G = { baby: babyParts(SKINS[sel]), teen: slimeParts(SKINS[sel]),
+                    awake: slimeParts(SKINS[sel], { awake: true }) };
         const row = document.createElement("div");
         row.className = "row";
-        [["베이비", babyParts(SKINS[sel])], ["틴", slimeParts(SKINS[sel])],
-         ["각성", slimeParts(SKINS[sel], { awake: true })]].forEach(([ko, g]) => {
+        ["baby", "teen", "awake"].forEach((st) => {
+          const on = st === stage, g = G[st];
           const fig = document.createElement("figure");
-          fig.style.textAlign = "center";
-          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade), 180) +
-            `<figcaption style="font-size:11.5px;font-weight:700;color:#4a453d">${ko}</figcaption>`;
+          fig.style.cssText = `text-align:center;opacity:${on ? 1 : .45}`;
+          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade), on ? 200 : 120) +
+            `<figcaption style="font-size:11.5px;font-weight:700;color:${on ? "#c05a2e" : "#6b655c"}">` +
+            `${IMP_KO[st]}${on ? " ← 이 장" : ""}</figcaption>`;
           row.appendChild(fig);
         });
         wear.appendChild(row);
@@ -2518,6 +2527,7 @@ function impSvg(r, slot, anchor, a, shade) {
   };
   fileEl.addEventListener("change", run);
   document.getElementById("impSlot").addEventListener("change", run);
+  document.getElementById("impStage").addEventListener("change", run);
   document.getElementById("impShade").addEventListener("change", run);
 })();
 

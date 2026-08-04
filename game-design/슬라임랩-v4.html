@@ -473,6 +473,10 @@
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impFix" checked style="accent-color:#f0a33c;vertical-align:-2px">
         확대본 정리해서 받기 <span style="color:#7d776b">— 배경 날리고 칸 크기 재서 줄인다</span></label>
+      <label style="font-size:12px;color:#9a9488">한 칸
+        <input type="number" id="impBlock" min="0" max="64" step="1" value="0"
+               style="width:52px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+        <span style="color:#7d776b">px · 0이면 자동</span></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
@@ -2203,8 +2207,9 @@ function guessBlock(d, w, h) {
     }
     return pos;
   };
-  const px = collect(h, w, (y, x) => y * w + x);
-  const py = collect(w, h, (x, y) => y * w + x);
+  const thin = (a) => a.length <= 60000 ? a : a.filter((_, i) => i % Math.ceil(a.length / 60000) === 0);
+  const px = thin(collect(h, w, (y, x) => y * w + x));
+  const py = thin(collect(w, h, (x, y) => y * w + x));
   if (px.length < 20 || py.length < 20) return 1;
   const score = (pos, k) => {                  // 어떤 시작점에 맞추면 몇 %가 격자선에 얹히나
     const hist = new Array(k).fill(0);
@@ -2244,9 +2249,17 @@ function downscale(d, w, h, k) {
 
 /* 색 줄이기 — 가장 적게 쓰인 색을 가장 가까운 색으로 흡수시킨다 */
 function quantize(px, max) {
-  const cnt = new Map();
-  for (const c of px.values()) cnt.set(c, (cnt.get(c) || 0) + 1);
   const rgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const hex = (v) => "#" + v.map((n) => Math.min(255, n).toString(16).padStart(2, "0")).join("");
+  const tally = () => { const m = new Map(); for (const c of px.values()) m.set(c, (m.get(c) || 0) + 1); return m; };
+  let cnt = tally();
+  /* 색이 수백 가지면 한 색씩 흡수시키는 건 너무 느리다(색² × 칸 수).
+     먼저 성글게 뭉쳐서 수십 가지로 줄인 다음 아래 정밀한 흡수로 넘긴다. */
+  for (const step of [8, 16, 32, 64]) {
+    if (cnt.size <= 48) break;
+    for (const [k, c] of px) px.set(k, hex(rgb(c).map((n) => Math.round(n / step) * step)));
+    cnt = tally();
+  }
   while (cnt.size > max) {
     const order = [...cnt].sort((a, b) => a[1] - b[1]);
     const [victim] = order[0];
@@ -2286,7 +2299,7 @@ function splitBlobs(px, w, h, gap) {
 }
 
 /* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
-function readPng(img, fix) {
+function readPng(img, fix, force) {
   const cv = document.createElement("canvas");
   cv.width = img.naturalWidth; cv.height = img.naturalHeight;
   const cx = cv.getContext("2d", { willReadFrequently: true });
@@ -2296,7 +2309,12 @@ function readPng(img, fix) {
 
   if (fix) {                                   // 확대본 되돌리기
     const bg = stripBg(d, cv.width, cv.height);
-    const k = guessBlock(d, cv.width, cv.height);
+    const k = force > 1 ? force : guessBlock(d, cv.width, cv.height);
+    /* 격자를 못 찾았는데(k=1) 그림이 크면 여기서 멈춘다.
+       예전엔 그대로 밀고 나가 100만 칸짜리 격자로 덩어리 쪼개기·색 줄이기를 돌려
+       브라우저가 굳었다. 못 되돌리는 그림은 못 되돌린다고 말하는 게 맞다. */
+    const cells = Math.round(cv.width / k) * Math.round(cv.height / k);
+    if (cells > 40000) return { fixed: true, block: k, bg, parts: [], stuck: { k, w: cv.width, h: cv.height } };
     const down = downscale(d, cv.width, cv.height, k);
     const blobs = splitBlobs(down.px, down.w, down.h);
     const parts = blobs.map((cell) => {
@@ -2373,13 +2391,30 @@ function impSvg(r, slot, anchor, a, shade) {
     files.forEach((f) => {
       const img = new Image();
       img.onload = () => {
-        const res = readPng(img, document.getElementById("impFix").checked);
+        const res = readPng(img, document.getElementById("impFix").checked,
+                            +document.getElementById("impBlock").value || 0);
+        if (res.stuck) {                     // 되돌리기 실패 — 밀고 나가면 브라우저가 굳는다
+          const s = res.stuck, gw = Math.round(s.w / s.k), gh = Math.round(s.h / s.k);
+          report.insertAdjacentHTML("beforeend",
+            `<div><b style="color:#f5785c">✕ ${f.name}</b> — ${s.w}×${s.h}px, ` + (s.k > 1
+              ? `한 칸 ${s.k}px 로 쟀는데 줄여도 <b>${gw}×${gh}칸</b>이다. 아이템 하나는 아무리 커도 65칸이다 — 칸 크기를 잘못 쟀다.`
+              : `<b>칸 격자를 못 찾았다.</b> 한 칸의 크기가 그림 전체에서 일정하지 않거나 칸 안에 그라데이션이 있다.`) +
+            `<br><span style="color:#7d776b">　한 칸이 몇 px 인지 알면 위 「한 칸」에 적어서 강제로 재게 할 수 있다. ` +
+            `모르면 그린 쪽에 <b>칸 크기를 일정하게, 칸 안은 단색으로</b> 다시 그려 달라고 해야 한다.</span></div>`);
+          return;
+        }
         if (res.fixed) {
           const head = document.createElement("div");
           head.innerHTML = `<b style="color:#9CC4EC">↻ ${f.name}</b> — 한 칸 <b>${res.block}px</b> 로 재서 줄임` +
             (res.bg ? ` · 배경 ${res.bg.toLocaleString()}픽셀 제거` : "") +
             (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "");
           report.appendChild(head);
+          if (!res.parts.length) {           // 줄이긴 했는데 건질 게 없다 — 말없이 끝내면 안 된다
+            report.insertAdjacentHTML("beforeend",
+              `<div style="padding-left:14px"><b style="color:#f5785c">✕ 아이템을 못 찾았다</b> — ` +
+              `칸 안이 단색이 아니라(그라데이션·노이즈) 대표색을 못 뽑았거나, 12칸이 안 되는 부스러기뿐이다. ` +
+              `<span style="color:#7d776b">「한 칸」 값을 바꿔 보고, 그래도 안 되면 칸 안을 단색으로 다시 그려 달라고 해야 한다.</span></div>`);
+          }
         }
         // 단계 배정 — 자동이면 덩어리 셋은 큰 것부터 각성·틴·베이비, 아니면 크기로 고른다
         const auto = stage === "auto";
@@ -2441,6 +2476,7 @@ function impSvg(r, slot, anchor, a, shade) {
   document.getElementById("impSlot").addEventListener("change", run);
   document.getElementById("impStage").addEventListener("change", run);
   document.getElementById("impFix").addEventListener("change", run);
+  document.getElementById("impBlock").addEventListener("change", run);
   document.getElementById("impDX").addEventListener("input", run);
   document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);

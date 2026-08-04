@@ -1064,7 +1064,7 @@ function fxGlyph(attr, cx, cy, s, ang) {
     // 물방울 — 둥근 머리 + 뾰족한 꼬리. ang 방향으로 머리가 향한다(= 날아가는 쪽).
     // 색은 화와 같은 띠 문법: 바깥부터 진파랑 → 하늘 → 옅은 하늘, 머리에 흰 심지.
     // 머리가 크고 꼬리가 짧아야 물방울이다. 꼬리가 길면 다트로 읽힌다.
-    const r = 8.5 * s, L = 15 * s, a = ang || 0;
+    const r = 12 * s, L = 22 * s, a = ang || 0;
     const co = Math.cos(a), si = Math.sin(a);
     const at = (x, y) => [cx + x * co - y * si, cy + x * si + y * co];
     const al = Math.acos(Math.min(0.98, r / L));
@@ -1080,7 +1080,7 @@ function fxGlyph(attr, cx, cy, s, ang) {
   } else if (attr === "gold") {
     // 4갈래 십자 반짝임 — 폴리곤으로 그리면 작아질 때 오목이 격자에서 뭉개져
     // 동그라미가 돼버린다. 격자에 맞춘 십자로 찍어야 크기와 무관하게 십자로 남는다.
-    const arm = Math.max(2 * CELL, Math.round((19 * s) / CELL) * CELL);
+    const arm = Math.max(2 * CELL, Math.round((22 * s) / CELL) * CELL);
     const set = new Set();
     for (let d = -arm; d <= arm; d += CELL) {
       const t = 1 - Math.abs(d) / arm;                       // 중심 1 → 끝 0
@@ -1092,7 +1092,7 @@ function fxGlyph(attr, cx, cy, s, ang) {
     }
     const rim = rimSet(set, 1);
     for (const k of set) buf.m.set(k, rim.has(k) ? A.line : A.fill);
-    disk(buf, cx, cy, 3.2 * s, A.hi);
+    disk(buf, cx, cy, 3.7 * s, A.hi);
 
   } else if (attr === "fire") {
     // 불꽃 — 아래는 완전한 반원(불덩이), 위로 갈수록 좁아지며 끝이 한쪽으로 크게 휜다.
@@ -1100,7 +1100,7 @@ function fxGlyph(attr, cx, cy, s, ang) {
     // 바깥부터 빨강 → 주황 → 노랑, 불덩이 아래쪽에 흰 심지. (레퍼런스 도트 불꽃 문법)
     // 통통한 불덩이 + 확실히 가늘어지며 갈고리진 끝.
     // 지수가 1보다 작으면 끝이 안 좁아져 잎사귀가 되고, 너무 크면 깃털이 된다. 1.1 근처가 불꽃.
-    const w = 11 * s, h = 32 * s, lean = 8 * s;
+    const w = 13 * s, h = 38 * s, lean = 9.5 * s;
     const cyB = cy + h * 0.26;                       // 불덩이 중심
     const prof = (py) => {
       const dy = py - cyB;
@@ -1175,7 +1175,7 @@ function fxGlyph(attr, cx, cy, s, ang) {
     // 돌덩어리 — 둥근 자갈. 각진 다각형은 돌이 아니라 광물 결정으로 읽혔다.
     // 레퍼런스 문법: 검정에 가까운 진갈색 외곽선 + 계단식 대각 경계로 갈린 세 면
     // (위 밝은 모래빛 → 중간 → 아래 진한 흙빛). 반지름을 조금씩 흔들어 자갈로 만든다.
-    const w = 15 * s, h = 12.5 * s;
+    const w = 17.5 * s, h = 14.5 * s;
     const RJ = [1.00, 0.94, 1.02, 0.97, 1.00, 0.93, 1.01, 0.96, 1.00, 0.95, 1.02, 0.97];
     const set = cellsInPolyLocal(RJ.map((r, i) => {
       const a = (i / RJ.length) * Math.PI * 2;

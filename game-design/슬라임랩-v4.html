@@ -500,6 +500,10 @@
         <input type="range" id="impGrip" min="0" max="100" step="2" value="78"
                style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impGripv" style="color:#e8e4dc">78</b>%
         <span style="color:#7d776b">손 슬롯만 — 가방은 낮게</span></label>
+      <label style="font-size:12px;color:#9a9488">기울기
+        <input type="range" id="impLean" min="-10" max="10" step="1" value="0"
+               style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impLeanv" style="color:#e8e4dc">0</b>칸
+        <span style="color:#7d776b">+면 위끝이 바깥으로</span></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
@@ -2608,6 +2612,26 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
   return { parts: [{ px, colors, soft, w: cv.width, h: cv.height }] };
 }
 
+/* 기울이기 — 행마다 옆으로 밀어 세운 물건을 비스듬하게 만든다.
+   픽셀 그림은 돌리면 깨지므로 회전이 아니라 **전단**이다. 칸은 하나도 안 상한다.
+   무기를 든 자세는 아래끝이 몸 쪽, 위끝이 바깥쪽이다 — 그래서 바깥 방향은
+   오른손이면 +x, 왼손이면 -x 다. lean 은 아래끝 대비 위끝이 밀리는 칸 수. */
+function shearPart(r, lean, slot) {
+  if (!lean || r.h < 2) return r;
+  const sgn = slot === "left" ? -1 : 1;
+  const px = new Map();
+  let x0 = Infinity, x1 = -Infinity;
+  for (const [k, c] of r.px) {
+    const [x, y] = k.split(",").map(Number);
+    const nx = x + Math.round(sgn * lean * (r.h - 1 - y) / (r.h - 1));
+    if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+    px.set(nx + "," + y, c);
+  }
+  const out = new Map();
+  for (const [k, c] of px) { const [x, y] = k.split(",").map(Number); out.set((x - x0) + "," + y, c); }
+  return { ...r, px: out, w: x1 - x0 + 1, colors: new Set(out.values()) };
+}
+
 /* 앵커를 안 준 경우의 기본값 — 슬롯이 몸에 닿는 쪽을 잡는다 */
 let GRIP = 0.78;                              // 손 슬롯에서 쥐는 자리의 높이 비율
 function guessAnchor(r, slot) {
@@ -2637,9 +2661,16 @@ function guessAnchor(r, slot) {
     const rows = [...byRow].filter(([, n]) => n >= best * 0.6).map(([y]) => y);
     return [cx, Math.round((Math.min(...rows) + Math.max(...rows)) / 2)];
   }
-  /* 손 — 그림에서 "쥐는 자리"의 높이. 연필·검은 아래에서 1/4(=78%)을 쥐지만
-     가방·핸드백은 맨 위 손잡이를 든다. 물건마다 달라서 슬라이더로 준다. */
-  return [cx, Math.round(Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * GRIP)];
+  /* 손 — 그림에서 "쥐는 자리". 높이는 연필·검이 아래에서 1/4(=78%), 가방은 맨 위라
+     물건마다 다르므로 슬라이더로 준다.
+     가로는 **그 높이에 실제로 그려진 칸들의 가운데**를 쓴다. 기울여 그린 물건은
+     아래끝과 위끝이 어긋나 있어서, 전체 가로 가운데를 쓰면 쥐는 자리가 옆으로 밀린다. */
+  const y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const gy = Math.round(y0 + (y1 - y0) * GRIP);
+  const row = [...r.px.keys()].map((k) => k.split(",").map(Number))
+    .filter(([, y]) => Math.abs(y - gy) <= 1).map(([x]) => x);
+  const gx = row.length ? Math.round((Math.min(...row) + Math.max(...row)) / 2) : cx;
+  return [gx, gy];
 }
 
 /* 격자를 앵커에 맞춰 몸 좌표로 옮겨 그린다 */
@@ -2677,6 +2708,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
     const ghost = document.getElementById("impGhost").checked;
     GRIP = (+document.getElementById("impGrip").value || 0) / 100;
     document.getElementById("impGripv").textContent = document.getElementById("impGrip").value;
+    const lean = +document.getElementById("impLean").value || 0;
+    document.getElementById("impLeanv").textContent = lean;
     const nudge = [+document.getElementById("impDX").value, +document.getElementById("impDY").value];
     document.getElementById("impDXv").textContent = nudge[0];
     document.getElementById("impDYv").textContent = nudge[1];
@@ -2736,7 +2769,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
         // 단계 배정 — 자동이면 덩어리 셋은 큰 것부터 각성·틴·베이비, 아니면 크기로 고른다
         const auto = stage === "auto";
         const trio = auto && res.parts.length === 3 ? ["awake", "teen", "baby"] : null;
-        res.parts.forEach((r, pi) => {
+        res.parts.forEach((r0, pi) => {
+          const r = shearPart(r0, lean, slot);     // 기울기는 검사 전에 먹인다 — 폭이 달라진다
           const st = r.stage || (trio ? trio[pi] : auto ? pickStage(r, slot) : stage);
           showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed, st, auto);
         });
@@ -2802,6 +2836,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
   document.getElementById("impGhost").addEventListener("change", run);
   document.getElementById("impOne").addEventListener("change", run);
   document.getElementById("impGrip").addEventListener("input", run);
+  document.getElementById("impLean").addEventListener("input", run);
   ["impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"]
     .forEach((id) => document.getElementById(id).addEventListener("input", run));
 

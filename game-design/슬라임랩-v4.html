@@ -474,7 +474,7 @@
         <input type="checkbox" id="impFix" checked style="accent-color:#f0a33c;vertical-align:-2px">
         확대본 정리해서 받기 <span style="color:#7d776b">— 배경 날리고 칸 크기 재서 줄인다</span></label>
       <label style="font-size:12px;color:#9a9488">한 칸
-        <input type="number" id="impBlock" min="0" max="64" step="1" value="0"
+        <input type="number" id="impBlock" min="0" max="64" step="0.1" value="0"
                style="width:52px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
         <span style="color:#7d776b">px · 0이면 자동</span></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
@@ -2183,68 +2183,94 @@ function stripBg(d, w, h, tol) {
   return n;
 }
 
-/* 칸 크기 — 색이 바뀌는 **자리**를 모아서 격자를 찾는다.
-   런 길이의 공약수를 보던 이전 방식은 칸 경계가 조금이라도 흐리면(안티앨리어싱)
-   길이가 k+1, k-1 로 흩어져 전부 무너졌다. 경계는 흐려져도 *자리*는 격자선 위에
-   남으므로, 경계 위치가 k 간격에 얼마나 잘 얹히는지를 본다. 얹히는 가장 큰 k 가 한 칸.
-   가로·세로를 따로 재서 둘 다 맞는 k 만 통과시킨다 — 가로로만 긴 그림에 안 속는다. */
-function guessBlock(d, w, h) {
+/* 격자 찾기 — 색이 바뀌는 **자리**를 모아 그 자리들이 몇 픽셀 간격에 얹히는지 본다.
+   두 번 고쳐 여기까지 왔다.
+   ① 런 길이의 공약수 → 경계가 흐려지면 길이가 k±1 로 흩어져 무너졌다
+   ② 정수 간격만 허용 → 생성 모델의 캔버스(1024·1232px)에 칸 수가 안 떨어지면
+      한 칸이 23.7px 같은 소수가 된다. 정수만 보니 하나도 못 맞췄다
+   그래서 지금은 **간격을 소수까지 훑고**, 시작점도 같이 찾는다. 가로·세로 따로 잰다. */
+function guessGrid(d, w, h, force) {
   const sig = (i, j) => {                      // 두 픽셀 사이가 "칸 경계"인가
     const ai = d[i * 4 + 3] >= 128, aj = d[j * 4 + 3] >= 128;
     if (ai !== aj) return true;
     if (!ai) return false;
-    return Math.abs(d[i*4] - d[j*4]) + Math.abs(d[i*4+1] - d[j*4+1]) + Math.abs(d[i*4+2] - d[j*4+2]) > 40;
+    return Math.abs(d[i*4] - d[j*4]) + Math.abs(d[i*4+1] - d[j*4+1]) + Math.abs(d[i*4+2] - d[j*4+2]) > 34;
   };
-  // 경계 위치 모으기. 흐린 경계는 2~3픽셀에 걸쳐 나오므로 뭉쳐서 가운데를 쓴다.
+  // 흐린 경계는 2~3픽셀에 걸쳐 나오므로 뭉쳐서 가운데를 쓴다
   const collect = (n, m, at) => {
     const pos = [];
     for (let a = 0; a < n; a++) {
       let s = -1;
       for (let b = 1; b <= m; b++) {
         if (b < m && sig(at(a, b - 1), at(a, b))) { if (s < 0) s = b; continue; }
-        if (s >= 0) { pos.push((s + b - 1) >> 1); s = -1; }
+        if (s >= 0) { pos.push((s + b - 1) / 2); s = -1; }
       }
     }
     return pos;
   };
-  const thin = (a) => a.length <= 60000 ? a : a.filter((_, i) => i % Math.ceil(a.length / 60000) === 0);
-  const px = thin(collect(h, w, (y, x) => y * w + x));
-  const py = thin(collect(w, h, (x, y) => y * w + x));
-  if (px.length < 20 || py.length < 20) return 1;
-  const score = (pos, k) => {                  // 어떤 시작점에 맞추면 몇 %가 격자선에 얹히나
-    const hist = new Array(k).fill(0);
-    for (const p of pos) hist[p % k]++;
-    let best = 0;
-    for (let o = 0; o < k; o++) {
-      const s = k >= 6 ? hist[o] + hist[(o + 1) % k] + hist[(o + k - 1) % k] : hist[o];
-      if (s > best) best = s;
+  const thin = (a) => a.length <= 20000 ? a : a.filter((_, i) => i % Math.ceil(a.length / 20000) === 0);
+  const PX = thin(collect(h, w, (y, x) => y * w + x));
+  const PY = thin(collect(w, h, (x, y) => y * w + x));
+  if (PX.length < 20 || PY.length < 20) return { ok: false, k: 0, sc: 0 };
+
+  const NB = 96;                               // 한 칸을 96등분해 위상 히스토그램을 만든다
+  const fit = (pos, k) => {
+    const hist = new Array(NB).fill(0);
+    for (const p of pos) hist[Math.floor((p % k) / k * NB) % NB]++;
+    const win = Math.max(1, Math.round(Math.max(1.2, k * 0.16) / k * NB));   // 경계가 흐려도 견디게
+    let best = 0, bo = 0;
+    for (let o = 0; o < NB; o++) {
+      let s = 0;
+      for (let j = -win; j <= win; j++) s += hist[(o + j + NB) % NB];
+      if (s > best) { best = s; bo = o; }
     }
-    return best / pos.length;
+    return { sc: best / pos.length, off: (bo + 0.5) / NB * k };
   };
-  let best = 1;
-  const kMax = Math.min(64, Math.floor(Math.min(w, h) / 4));
-  for (let k = 4; k <= kMax; k++)
-    if (Math.min(score(px, k), score(py, k)) >= 0.9) best = k;   // 맞는 것 중 제일 큰 k
-  return best;
+  const axis = (pos, span) => {                // 통과하는 것 중 제일 큰 간격이 한 칸
+    if (force > 1) return { ok: true, k: force, ...fit(pos, force) };   // 손으로 준 값은 그대로 쓰되 시작점만 찾는다
+    let out = null, top = { k: 0, sc: 0 };
+    const kMax = Math.min(64, span / 4);
+    for (let k = 4; k <= kMax; k += 0.25) {
+      const f = fit(pos, k);
+      if (f.sc > top.sc) top = { k, ...f };
+      if (f.sc >= 0.86) out = { k, ...f };
+    }
+    if (!out) return { ok: false, top };
+    let best = out;                            // 0.05 단위로 한 번 더 다듬는다
+    for (let k = out.k - 0.25; k <= out.k + 0.25; k += 0.05) {
+      const f = fit(pos, k);
+      if (f.sc >= best.sc) best = { k, ...f };
+    }
+    return { ok: true, ...best };
+  };
+  const gx = axis(PX, w), gy = axis(PY, h);
+  if (!gx.ok || !gy.ok) {                      // 왜 못 찾았는지 알려 줄 만큼은 남긴다
+    const bad = !gx.ok ? gx.top : gy.top;
+    return { ok: false, k: Math.round(bad.k * 10) / 10, sc: bad.sc };
+  }
+  return { ok: true, kx: gx.k, ox: gx.off, ky: gy.k, oy: gy.off, sc: Math.min(gx.sc, gy.sc) };
 }
 
-/* 확대본을 원래 격자로 줄인다. 한 칸에서 제일 많이 나온 색을 고른다. */
-function downscale(d, w, h, k) {
-  const W = Math.round(w / k), H = Math.round(h / k), px = new Map();
-  for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
-    const vote = new Map();
-    for (let y = Y * k; y < Math.min(h, (Y + 1) * k); y++)
-      for (let x = X * k; x < Math.min(w, (X + 1) * k); x++) {
-        const i = (y * w + x) * 4;
-        if (d[i + 3] < 128) continue;
-        const c = "#" + [d[i], d[i + 1], d[i + 2]].map((v) => v.toString(16).padStart(2, "0")).join("");
-        vote.set(c, (vote.get(c) || 0) + 1);
-      }
-    let top = null, n = 0;
-    for (const [c, v] of vote) if (v > n) { n = v; top = c; }
-    if (top && n >= k * k * 0.34) px.set(X + "," + Y, top);
+/* 확대본을 원래 격자로 줄인다.
+   **칸 한가운데만 본다.** 칸 전체에서 다수결을 하던 이전 방식은 칸 안에 옅은
+   그라데이션만 있어도(생성 모델은 늘 넣는다) 대표색이 안 뽑혀 통째로 버려졌다.
+   가운데 절반의 평균을 쓰면 그라데이션도 경계 흐림도 지나간다. */
+function downscale(d, w, h, g) {
+  const line = (k, off, span) => { const a = []; let s = off % k; if (s > 0.5) s -= k; for (; s < span - k * 0.5; s += k) a.push(s); return a; };
+  const xs = line(g.kx, g.ox, w), ys = line(g.ky, g.oy, h), px = new Map();
+  const hex = (v) => "#" + v.map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0")).join("");
+  for (let Y = 0; Y < ys.length; Y++) for (let X = 0; X < xs.length; X++) {
+    const x0 = Math.max(0, Math.floor(xs[X] + g.kx * 0.25)), x1 = Math.min(w - 1, Math.max(x0, Math.ceil(xs[X] + g.kx * 0.75) - 1));
+    const y0 = Math.max(0, Math.floor(ys[Y] + g.ky * 0.25)), y1 = Math.min(h - 1, Math.max(y0, Math.ceil(ys[Y] + g.ky * 0.75) - 1));
+    let r = 0, gg = 0, bb = 0, n = 0, all = 0;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = (y * w + x) * 4; all++;
+      if (d[i + 3] < 128) continue;
+      r += d[i]; gg += d[i + 1]; bb += d[i + 2]; n++;
+    }
+    if (all && n / all >= 0.55) px.set(X + "," + Y, hex([r / n, gg / n, bb / n]));
   }
-  return { px, w: W, h: H };
+  return { px, w: xs.length, h: ys.length };
 }
 
 /* 색 줄이기 — 가장 적게 쓰인 색을 가장 가까운 색으로 흡수시킨다 */
@@ -2309,13 +2335,16 @@ function readPng(img, fix, force) {
 
   if (fix) {                                   // 확대본 되돌리기
     const bg = stripBg(d, cv.width, cv.height);
-    const k = force > 1 ? force : guessBlock(d, cv.width, cv.height);
-    /* 격자를 못 찾았는데(k=1) 그림이 크면 여기서 멈춘다.
-       예전엔 그대로 밀고 나가 100만 칸짜리 격자로 덩어리 쪼개기·색 줄이기를 돌려
-       브라우저가 굳었다. 못 되돌리는 그림은 못 되돌린다고 말하는 게 맞다. */
-    const cells = Math.round(cv.width / k) * Math.round(cv.height / k);
-    if (cells > 40000) return { fixed: true, block: k, bg, parts: [], stuck: { k, w: cv.width, h: cv.height } };
-    const down = downscale(d, cv.width, cv.height, k);
+    const auto = guessGrid(d, cv.width, cv.height, force);
+    const g = auto.ok ? auto
+            : cv.width * cv.height <= 40000 ? { kx: 1, ky: 1, ox: 0, oy: 0, sc: 0 }   // 이미 1픽셀=1칸
+            : null;
+    /* 격자를 못 찾으면 여기서 멈춘다. 예전엔 그대로 밀고 나가 100만 칸짜리 격자로
+       덩어리 쪼개기·색 줄이기를 돌려 브라우저가 굳었다. */
+    if (!g) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, ...auto } };
+    const cells = (cv.width / g.kx) * (cv.height / g.ky);
+    if (cells > 40000) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, k: g.kx, sc: 1 } };
+    const down = downscale(d, cv.width, cv.height, g);
     const blobs = splitBlobs(down.px, down.w, down.h);
     const parts = blobs.map((cell) => {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -2327,7 +2356,7 @@ function readPng(img, fix, force) {
       const n = quantize(px, IMP_COLORS);
       return { px, colors: new Set(px.values()), soft: 0, w: x1 - x0 + 1, h: y1 - y0 + 1, quantized: n };
     });
-    return { fixed: true, block: k, bg, parts };
+    return { fixed: true, block: g.kx, blockY: g.ky, fit: g.sc, bg, parts };
   }
 
   const px = new Map(), colors = new Set();
@@ -2396,16 +2425,21 @@ function impSvg(r, slot, anchor, a, shade) {
         if (res.stuck) {                     // 되돌리기 실패 — 밀고 나가면 브라우저가 굳는다
           const s = res.stuck, gw = Math.round(s.w / s.k), gh = Math.round(s.h / s.k);
           report.insertAdjacentHTML("beforeend",
-            `<div><b style="color:#f5785c">✕ ${f.name}</b> — ${s.w}×${s.h}px, ` + (s.k > 1
+            `<div><b style="color:#f5785c">✕ ${f.name}</b> — ${s.w}×${s.h}px, ` + (s.sc >= 0.86
               ? `한 칸 ${s.k}px 로 쟀는데 줄여도 <b>${gw}×${gh}칸</b>이다. 아이템 하나는 아무리 커도 65칸이다 — 칸 크기를 잘못 쟀다.`
-              : `<b>칸 격자를 못 찾았다.</b> 한 칸의 크기가 그림 전체에서 일정하지 않거나 칸 안에 그라데이션이 있다.`) +
+              : `<b>칸 격자를 못 찾았다.</b> 제일 그럴듯한 간격이 ${s.k || "?"}px 인데 칸 경계의 ` +
+                `<b>${Math.round(s.sc * 100)}%</b>만 거기 얹힌다(86% 넘어야 한다). ` +
+                `한 칸 크기가 일정하지 않거나 칸 안에 그라데이션이 있다.`) +
             `<br><span style="color:#7d776b">　한 칸이 몇 px 인지 알면 위 「한 칸」에 적어서 강제로 재게 할 수 있다. ` +
             `모르면 그린 쪽에 <b>칸 크기를 일정하게, 칸 안은 단색으로</b> 다시 그려 달라고 해야 한다.</span></div>`);
           return;
         }
         if (res.fixed) {
           const head = document.createElement("div");
-          head.innerHTML = `<b style="color:#9CC4EC">↻ ${f.name}</b> — 한 칸 <b>${res.block}px</b> 로 재서 줄임` +
+          const px1 = (v) => Math.round(v * 10) / 10;
+          head.innerHTML = `<b style="color:#9CC4EC">↻ ${f.name}</b> — 한 칸 <b>${px1(res.block)}` +
+            (px1(res.blockY) !== px1(res.block) ? `×${px1(res.blockY)}` : "") + `px</b> 로 재서 줄임` +
+            (res.fit ? ` <span style="color:#7d776b">(맞춘 정도 ${Math.round(res.fit * 100)}%)</span>` : "") +
             (res.bg ? ` · 배경 ${res.bg.toLocaleString()}픽셀 제거` : "") +
             (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "");
           report.appendChild(head);

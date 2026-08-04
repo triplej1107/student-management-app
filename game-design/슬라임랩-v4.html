@@ -448,6 +448,28 @@
   </section>
 
   <section class="card">
+    <h2>아이템 반입 <em>— 밖에서 그려온 PNG 를 떨구면 규격을 검사하고 세 단계에 얹어 본다.
+      규격서는 <b style="color:#f0a33c">아이템-반입-규격.md</b></em></h2>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <input type="file" id="impFile" accept="image/png" multiple
+             style="font-family:inherit;font-size:12px;color:#9a9488">
+      <label style="font-size:12px;color:#9a9488">슬롯
+        <select id="impSlot" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+          <option value="head">머리</option><option value="face">얼굴</option>
+          <option value="right">오른손</option><option value="left">왼손</option>
+          <option value="fx">이펙트</option>
+        </select></label>
+      <label style="font-size:12px;color:#9a9488;cursor:pointer">
+        <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
+        본색만 줬으면 음영 자동으로 입히기</label>
+    </div>
+    <div id="impReport" style="font-size:12px;line-height:1.9;color:#9a9488">
+      PNG 를 고르면 검사 결과가 여기 뜬다.
+    </div>
+    <div class="sheet" id="impWear" style="margin-top:10px;display:none"></div>
+  </section>
+
+  <section class="card">
     <h2>노말 아이템 33종 <em>— 몸(셀 3)보다 두 배 촘촘한 셀 1.5.
       눌러서 아래 세 단계에 얹어 본다</em></h2>
     <div class="sheet" id="itemSheet"></div>
@@ -2391,6 +2413,110 @@ function render() {
     `<div>정지 SVG <b>${(bytes / 1024).toFixed(1)}KB</b> · 점프 A <b>${kb(jf.svg)}KB</b> · B <b>${kb(xf.svg)}KB</b> · B+ <b>${kb(sp.svg)}KB</b></div>` +
     `<div style="margin-top:6px;color:#5d5850">셀 ${CELL} · 정수리 y ${Math.round(g.top)} · 바닥 y ${B} · 점프 정점 +32</div>`;
 }
+
+/* ============================================================
+   아이템 반입 — 밖에서 그린 PNG 를 규격대로 받아 그대로 넣는다.
+   규격은 game-design/아이템-반입-규격.md. 이미지 1픽셀 = 게임 1칸이 전제다.
+   검사에서 걸리면 넣지 않는다 — 어중간하게 들어가 103종을 나중에 다시 손대는 것보다 낫다.
+   ============================================================ */
+const IMP_LIMIT = {                      // 슬롯별 크기 상한 (칸) · 규격서 §2
+  head:  [40, 20], face: [40, 14], right: [18, 34], left: [22, 30], fx: [70, 26],
+};
+const IMP_COLORS = 12;
+
+/* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
+function readPng(img) {
+  const cv = document.createElement("canvas");
+  cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(img, 0, 0);
+  const d = cx.getImageData(0, 0, cv.width, cv.height).data;
+  const px = new Map(), colors = new Set();
+  let soft = 0;
+  for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) {
+    const i = (y * cv.width + x) * 4, a = d[i + 3];
+    if (a !== 0 && a !== 255) { soft++; continue; }
+    if (a === 0) continue;
+    const hex = "#" + [d[i], d[i + 1], d[i + 2]].map((v) => v.toString(16).padStart(2, "0")).join("");
+    px.set(x + "," + y, hex); colors.add(hex);
+  }
+  return { px, colors, soft, w: cv.width, h: cv.height };
+}
+
+/* 앵커를 안 준 경우의 기본값 — 슬롯이 몸에 닿는 쪽을 잡는다 */
+function guessAnchor(r, slot) {
+  const xs = [...r.px.keys()].map((k) => +k.split(",")[0]);
+  const ys = [...r.px.keys()].map((k) => +k.split(",")[1]);
+  const cx = Math.round((Math.min(...xs) + Math.max(...xs)) / 2);
+  if (slot === "head") return [cx, Math.max(...ys)];          // 아래 테두리 가운데
+  if (slot === "fx") return [cx, Math.max(...ys)];
+  if (slot === "face") return [cx, Math.round((Math.min(...ys) + Math.max(...ys)) / 2)];
+  return [cx, Math.round(Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * 0.78)];  // 쥐는 자리
+}
+
+/* 격자를 앵커에 맞춰 몸 좌표로 옮겨 그린다 */
+function impSvg(r, slot, anchor, a, shade) {
+  const b = new IBuf();
+  const at = { head: a.head, face: a.face, fx: a.foot,
+               right: [a.hand[0], a.hand[1]], left: [-a.hand[0], a.hand[1]] }[slot];
+  for (const [k, hex] of r.px) {
+    const [x, y] = k.split(",").map(Number);
+    b.px(at[0] + (x - anchor[0]) * ICELL, at[1] + (y - anchor[1]) * ICELL, hex);
+  }
+  if (shade) shadeItem(b);
+  return b.svg();
+}
+
+(function () {
+  const fileEl = document.getElementById("impFile");
+  if (!fileEl) return;
+  const report = document.getElementById("impReport"), wear = document.getElementById("impWear");
+  const run = () => {
+    const files = [...fileEl.files];
+    if (!files.length) return;
+    const slot = document.getElementById("impSlot").value;
+    const shade = document.getElementById("impShade").checked;
+    const lim = IMP_LIMIT[slot];
+    report.innerHTML = "";
+    wear.innerHTML = ""; wear.style.display = "none";
+    files.forEach((f) => {
+      const img = new Image();
+      img.onload = () => {
+        const r = readPng(img);
+        const bad = [];
+        if (r.soft) bad.push(`안티앨리어싱 <b style="color:#f5785c">${r.soft}픽셀</b> — 알파가 0·255 가 아니다`);
+        if (r.colors.size > IMP_COLORS) bad.push(`색 <b style="color:#f5785c">${r.colors.size}</b>가지 — ${IMP_COLORS} 이하로`);
+        if (r.w > lim[0] || r.h > lim[1]) bad.push(`크기 <b style="color:#f5785c">${r.w}×${r.h}</b> — 상한 ${lim[0]}×${lim[1]}`);
+        const line = document.createElement("div");
+        line.innerHTML = bad.length
+          ? `<b style="color:#f5785c">✕ ${f.name}</b> — ${bad.join(" · ")}`
+          : `<b style="color:#9BD468">✓ ${f.name}</b> — ${r.w}×${r.h}칸 · ${r.colors.size}색 · 그대로 들어간다` +
+            (r.w > 2 * babyParts(SKINS[0]).anchors.headHw / CELL
+              ? ` <span style="color:#E8C98A">· 베이비엔 크다 → 별도 PNG 필요 (틴의 약 70%)</span>` : "");
+        report.appendChild(line);
+        if (bad.length) return;
+        const anchor = guessAnchor(r, slot);
+        wear.style.display = "";
+        const row = document.createElement("div");
+        row.className = "row";
+        [["베이비", babyParts(SKINS[sel])], ["틴", slimeParts(SKINS[sel])],
+         ["각성", slimeParts(SKINS[sel], { awake: true })]].forEach(([ko, g]) => {
+          const fig = document.createElement("figure");
+          fig.style.textAlign = "center";
+          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade), 180) +
+            `<figcaption style="font-size:11.5px;font-weight:700;color:#4a453d">${ko}</figcaption>`;
+          row.appendChild(fig);
+        });
+        wear.appendChild(row);
+      };
+      img.src = URL.createObjectURL(f);
+    });
+  };
+  fileEl.addEventListener("change", run);
+  document.getElementById("impSlot").addEventListener("change", run);
+  document.getElementById("impShade").addEventListener("change", run);
+})();
 
 const KEY = "slimeLabV4ref";
 function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} }

@@ -2554,15 +2554,24 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
       }
       raw = raw.slice(0, 3);
       if (!raw.length) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, k: g ? g.kx : 0, sc: 0, ...(g ? {} : auto) } };
-      const order = raw.length === 3 ? ["awake", "teen", "baby"] : null;   // 세 벌이면 큰 것부터
-      const parts = raw.map((b, i) => {
-        const st = order ? order[i] : want && want !== "auto" ? want : "teen";
+      /* 어떤 덩어리를 어느 단계로 뜰지 정한다.
+         - 덩어리가 셋이면 큰 것부터 각성·틴·베이비
+         - **덩어리 하나 + 단계 자동**이면 그 하나로 세 벌을 다 뜬다. 홍조처럼 단순한
+           아이템은 한 장만 그려 와도 크기만 바꿔 세 단계를 만들 수 있다 (규격서 §7-나-3).
+           예전엔 한 벌만 나와서 단계를 바꿔 가며 세 번 넣어야 했다 */
+      const order = raw.length === 3 ? ["awake", "teen", "baby"] : null;
+      const jobs = order ? raw.map((b, i) => [b, order[i]])
+        : raw.length === 1 && (!want || want === "auto")
+          ? ["baby", "teen", "awake"].map((st) => [raw[0], st])
+          : raw.map((b) => [b, want && want !== "auto" ? want : null]);
+      const parts = jobs.map(([b, st0]) => {
+        const st = st0 || "teen";
         const rec = IMP_REC[st][slot || "head"];
         const CW = (cw && cw[st]) || rec[0];           // 손으로 준 가로 칸 수가 있으면 그걸 쓴다
         const CH = Math.max(1, Math.round(CW * (b.y1 - b.y0 + 1) / (b.x1 - b.x0 + 1)));
         const px = resampleTo(d, cv.width, cv.height, b, CW, CH);
         const n = quantize(px, IMP_COLORS);
-        return { px, colors: new Set(px.values()), soft: 0, w: CW, h: CH, quantized: n, stage: order ? st : null };
+        return { px, colors: new Set(px.values()), soft: 0, w: CW, h: CH, quantized: n, stage: st0 };
       });
       return { fixed: true, byCount: true, bg, parts };
     }

@@ -930,7 +930,9 @@ function ringPaint(buf, layers, reachFn, colorFn) {
 const AURA = {
   water: { rim: "#7FE9FF", line: "#2FA8D8", fill: "#B8F2FF", hi: "#FFFFFF", fx: "float" },
   gold:  { rim: "#FFE894", line: "#E0A81A", fill: "#FFF6C8", hi: "#FFFFFF", fx: "twink" },
-  fire:  { rim: "#FFB03A", line: "#E04A0C", fill: "#FFC53C", hi: "#FFF4C0", fx: "float" },
+  // 화 = 겹겹이 두른 띠. 레퍼런스(도트 불꽃 아이콘) 문법: 빨강 → 주황 → 노랑 → 흰 심지
+  fire:  { rim: "#FFB03A", line: "#E8321C", fill: "#F97A16", hi: "#FFF3C4",
+           f1: "#E8321C", f2: "#F97A16", f3: "#FFC81E", f4: "#FFF3C4", fx: "float" },
   wood:  { rim: "#A8F06A", line: "#2E7A22", fill: "#63C13C", hi: "#C6F58E", fx: "drift" },
   earth: { rim: "#D6B98A", line: "#4A3A26", fill: "#8A7157", hi: "#C2A87E", fx: "float" },
 };
@@ -993,15 +995,18 @@ function fxGlyph(attr, cx, cy, s) {
     disk(buf, cx, cy, 3.2 * s, A.hi);
 
   } else if (attr === "fire") {
-    // 불꽃 — 아래는 완전한 반원(불덩이), 위로 갈수록 좁아지며 끝이 한쪽으로 휜다.
-    // 아랫줄을 그냥 잘라내면 네모로 각져서 불꽃으로 안 읽힌다.
-    const w = 9.5 * s, h = 30 * s, lean = 6 * s;
-    const cyB = cy + h * 0.30;                       // 불덩이 중심
+    // 불꽃 — 아래는 완전한 반원(불덩이), 위로 갈수록 좁아지며 끝이 한쪽으로 크게 휜다.
+    // 색은 윤곽선+단색이 아니라 실루엣을 따라 겹겹이 두른 띠로 넣는다:
+    // 바깥부터 빨강 → 주황 → 노랑, 불덩이 아래쪽에 흰 심지. (레퍼런스 도트 불꽃 문법)
+    // 통통한 불덩이 + 확실히 가늘어지며 갈고리진 끝.
+    // 지수가 1보다 작으면 끝이 안 좁아져 잎사귀가 되고, 너무 크면 깃털이 된다. 1.1 근처가 불꽃.
+    const w = 11 * s, h = 32 * s, lean = 8 * s;
+    const cyB = cy + h * 0.26;                       // 불덩이 중심
     const prof = (py) => {
       const dy = py - cyB;
       if (dy >= 0) return { hw: Math.sqrt(Math.max(0, w * w - dy * dy)), off: 0 };  // 아래 반원
       const t = Math.min(1, -dy / (h - w));                                          // 0 중심 → 1 끝
-      return { hw: w * Math.pow(1 - t, 0.72), off: lean * t * t };
+      return { hw: w * Math.pow(1 - t, 1.1), off: lean * t * t };
     };
     const set = new Set();
     for (let y = snap(cyB - (h - w)); y <= cyB + w; y += CELL) {
@@ -1009,13 +1014,14 @@ function fxGlyph(attr, cx, cy, s) {
       for (let x = Math.ceil((cx + off - hw - CELL / 2) / CELL) * CELL; x + CELL / 2 <= cx + off + hw; x += CELL)
         set.add(x + "_" + y);
     }
-    const rim = rimSet(set, 1);
-    for (const k of set) buf.m.set(k, rim.has(k) ? A.line : A.fill);
-    // 안쪽 심지 — 같은 실루엣을 절반 폭으로
-    for (let y = snap(cyB - (h - w) * 0.55); y <= cyB + w * 0.55; y += CELL) {
-      const { hw, off } = prof(y + CELL / 2);
-      for (let x = snap(cx + off - hw * 0.5); x <= cx + off + hw * 0.5; x += CELL) buf.setIn(set, x, y, A.hi);
-    }
+    const d1 = rimSet(set, 1), d3 = rimSet(set, 3);
+    for (const k of set) buf.m.set(k, d1.has(k) ? A.f1 : d3.has(k) ? A.f2 : A.f3);
+    // 흰 심지 — 불덩이 아래 가운데
+    disk(buf, cx, cyB + w * 0.30, w * 0.34, A.f4, set);
+    // 떨어져 나간 불티 — 레퍼런스처럼 끝에서 튄 조각
+    const ex = snap(cx + lean * 1.05), ey = snap(cyB - (h - w) - 3 * CELL);
+    buf.m.set(ex + "_" + ey, A.f1);
+    buf.m.set(snap(ex + CELL) + "_" + snap(ey - CELL), A.f2);
 
   } else if (attr === "wood") {
     // 나뭇잎 — 양끝이 뾰족한 잎 + 가운데 잎맥 + 곁맥 + 잎자루

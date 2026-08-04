@@ -223,19 +223,19 @@
     90%        { opacity: 1; transform: translate(0, 0) rotate(0deg); }
     97%,100%   { opacity: 1; transform: translate(30px, 5px) rotate(42deg); }
   }
-  /* 베이비는 껍질 뒤에 납작하게 숨어 있다가 위로 자라 올라온다.
-     바닥이 기준점이라 세로 배율만 키우면 "머리부터 빠져나오는" 그림이 된다.
-     아래 껍질이 베이비보다 앞에 그려져서 하반신을 가려 준다. */
+  /* 베이비는 껍질 안에서 디졸브로 형체가 잡힌다 (원장 지시 2026-08-04).
+     아래에서 밀려 올라오면 부화가 아니라 "솟아난다"로 읽혔다.
+     아래 껍질이 베이비보다 앞에 그려져 하반신을 가리므로, 제자리에서 떠올라도
+     껍질 안에서 나타나는 그림이 된다. 껍질이 갈라질 때 한 번 튕겨 살아난다. */
   .h-baby { animation-name: hBaby; }
   @keyframes hBaby {
-     0%, 61.9% { opacity: 0; transform: scale(0.90, 0.10); }
-    62%        { opacity: 1; transform: scale(0.90, 0.10); }
-    70%        { opacity: 1; transform: scale(0.92, 0.40); }
-    78%        { opacity: 1; transform: scale(0.95, 0.72); }
-    85%        { opacity: 1; transform: scale(0.98, 0.94); }
-    90%        { opacity: 1; transform: scale(1.09, 1.06); }
-    95%        { opacity: 1; transform: scale(0.97, 0.99); }
-   100%        { opacity: 1; transform: scale(1, 1); }
+     0%, 63.9% { opacity: 0;   transform: scale(0.96, 0.96); }
+    64%        { opacity: 0;   transform: scale(0.96, 0.96); }
+    74%        { opacity: .45; transform: scale(0.97, 0.97); }
+    84%        { opacity: 1;   transform: scale(1, 1); }
+    91%        { opacity: 1;   transform: scale(1.07, 0.94); }
+    96%        { opacity: 1;   transform: scale(0.97, 1.03); }
+   100%        { opacity: 1;   transform: scale(1, 1); }
   }
   body.nomo .h-shake, body.nomo .h-c0, body.nomo .h-c1, body.nomo .h-c2, body.nomo .h-c3,
   body.nomo .h-top, body.nomo .h-bowl, body.nomo .h-left, body.nomo .h-right,

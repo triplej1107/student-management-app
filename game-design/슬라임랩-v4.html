@@ -455,6 +455,7 @@
              style="font-family:inherit;font-size:12px;color:#9a9488">
       <label style="font-size:12px;color:#9a9488">단계
         <select id="impStage" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+          <option value="auto">자동 (한 장에 3단계)</option>
           <option value="teen">틴</option><option value="baby">베이비</option><option value="awake">각성</option>
         </select></label>
       <label style="font-size:12px;color:#9a9488">슬롯
@@ -2137,8 +2138,25 @@ const IMP_LIMIT = {                      // 단계 × 슬롯 크기 상한 (칸)
   teen:  { head: [30, 16], face: [32, 12], right: [14, 26], left: [17, 23], fx: [52, 20] },
   awake: { head: [38, 20], face: [40, 15], right: [18, 33], left: [21, 29], fx: [65, 25] },
 };
+const IMP_REC = {                        // 권장 크기 (칸) · 규격서 §2 — 단계 자동 판별에 쓴다
+  baby:  { head: [24, 11], face: [24, 7], right: [8, 18], left: [11, 16], fx: [41, 14] },
+  teen:  { head: [26, 12], face: [26, 8], right: [9, 20], left: [12, 17], fx: [45, 15] },
+  awake: { head: [32, 15], face: [32, 10], right: [11, 25], left: [15, 21], fx: [56, 19] },
+};
 const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
 const IMP_COLORS = 12;
+
+/* 한 장에 세 벌을 나란히 그려 오는 게 규격이다(§5). 덩어리가 셋이면 큰 것부터
+   각성·틴·베이비로 본다. 그 외에는 권장 크기에 제일 가까운 단계로 붙인다. */
+function pickStage(r, slot) {
+  let best = "teen", bd = Infinity;
+  for (const st of ["baby", "teen", "awake"]) {
+    const rec = IMP_REC[st][slot];
+    const dd = Math.abs(r.w - rec[0]) / rec[0] + Math.abs(r.h - rec[1]) / rec[1];
+    if (dd < bd) { bd = dd; best = st; }
+  }
+  return best;
+}
 
 /* ---------- 확대본 되돌리기 ----------
    이미지 생성 모델은 "가로 26픽셀 PNG" 를 못 만든다. 아무리 시켜도 큰 래스터를 만들고
@@ -2161,33 +2179,47 @@ function stripBg(d, w, h, tol) {
   return n;
 }
 
-/* 칸 크기 — 같은 색이 이어지는 길이는 항상 "한 칸"의 배수다.
-   그래서 최빈값이 아니라 **공약수**를 찾아야 한다. 최빈값을 쓰면 긴 획(모자 챙 같은)
-   하나에 끌려가 엉뚱한 값이 나온다. 세로도 같이 봐서 가로로만 긴 그림에 안 속는다. */
+/* 칸 크기 — 색이 바뀌는 **자리**를 모아서 격자를 찾는다.
+   런 길이의 공약수를 보던 이전 방식은 칸 경계가 조금이라도 흐리면(안티앨리어싱)
+   길이가 k+1, k-1 로 흩어져 전부 무너졌다. 경계는 흐려져도 *자리*는 격자선 위에
+   남으므로, 경계 위치가 k 간격에 얼마나 잘 얹히는지를 본다. 얹히는 가장 큰 k 가 한 칸.
+   가로·세로를 따로 재서 둘 다 맞는 k 만 통과시킨다 — 가로로만 긴 그림에 안 속는다. */
 function guessBlock(d, w, h) {
-  const key = (i) => d[i * 4 + 3] === 0 ? "t" : `${d[i*4]},${d[i*4+1]},${d[i*4+2]}`;
-  const runs = [];
-  const scan = (n, m, at) => {                 // n줄 × m칸을 훑으며 런 길이를 모은다
+  const sig = (i, j) => {                      // 두 픽셀 사이가 "칸 경계"인가
+    const ai = d[i * 4 + 3] >= 128, aj = d[j * 4 + 3] >= 128;
+    if (ai !== aj) return true;
+    if (!ai) return false;
+    return Math.abs(d[i*4] - d[j*4]) + Math.abs(d[i*4+1] - d[j*4+1]) + Math.abs(d[i*4+2] - d[j*4+2]) > 40;
+  };
+  // 경계 위치 모으기. 흐린 경계는 2~3픽셀에 걸쳐 나오므로 뭉쳐서 가운데를 쓴다.
+  const collect = (n, m, at) => {
+    const pos = [];
     for (let a = 0; a < n; a++) {
-      let run = 1;
+      let s = -1;
       for (let b = 1; b <= m; b++) {
-        const same = b < m && key(at(a, b)) === key(at(a, b - 1));
-        if (same) { run++; continue; }
-        if (key(at(a, b - 1)) !== "t") runs.push(run);
-        run = 1;
+        if (b < m && sig(at(a, b - 1), at(a, b))) { if (s < 0) s = b; continue; }
+        if (s >= 0) { pos.push((s + b - 1) >> 1); s = -1; }
       }
     }
+    return pos;
   };
-  scan(h, w, (y, x) => y * w + x);
-  scan(w, h, (x, y) => y * w + x);
-  if (!runs.length) return 1;
-  const total = runs.reduce((a, b) => a + b, 0);
+  const px = collect(h, w, (y, x) => y * w + x);
+  const py = collect(w, h, (x, y) => y * w + x);
+  if (px.length < 20 || py.length < 20) return 1;
+  const score = (pos, k) => {                  // 어떤 시작점에 맞추면 몇 %가 격자선에 얹히나
+    const hist = new Array(k).fill(0);
+    for (const p of pos) hist[p % k]++;
+    let best = 0;
+    for (let o = 0; o < k; o++) {
+      const s = k >= 6 ? hist[o] + hist[(o + 1) % k] + hist[(o + k - 1) % k] : hist[o];
+      if (s > best) best = s;
+    }
+    return best / pos.length;
+  };
   let best = 1;
-  for (let k = 2; k <= 64; k++) {
-    let ok = 0;
-    for (const r of runs) if (r % k === 0) ok += r;
-    if (ok / total >= 0.92) best = k;          // 거의 다 k의 배수면 k가 한 칸이다
-  }
+  const kMax = Math.min(64, Math.floor(Math.min(w, h) / 4));
+  for (let k = 4; k <= kMax; k++)
+    if (Math.min(score(px, k), score(py, k)) >= 0.9) best = k;   // 맞는 것 중 제일 큰 k
   return best;
 }
 
@@ -2336,7 +2368,6 @@ function impSvg(r, slot, anchor, a, shade) {
     const nudge = [+document.getElementById("impDX").value, +document.getElementById("impDY").value];
     document.getElementById("impDXv").textContent = nudge[0];
     document.getElementById("impDYv").textContent = nudge[1];
-    const lim = IMP_LIMIT[stage][slot];
     report.innerHTML = "";
     wear.innerHTML = ""; wear.style.display = "none";
     files.forEach((f) => {
@@ -2350,12 +2381,19 @@ function impSvg(r, slot, anchor, a, shade) {
             (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "");
           report.appendChild(head);
         }
-        res.parts.forEach((r, pi) => showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed));
+        // 단계 배정 — 자동이면 덩어리 셋은 큰 것부터 각성·틴·베이비, 아니면 크기로 고른다
+        const auto = stage === "auto";
+        const trio = auto && res.parts.length === 3 ? ["awake", "teen", "baby"] : null;
+        res.parts.forEach((r, pi) => {
+          const st = trio ? trio[pi] : auto ? pickStage(r, slot) : stage;
+          showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed, st, auto);
+        });
       };
       img.src = URL.createObjectURL(f);
     });
     function anchorOf(r) { const g = guessAnchor(r, slot); return [g[0] - nudge[0], g[1] - nudge[1]]; }
-    function showOne(r, name, fixed) {
+    function showOne(r, name, fixed, stage, auto) {
+        const lim = IMP_LIMIT[stage][slot];
         const bad = [];
         if (r.soft) bad.push(`안티앨리어싱 <b style="color:#f5785c">${r.soft}픽셀</b> — 알파가 0·255 가 아니다`);
         if (r.colors.size > IMP_COLORS) bad.push(`색 <b style="color:#f5785c">${r.colors.size}</b>가지 — ${IMP_COLORS} 이하로`);
@@ -2364,7 +2402,7 @@ function impSvg(r, slot, anchor, a, shade) {
         line.style.paddingLeft = fixed ? "14px" : "0";
         line.innerHTML = bad.length
           ? `<b style="color:#f5785c">✕ ${name}</b> — ${bad.join(" · ")}`
-          : `<b style="color:#9BD468">✓ ${name}</b> — ${IMP_KO[stage]}용 ${r.w}×${r.h}칸 · ${r.colors.size}색 · 들어간다` +
+          : `<b style="color:#9BD468">✓ ${name}</b> — ${IMP_KO[stage]}용${auto ? "(자동)" : ""} ${r.w}×${r.h}칸 · ${r.colors.size}색 · 들어간다` +
             ` <span style="color:#7d776b">· 앵커 [${anchorOf(r).join(", ")}]</span>`;
         report.appendChild(line);
         if (bad.length) return;
@@ -2373,6 +2411,18 @@ function impSvg(r, slot, anchor, a, shade) {
         wear.style.display = "";
         const G = { baby: babyParts(SKINS[sel]), teen: slimeParts(SKINS[sel]),
                     awake: slimeParts(SKINS[sel], { awake: true }) };
+        if (auto) {
+          // 자동일 땐 세 벌이 각자 제 단계에 얹힌 모습만 한 줄에 모아 보여 준다
+          let row = wear.firstElementChild;
+          if (!row) { row = document.createElement("div"); row.className = "row"; wear.appendChild(row); }
+          const g = G[stage];
+          const fig = document.createElement("figure");
+          fig.style.cssText = `text-align:center;order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
+          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade), 190) +
+            `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[stage]}</figcaption>`;
+          row.appendChild(fig);
+          return;
+        }
         const row = document.createElement("div");
         row.className = "row";
         ["baby", "teen", "awake"].forEach((st) => {

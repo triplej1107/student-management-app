@@ -159,14 +159,25 @@
   }
   body.nomo .fx-sp { animation: none; }
 
-  /* 나뭇잎 — 떠오르면서 살랑 돈다 */
-  @keyframes fxDrift { 0%,100% { transform: translateY(0)    rotate(-9deg); }
-                        50%    { transform: translateY(-11px) rotate(11deg); } }
-  .fx-dr1, .fx-dr2, .fx-dr3 { transform-box: fill-box; transform-origin: 50% 50%;
-                              animation: fxDrift 3.2s ease-in-out infinite; }
-  .fx-dr2 { animation-duration: 3.9s; animation-delay: -1.1s; }
-  .fx-dr3 { animation-duration: 2.7s; animation-delay: -2.0s; }
-  body.nomo .fx-dr1, body.nomo .fx-dr2, body.nomo .fx-dr3 { animation: none; }
+  /* 나뭇잎 — 위에서 아래로 지그재그로 내려온다 (원장 지시 2026-08-04).
+     제자리에서 떠오르며 살랑거리기만 하니 잎이 공중에 붙어 있는 것으로 읽혔다.
+     y 는 한 방향으로만 내려가고 x 만 좌우로 번갈아야 낙엽이 된다.
+     좌우 폭은 --sw, 내려갈 거리는 --dy 로 잎마다 따로 준다. */
+  .fx-fall {
+    transform-box: fill-box; transform-origin: 50% 50%;
+    animation-name: fxFall; animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  @keyframes fxFall {
+      0% { transform: translate(0, 0) rotate(-16deg); opacity: 0; }
+      7% { opacity: 1; }
+     25% { transform: translate(var(--sw), calc(var(--dy) * .25)) rotate(18deg); }
+     50% { transform: translate(calc(var(--sw) * -1), calc(var(--dy) * .5)) rotate(-18deg); }
+     75% { transform: translate(var(--sw), calc(var(--dy) * .75)) rotate(18deg); }
+     92% { opacity: 1; }
+    100% { transform: translate(0, var(--dy)) rotate(-4deg); opacity: 0; }
+  }
+  body.nomo .fx-fall { animation: none; }
   body.nomo .fx-float1, body.nomo .fx-float2, body.nomo .fx-float3,
   body.nomo .fx-tw1, body.nomo .fx-tw2, body.nomo .fx-tw3 { animation: none; }
 
@@ -451,7 +462,8 @@
 
   <section class="card awake-sec">
     <h2><span class="tag awake">각성</span> 속성 발현
-      <em>— 화=불꽃 오라 · 수=물방울+발광테 · 목=잎 볏 · 금=반짝임+금테 · 토=바위 결정</em></h2>
+      <em>— 발광 테두리는 5속성 공통. 상징물은 화=불꽃 · 수=튀는 물방울 ·
+        목=지그재그로 떨어지는 잎 · 금=반짝임 · 토=떠 있는 자갈</em></h2>
     <div class="sheet" id="awakeSheet"></div>
     <label style="display:block;margin:10px 0;font-size:12px;color:#9a9488;cursor:pointer">
       <input type="checkbox" id="awakeGearChk" style="accent-color:#f0a33c;vertical-align:-2px">
@@ -1030,7 +1042,7 @@ const AURA = {
            f1: "#E8321C", f2: "#F97A16", f3: "#FFC81E", f4: "#FFF3C4", fx: "float" },
   // 목 = 양끝이 뾰족한 잎 하나. 곁맥 없이 어두운 중앙맥 하나로 가른 두 면 (레퍼런스 도트 잎)
   wood:  { rim: "#A8F06A", line: "#2E7A22", fill: "#63C13C", hi: "#C6F58E",
-           l1: "#245E1A", l2: "#4FA92E", l3: "#8ADD57", l4: "#357F24", fx: "drift" },
+           l1: "#245E1A", l2: "#4FA92E", l3: "#8ADD57", l4: "#357F24", fx: "fall" },
   // 토 = 둥근 자갈. 계단식 대각 경계로 나뉜 세 면 (레퍼런스 도트 돌)
   earth: { rim: "#D6B98A", line: "#4A3A26", fill: "#8A7157", hi: "#C2A87E",
            r1: "#2E2418", r2: "#D9C4A2", r3: "#A2856A", r4: "#6B5140", fx: "float" },
@@ -1203,7 +1215,25 @@ function awakeFx(attr, g) {
     }).join("");
   }
 
-  const pre = { float: "fx-float", twink: "fx-tw", drift: "fx-dr" }[AURA[attr].fx];
+  // 목 — 낙엽이 위에서 아래로 지그재그로 내려온다. 셋이 같은 자리에서 떨어지면
+  // 한 줄기로 보이므로 시작 x·좌우 폭·크기·주기를 전부 다르게 준다.
+  // 가운데 잎만 몸 앞을 스치되 눈(±0.32rx)과 하이라이트(-0.54rx)는 피한다.
+  if (AURA[attr].fx === "fall") {
+    const R = rx + rimU;
+    const startY = snap(mid - (ry + rimU) - 8);          // 오라 바깥선 위에서 출발
+    const dy = Math.round(2 * ry + rimU + 3);            // 바닥선에 닿으며 사라진다
+    const LANES = [
+      { x: -1.00, sw:  9, dur: 3.4, delay: 0 },
+      { x:  1.00, sw: -8, dur: 4.2, delay: -1.6 },
+      { x:  0.64, sw:  8, dur: 2.9, delay: -2.4 },
+    ];
+    return LANES.map((ln, i) =>
+      `<g class="fx-fall" style="--sw:${ln.sw}px;--dy:${dy}px;` +
+      `animation-duration:${ln.dur}s;animation-delay:${ln.delay}s">` +
+      fxGlyph(attr, snap(ln.x * R), startY, sc[i] * F) + `</g>`).join("");
+  }
+
+  const pre = { float: "fx-float", twink: "fx-tw" }[AURA[attr].fx];
   return FX_DIRS.map((_, i) => {
     const [px, py] = anchor(i);
     return `<g class="${pre}${i + 1}">${fxGlyph(attr, px, py, sc[i] * F)}</g>`;

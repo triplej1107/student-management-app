@@ -459,7 +459,7 @@
 
   <section class="card baby-sec">
     <h2><span class="tag baby">베이비</span> 표정
-      <em>— 오로지 눈으로만. 기호·입이 있어야 하는 표정은 베이비에 없다 (10종).
+      <em>— 눈과 머리 위 기호로. 입이 있어야 하는 표정은 베이비에 없다 (14종).
         성장하며 표정이 늘어난다 → 틴·각성 17종</em></h2>
     <div class="sheet" id="babyFaceSheet"></div>
   </section>
@@ -1000,16 +1000,16 @@ const FACES = [
   { key: "wink",     ko: "윙크",     eye: "basic",     eyeR: "arch", sign: "spark",
                                    babyEye: "basic", babyEyeR: "archB" },
   { key: "surprise", ko: "놀람",     eye: "round",     sign: "bang",   babyEye: "roundB" },
-  { key: "sing",     ko: "노래",     eye: "arch",      sign: "phone" },        // 레퍼런스 헤드폰
+  { key: "sing",     ko: "노래",     eye: "arch",      sign: "phone",  babyEye: "archB" },   // 레퍼런스 헤드폰
   { key: "wince",    ko: "찡긋",     eye: "squint",    sign: "star",   babyEye: "squintB" },
   { key: "weary",    ko: "지침",     eye: "half",      sign: "speech", sweat: 1, babyEye: "halfB" },  // 레퍼런스 말줄임 말풍선
   { key: "teary",    ko: "눈물글썽", eye: "shiny",     tear: 1 },
   { key: "pout",     ko: "뽀로통",   eye: "slantSoft", sign: "broken", babyEye: "slantB" },       // 레퍼런스 뾰족눈 + 깨진 하트
-  { key: "fierce",   ko: "씩씩",     eye: "slantHard", sign: "flame" },
+  { key: "fierce",   ko: "씩씩",     eye: "slantHard", sign: "flame",  babyEye: "slantHardB" },
   { key: "think",    ko: "골똘히",   eye: "narrow",    sign: "quest",  babyEye: "narrowB" },
-  { key: "dizzy",    ko: "어질어질", eye: "spiral",    sign: "swirl" },
+  { key: "dizzy",    ko: "어질어질", eye: "spiral",    sign: "swirl",  babyEye: "ringB" },
   { key: "eating",   ko: "먹는중",   eye: "arch",      cookie: 1, mouth: 1 },
-  { key: "proud",    ko: "뿌듯",     eye: "arch",      sign: "thumb" },        // 레퍼런스 따봉
+  { key: "proud",    ko: "뿌듯",     eye: "arch",      sign: "thumb",  babyEye: "archB" },   // 레퍼런스 따봉
 ];
 
 /* 무늬 한 장을 격자에 찍는다. set 을 주면 실루엣 안쪽만 칠한다(얼굴), 없으면 밖도 칠한다(기호).
@@ -1030,15 +1030,14 @@ function stamp(buf, rows, ccx, ccy, pal, set, k) {
 const flipArt = (rows) => rows.map((r) => [...r].reverse().join(""));
 
 /* ============================================================
-   베이비 표정 — 오로지 눈으로만 (원장 지시 2026-08-04).
-   머리 위 기호도 입도 안 쓴다. 눈만으로 안 되는 표정은 베이비에 아예 없다:
-   성장하며 표정이 늘어나는 게 정상이라는 판단. 베이비 10 → 틴·각성 17.
+   베이비 표정 — 눈 + 머리 위 기호 (원장 지시 2026-08-04).
+   입만 없다. 입이 있어야 성립하는 표정은 베이비에 아예 없다:
+   성장하며 표정이 늘어나는 게 정상이라는 판단. 베이비 14 → 틴·각성 17.
 
-   빠진 일곱: 하품·먹는중(입이 있어야 함) · 노래·뿌듯(기호를 빼면 웃기와 같아짐) ·
-   눈물글썽(울기와 겹침) · 씩씩(이 해상도에서 뽀로통과 안 갈림) ·
-   어질어질(5칸 눈에서는 나선이 한 바퀴도 못 감겨 쉼표로 읽힌다).
+   빠진 셋: 하품·먹는중(입이 있어야 함) · 눈물글썽(기호가 없어 울기와 겹침).
 
-   무늬는 5칸 × 4줄. 틴의 7칸 무늬를 그대로 줄이면 획이 뭉개진다.
+   무늬는 5칸 × 4~5줄. 틴의 7칸 무늬를 그대로 줄이면 획이 뭉개진다.
+   기호는 몸이 작으니 1칸으로 찍는다 — 틴처럼 2칸으로 찍으면 기호가 몸보다 커진다.
    ============================================================ */
 // 베이비 눈은 2칸 막대 기준으로 간격(0.23)이 잡혀 있다. 표정 무늬는 5칸이라
 // 그 간격으로는 두 눈이 붙어 눈썹 한 줄로 보인다 → 표정일 때만 벌린다.
@@ -1047,10 +1046,15 @@ const BABY_EYE_ART = {
   archB:     [".....", ".KKK.", "KK.KK", "....."],   // 웃기 ∩
   archDownB: [".....", "KK.KK", ".KKK.", "....."],   // 울기·졸기 ∪
   roundB:    [".KKK.", "KWWKK", "KKKKK", ".KKK."],   // 놀람
-  squintB:   ["K...", ".KK.", ".KK.", "K..."],       // 찡긋 ><
+  // 찡긋은 커야 귀엽다 (원장 지시) — 베이비 눈 중 제일 큰 획
+  squintB:   ["KK...", ".KK..", "..KK.", ".KK..", "KK..."],
   halfB:     [".....", "KKKKK", "..K..", "....."],   // 지침
   slantB:    [".....", "KK...", ".KKKK", "....."],   // 뽀로통
+  slantHardB:["KK...", ".KKK.", "..KKK", "....."],   // 씩씩 — 뽀로통보다 가파르게
   narrowB:   [".....", "KKKKK", "KKKKK", "....."],   // 골똘히
+  // 어질어질 — 5칸에서는 나선이 한 바퀴도 못 감긴다. 초점 풀린 고리눈으로 대신하고
+  // 머리 위 소용돌이가 뜻을 확정한다.
+  ringB:     [".KKK.", "K.K.K", ".KKK.", "....."],
 };
 
 /* 베이비 얼굴. rx·H 는 몸통 실루엣 치수. */
@@ -1074,12 +1078,18 @@ function babyFacePixels(buf, set, rx, H, key) {
   if (art !== "basic") put(art, -1);
   put(f.babyEyeR || art, 1);
 
-  // 눈물은 눈에서 나오는 것이라 "눈으로만"에 든다 — 울기와 졸기를 가르는 유일한 단서다
-  if (f.tear) {
+  if (f.tear) {                       // 울기와 졸기를 가르는 단서
     for (const sd of [-1, 1]) {
       const tx = snap(sd * gap);
       for (let b = 0; b < 3; b++) buf.setIn(set, tx, snap(cy) + (2 + b) * CELL, TEAR);
     }
+  }
+  // 머리 위 기호 — 정수리 바로 위. 틴과 같은 무늬를 1칸으로 찍는다.
+  if (f.sign === "swirl") {
+    spiralAt(buf, 0, B - H - 6 * CELL, 4 * CELL, "#5A6B8C");
+  } else if (f.sign) {
+    const g = SIGN_ART[f.sign];
+    stamp(buf, g.art, 0, B - H - 2 * CELL - g.art.length * CELL / 2, g.pal);
   }
 }
 

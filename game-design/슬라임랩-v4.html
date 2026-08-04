@@ -439,6 +439,15 @@
   </section>
 
   <section class="card">
+    <h2>앵커 좌표 <em>— 아이템이 붙는 자리. 세 단계가 같은 규칙에서 나온다.
+      <b style="color:#C0392B">┼ 정수리</b> · <b style="color:#8E44AD">┼ 눈높이</b> ·
+      <b style="color:#1E8449">┼ 양손</b> · <b style="color:#2E86C1">┼ 발밑</b> ·
+      점선 = 머리 아이템 허용 폭</em></h2>
+    <div class="sheet" id="ancSheet"></div>
+    <div class="meta" id="ancTable" style="margin-top:10px;font-size:12px;color:#9a9488"></div>
+  </section>
+
+  <section class="card">
     <h2>구성 순서 <em>— 레퍼런스 BUILDING A SLIME 과 같은 순서로 쌓인다</em></h2>
     <div class="build" id="build"></div>
   </section>
@@ -671,7 +680,51 @@ function bboxOf(set) {
     if (x < x0) x0 = x; if (x > x1) x1 = x;
     if (y < y0) y0 = y; if (y > y1) y1 = y;
   }
-  return { cx: (x0 + x1) / 2, hw: Math.max(1, (x1 - x0) / 2), h: Math.max(1, y1 - y0), y1 };
+  return { cx: (x0 + x1) / 2, hw: Math.max(1, (x1 - x0) / 2), h: Math.max(1, y1 - y0), y0, y1 };
+}
+
+/* ============================================================
+   앵커 — 아이템이 몸에 붙는 자리.
+   아이템 103종을 한 번만 그려서 세 단계에 다 쓰려면 이 좌표가 하나의 규칙에서
+   나와야 한다. 전에는 단계마다 눈으로 맞춘 계수를 따로 썼고(머리 폭이
+   베이비 0.56·틴 0.60·각성 0.50), 그래서 각성이 틴보다 몸은 큰데 모자는 작았다.
+
+   규칙: 몸통을 그린 실루엣에서 직접 잰다. 반지름(rx)은 제일 넓은 곳이라
+   손 높이의 실제 폭과 다르므로 쓰지 않는다.
+     · 손 높이 = 바닥에서 몸높이의 handF
+     · 손 좌우 = 그 높이의 실루엣 끝 + gap 칸
+     · 머리 폭 = 정수리에서 몸높이의 headF 만큼 내려온 자리의 실루엣 폭
+   몸통 함수가 앵커까지 같이 돌려주므로 렌더와 앵커가 어긋날 수 없다.
+   ============================================================ */
+const ANCHOR = { handF: 0.13, headF: 0.20, gapCells: 2 };
+
+// 그 높이에서 실루엣이 좌우로 얼마나 벌어져 있나
+function hwAt(set, y) {
+  let hw = 0;
+  for (const k of set) {
+    const i = k.indexOf("_");
+    if (+k.slice(i + 1) === y) hw = Math.max(hw, Math.abs(+k.slice(0, i)) + CELL);
+  }
+  return hw;
+}
+
+function anchorsOf(set, eyeCY) {
+  const bb = bboxOf(set);
+  const top = bb.y0, Hb = B - top;
+  const handY = snap(B - ANCHOR.handF * Hb);
+  const headY = snap(top + ANCHOR.headF * Hb);
+  const handX = gsnap(hwAt(set, handY) + ANCHOR.gapCells * CELL);
+  const faceY = snap(eyeCY);
+  return {
+    top, Hb, bodyHw: bb.hw,
+    // 머리 아이템의 기준선은 정수리가 아니라 "머리가 그 폭이 되는 높이"다.
+    // 정수리에 맞추면 모자가 머리 위에 떠 버린다 — 정수리에서는 폭이 0이기 때문.
+    head: [0, headY], headHw: hwAt(set, headY),
+    crown: [0, top],                 // 정수리 — 후광처럼 머리 위에 뜨는 것만 여기 쓴다
+    face: [0, faceY], faceHw: hwAt(set, faceY),
+    hand: [handX, handY],            // 오른손 (왼손은 x 부호만 뒤집는다)
+    foot: [0, B],                    // 이펙트 — 발밑
+  };
 }
 
 /* ---------- 베이비 본체 ----------
@@ -713,20 +766,12 @@ function babyParts(skin, opts) {
 
   babyFacePixels(buf, set, rx, H, opts.face || "basic");   // 눈만으로 표현한다
 
-  // 그립 앵커 — 바닥 쪽이 좁아졌으므로 rx 가 아니라 손 높이의 실제 몸통 폭에서 잡는다
-  const gripY = snap(B - 8);
-  let gripHw = 0;
-  for (const key of set) {
-    const i = key.indexOf("_");
-    if (+key.slice(i + 1) === gripY) gripHw = Math.max(gripHw, +key.slice(0, i) + CELL);
-  }
-  if (!gripHw) gripHw = bx.hw;
-
   const r = toRects(buf);
   return {
     inner: r.out, n: r.n, raw: r.raw,
     cells: Math.round((2 * bx.hw) / CELL) + 1,   // 실제 최대 폭 (rx 는 taper 전 값)
-    top: B - H, rx, H, gripHw,
+    top: B - H, rx, H, set,
+    anchors: anchorsOf(set, snap(B - P.babyEyeY * H) + P.babyEyeH * CELL / 2),
   };
 }
 
@@ -863,16 +908,16 @@ function hatchSvg(eggSkin, babySkin, width) {
 }
 
 /* 베이비 노말 장비 — 머리(비니)와 오른손(연필). 노말만 착용 가능. */
-function babyGearSoft(rx, H) {
-  const top = gsnap(B - H), hw = gsnap(rx * 0.56);
+function babyGearSoft(a) {
+  const y = a.head[1], hw = gsnap(a.headHw);
   const K = "#2B2B33", RED = "#C43B3B", RD = "#8E2020";
-  return RECT(-hw - C, top - C, 2 * hw + 2 * C, C, K) +
-    RECT(-hw, top - 4 * C, 2 * hw, 3 * C, RED) +
-    RECT(-hw, top - 5 * C, 2 * hw, C, K) +
-    RECT(-hw - C, top - 4 * C, C, 3 * C, K) + RECT(hw, top - 4 * C, C, 3 * C, K);
+  return RECT(-hw - C, y - C, 2 * hw + 2 * C, C, K) +
+    RECT(-hw, y - 4 * C, 2 * hw, 3 * C, RED) +
+    RECT(-hw, y - 5 * C, 2 * hw, C, K) +
+    RECT(-hw - C, y - 4 * C, C, 3 * C, K) + RECT(hw, y - 4 * C, C, 3 * C, K);
 }
-function babyGearRigid(rx) {
-  const hx = gsnap(rx + 2 * C), hy = gsnap(B - 8);
+function babyGearRigid(a) {
+  const hx = a.hand[0], hy = a.hand[1];
   const K = "#2B2B33", Y = "#E8C13A", P2 = "#F0A0B4";
   return RECT(hx, hy - 11 * C, C, C, K) +
     RECT(hx, hy - 10 * C, C, 7 * C, Y) + RECT(hx - C, hy - 10 * C, C, 7 * C, K) +
@@ -882,8 +927,8 @@ function babyGearRigid(rx) {
 
 function babyCrawlSvg(skin, width, gear, patrol) {
   const g = babyParts(skin);
-  const soft = gear ? babyGearSoft(g.rx, g.H) : "";
-  const rigid = gear ? babyGearRigid(g.gripHw) : "";
+  const soft = gear ? babyGearSoft(g.anchors) : "";
+  const rigid = gear ? babyGearRigid(g.anchors) : "";
   const inner =
     `<g class="cr" style="--dur:${P.crawlMs}ms">${g.inner}${soft}</g>` +
     `<g class="crMove" style="--dur:${P.crawlMs}ms">${rigid}</g>`;
@@ -1228,7 +1273,8 @@ function slimeParts(skin, opts) {
     B - 2 * ry - (opts.awake ? P.awRim * CELL : 0) - 3 * CELL);
 
   const r = toRects(buf);
-  return { inner: r.out, n: r.n, raw: r.raw, cells: Math.round((2 * rx) / CELL), top: B - 2 * ry, set, rx, ry, cy };
+  const anchors = anchorsOf(set, snap(B - P.eyeY * 2 * ry) + P.eyeH * CELL / 2);
+  return { inner: r.out, n: r.n, raw: r.raw, cells: Math.round((2 * rx) / CELL), top: B - 2 * ry, set, rx, ry, cy, anchors };
 }
 function wrap(inner, width, extra) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEWBOX}" width="${width}" role="img" aria-label="슬라임">` +
@@ -1529,8 +1575,8 @@ function cellsInPolyLocal(poly) {
 
 /* ---------- 각성 테스트 장비 5슬롯 — 상징물이 묻히는지 확인용 임시 아트 ----------
    앵커: 정수리 (0, B-2ry) · 눈높이 (±eyeGap·rx, B-eyeY·2ry) · 양손 (±(rx+2셀), B-14) */
-function awakeGearSoft(rx, ry) {                 // 머리·얼굴 — 몸 따라 찌그러진다
-  const top = gsnap(B - 2 * ry), hw = gsnap(rx * 0.50);
+function awakeGearSoft(a) {                      // 머리·얼굴 — 몸 따라 찌그러진다
+  const top = a.head[1], hw = gsnap(a.headHw);
   const K = "#2B2B33", G = "#E8B42A", g2 = "#B0821A", V = "#3A4250", VL = "#8FB6D8";
   let s = "";
   // 왕관 — 세 갈래
@@ -1543,15 +1589,15 @@ function awakeGearSoft(rx, ry) {                 // 머리·얼굴 — 몸 따�
        RECT(-hw, top - 6 * C, 2 * hw, C, g2) +
        RECT(-hw, top - 5 * C, 2 * hw, C, K);
   // 얼굴 바이저 — 눈높이를 가로지르는 띠
-  const ey = gsnap(B - P.eyeY * 2 * ry) - 2 * C;
-  s += RECT(-rx * 0.62, ey - C, rx * 1.24, C, K) +
-       RECT(-rx * 0.62, ey, rx * 1.24, 3 * C, V) +
-       RECT(-rx * 0.52, ey + C, rx * 0.34, C, VL) +
-       RECT(-rx * 0.62, ey + 3 * C, rx * 1.24, C, K);
+  const ey = a.face[1] - 2 * C, fw = gsnap(a.faceHw * 0.78);   // 허용 폭의 78%만 쓴다
+  s += RECT(-fw, ey - C, 2 * fw, C, K) +
+       RECT(-fw, ey, 2 * fw, 3 * C, V) +
+       RECT(-fw * 0.84, ey + C, fw * 0.55, C, VL) +
+       RECT(-fw, ey + 3 * C, 2 * fw, C, K);
   return s;
 }
-function awakeGearRigid(rx) {                    // 양손 — 쇠붙이라 안 찌그러진다
-  const hx = gsnap(rx + 2 * C), hy = gsnap(B - 14);
+function awakeGearRigid(a) {                     // 양손 — 쇠붙이라 안 찌그러진다
+  const hx = a.hand[0], hy = a.hand[1];
   const K = "#2B2B33", S = "#C9CDD4", SD = "#8A9099", G = "#E8B42A", RD = "#8E2020", B2 = "#3C6FA8";
   let s = "";
   // 오른손 대검
@@ -1560,18 +1606,19 @@ function awakeGearRigid(rx) {                    // 양손 — 쇠붙이라 안 
        RECT(hx - 3 * C, hy - 5 * C, 9 * C, C, G) +
        RECT(hx, hy - 4 * C, 3 * C, 4 * C, RD) + RECT(hx, hy, 3 * C, C, K);
   // 왼손 방패
-  const sx = gsnap(-rx - 6 * C), sy = gsnap(B - 42);
+  // 왼손 방패 — 오른손과 같은 높이에서 좌우만 뒤집는다
+  const sx = gsnap(-hx - 7 * C), sy = gsnap(hy - 13 * C);
   s += RECT(sx - C, sy - C, 12 * C, C, K) + RECT(sx - C, sy, C, 12 * C, K) +
        RECT(sx + 10 * C, sy, C, 12 * C, K) + RECT(sx, sy, 10 * C, 12 * C, B2) +
        RECT(sx + 3 * C, sy + 3 * C, 4 * C, 5 * C, G) +
        RECT(sx, sy + 12 * C, 10 * C, C, K);
   return s;
 }
-function awakeGearFx(rx) {                       // 이펙트 슬롯 — 발밑 룬 고리
-  const y = gsnap(B - 4), G = "#FFE894", g2 = "#E0A81A";
+function awakeGearFx(a) {                        // 이펙트 슬롯 — 발밑 룬 고리
+  const y = gsnap(a.foot[1] - 4), G = "#FFE894", g2 = "#E0A81A";
   let s = "";
   for (let i = -4; i <= 4; i++) {
-    const x = gsnap(i * rx * 0.24), dy = Math.abs(i) === 4 ? 0 : Math.abs(i) === 2 ? -C : -2 * C;
+    const x = gsnap(i * a.bodyHw * 0.24), dy = Math.abs(i) === 4 ? 0 : Math.abs(i) === 2 ? -C : -2 * C;
     s += RECT(x - C, y + dy, C, C, g2) + RECT(x, y + dy - C, C, 2 * C, G) + RECT(x + C, y + dy, C, C, g2);
   }
   return `<g class="fx-tw2">${s}</g>`;
@@ -1581,9 +1628,9 @@ function awakeGearFx(rx) {                       // 이펙트 슬롯 — 발밑 
 function awakeSvg(skin, width, jump, gear, face) {
   const g = slimeParts(skin, { awake: true, face: face });
   const attr = skin.key;
-  const soft = gear ? awakeGearSoft(g.rx, g.ry) : "";
-  const rigid = gear ? awakeGearRigid(g.rx) : "";
-  const efx = gear ? awakeGearFx(g.rx) : "";
+  const soft = gear ? awakeGearSoft(g.anchors) : "";
+  const rigid = gear ? awakeGearRigid(g.anchors) : "";
+  const efx = gear ? awakeGearFx(g.anchors) : "";
   const body = `<g class="${jump ? "xf" : ""}" style="--dur:${P.jumpMs}ms">` +
     awakeBack(attr, g) + g.inner + soft + `</g>` +
     (rigid ? `<g class="${jump ? "xfMove" : ""}" style="--dur:${P.jumpMs}ms">${rigid}</g>` : "");
@@ -1598,19 +1645,19 @@ const gsnap = (v) => Math.round(v / C) * C;
 const RECT = (x, y, w, h, f) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`;
 
 // 무른 장비 — 몸을 따라 같이 찌그러져야 자연스럽다 (모자·얼굴·이펙트)
-function gearSoft(rx, ry) {
-  const top = gsnap(B - 2 * ry), hw = gsnap(rx * 0.60);
+function gearSoft(a) {
+  const y = a.head[1], hw = gsnap(a.headHw);   // 챙이 놓이는 선
   const K = "#2B2B33", RED = "#C43B3B", RD = "#8E2020";
-  return RECT(-hw - 2 * C, top - 2 * C, 2 * hw + 4 * C, C, K) +
-    RECT(-hw - 2 * C, top - 3 * C, 2 * hw + 4 * C, C, RD) +
-    RECT(-hw, top - 7 * C, 2 * hw, 4 * C, RED) +
-    RECT(-hw, top - 8 * C, 2 * hw, C, K) +
-    RECT(-hw - C, top - 7 * C, C, 4 * C, K) +
-    RECT(hw, top - 7 * C, C, 4 * C, K);
+  return RECT(-hw - 2 * C, y - C, 2 * hw + 4 * C, C, K) +
+    RECT(-hw - 2 * C, y - 2 * C, 2 * hw + 4 * C, C, RD) +
+    RECT(-hw, y - 6 * C, 2 * hw, 4 * C, RED) +
+    RECT(-hw, y - 7 * C, 2 * hw, C, K) +
+    RECT(-hw - C, y - 6 * C, C, 4 * C, K) +
+    RECT(hw, y - 6 * C, C, 4 * C, K);
 }
 // 단단한 장비 — 쇠붙이라 찌그러지면 어색하다 (검·방패)
-function gearRigid(rx) {
-  const hx = gsnap(rx + 4 * C), hy = gsnap(B - 12);
+function gearRigid(a) {
+  const hx = a.hand[0], hy = a.hand[1];
   const K = "#2B2B33", S = "#C9CDD4", SD = "#8A9099", GD = "#E0B23A", RD = "#8E2020";
   return RECT(hx - C, hy - 16 * C, C, 13 * C, K) +
     RECT(hx, hy - 16 * C, 2 * C, 13 * C, S) +
@@ -1618,7 +1665,27 @@ function gearRigid(rx) {
     RECT(hx - 2 * C, hy - 3 * C, 7 * C, C, GD) +
     RECT(hx, hy - 2 * C, 2 * C, 3 * C, RD);
 }
-function gearSvg(rx, ry) { return gearSoft(rx, ry) + gearRigid(rx); }
+function gearSvg(a) { return gearSoft(a) + gearRigid(a); }
+
+/* ---------- 앵커 눈으로 보기 ----------
+   도트가 아니라 안내선이므로 격자에 맞추지 않는다 — 실제 좌표를 그대로 긋는다. */
+const ANC_COL = { crown: "#C0392B", face: "#8E44AD", hand: "#1E8449", foot: "#2E86C1" };
+function anchorMarks(a) {
+  const cross = (x, y, col) =>
+    `<line x1="${x - 9}" y1="${y}" x2="${x + 9}" y2="${y}" stroke="${col}" stroke-width="1.4"/>` +
+    `<line x1="${x}" y1="${y - 9}" x2="${x}" y2="${y + 9}" stroke="${col}" stroke-width="1.4"/>`;
+  // 머리 아이템이 쓸 수 있는 폭 — 이 선을 넘으면 얼굴을 덮는다
+  const hy = a.head[1];
+  const budget =
+    `<line x1="${-a.headHw}" y1="${hy}" x2="${a.headHw}" y2="${hy}" ` +
+    `stroke="${ANC_COL.crown}" stroke-width="1.2" stroke-dasharray="3 3"/>` +
+    `<line x1="${-a.headHw}" y1="${hy - 4}" x2="${-a.headHw}" y2="${hy + 4}" stroke="${ANC_COL.crown}" stroke-width="1.2"/>` +
+    `<line x1="${a.headHw}" y1="${hy - 4}" x2="${a.headHw}" y2="${hy + 4}" stroke="${ANC_COL.crown}" stroke-width="1.2"/>`;
+  return budget + cross(a.head[0], hy, ANC_COL.crown) +
+    cross(a.face[0], a.face[1], ANC_COL.face) +
+    cross(a.hand[0], a.hand[1], ANC_COL.hand) + cross(-a.hand[0], a.hand[1], ANC_COL.hand) +
+    cross(a.foot[0], a.foot[1], ANC_COL.foot);
+}
 
 /* ---------- 점프: 프레임 재렌더 방식 ----------
    포즈가 같은 프레임(2·8, 3·7, 4·6)은 <use> 로 재활용해 용량을 줄인다. */
@@ -1631,7 +1698,7 @@ function jumpFramesSvg(skin, width, gear) {
       const id = "p" + defs.size;
       const g = slimeParts(skin, { sx: p.sx, sy: p.sy });
       // 포즈마다 rx·ry가 달라 장비 앵커를 매번 다시 푼다
-      const gr = gear ? gearSvg(P.rx * p.sx, P.ry * p.sy) : "";
+      const gr = gear ? gearSvg(g.anchors) : "";
       defsMarkup += `<g id="${id}">${g.inner}${gr}</g>`;
       total += g.n;
       defs.set(k, id);
@@ -1653,7 +1720,7 @@ function jumpFramesSvg(skin, width, gear) {
 function jumpTransformSvg(skin, width, gear) {
   const g = slimeParts(skin);
   // 앵커를 중립 자세에서 한 번만 잡는다 — 몸통·장비가 한 그룹으로 통째 변형된다
-  const gr = gear ? gearSvg(P.rx, P.ry) : "";
+  const gr = gear ? gearSvg(g.anchors) : "";
   const svg = wrap(`<g class="xf" style="--dur:${P.jumpMs}ms">${g.inner}${gr}</g>`, width);
   return { svg, rects: g.n };
 }
@@ -1662,8 +1729,8 @@ function jumpTransformSvg(skin, width, gear) {
    무른 것(몸통·모자)은 찌그러지는 그룹에, 단단한 것(검)은 높이만 따라가는 그룹에 둔다. */
 function jumpSplitSvg(skin, width, gear) {
   const g = slimeParts(skin);
-  const soft = gear ? gearSoft(P.rx, P.ry) : "";
-  const rigid = gear ? gearRigid(P.rx) : "";
+  const soft = gear ? gearSoft(g.anchors) : "";
+  const rigid = gear ? gearRigid(g.anchors) : "";
   const svg = wrap(
     `<g class="xf" style="--dur:${P.jumpMs}ms">${g.inner}${soft}</g>` +
     `<g class="xfMove" style="--dur:${P.jumpMs}ms">${rigid}</g>`, width);
@@ -1770,6 +1837,43 @@ function render() {
   const { svg, g } = slimeSvg(skin, 300, { face: faceKey });
   document.getElementById("bigBox").innerHTML = svg;
   const bytes = new Blob([svg]).size;
+
+  // 앵커 — 세 단계를 나란히 놓고 같은 규칙에서 나오는지 본다
+  const STAGES = [
+    ["베이비", babyParts(skin)],
+    ["틴", slimeParts(skin)],
+    ["각성", slimeParts(skin, { awake: true })],
+  ];
+  const ancRow = document.createElement("div");
+  ancRow.className = "row";
+  STAGES.forEach(([ko, g]) => {
+    const f = document.createElement("figure");
+    f.style.textAlign = "center";
+    f.innerHTML = wrap(g.inner + anchorMarks(g.anchors), 190) +
+      `<figcaption style="font-size:12px;font-weight:700;color:#4a453d">${ko}</figcaption>`;
+    ancRow.appendChild(f);
+  });
+  const ancSheet = document.getElementById("ancSheet");
+  ancSheet.innerHTML = "";
+  ancSheet.appendChild(ancRow);
+
+  // 숫자표 — 단계 간 배율이 보여야 아이템을 한 번만 그릴 수 있다
+  const teenA = STAGES[1][1].anchors;
+  const cel = (v) => (v / CELL).toFixed(1);
+  document.getElementById("ancTable").innerHTML =
+    `<table style="border-collapse:collapse;font-variant-numeric:tabular-nums">` +
+    `<tr style="color:#7d776b"><td style="padding:2px 12px 2px 0">　</td>` +
+    STAGES.map(([ko]) => `<td style="padding:2px 14px 2px 0">${ko}</td>`).join("") + `</tr>` +
+    [["몸 높이", (a) => `${a.Hb}`],
+     ["정수리 y", (a) => `${a.crown[1]}`],
+     ["눈높이 y", (a) => `${a.face[1]}`],
+     ["손 (x, y)", (a) => `±${a.hand[0]}, ${a.hand[1]}`],
+     ["머리 허용 폭", (a) => `${cel(2 * a.headHw)}칸`],
+     ["틴 대비 배율", (a) => `×${(a.headHw / teenA.headHw).toFixed(2)}`]]
+      .map(([ko, fn]) =>
+        `<tr><td style="padding:2px 12px 2px 0;color:#7d776b">${ko}</td>` +
+        STAGES.map(([, g]) => `<td style="padding:2px 14px 2px 0;color:#e8e4dc">${fn(g.anchors)}</td>`).join("") + `</tr>`)
+      .join("") + `</table>`;
 
   // 구성 순서
   const build = document.getElementById("build");
@@ -1949,7 +2053,15 @@ document.getElementById("resetBtn").addEventListener("click", () => {
 document.getElementById("exportBtn").addEventListener("click", () => {
   const out = document.getElementById("out");
   out.style.display = "block";
-  out.value = JSON.stringify({ version: 4, style: "reference", cell: CELL, baseline: B, viewBox: VIEWBOX, params: P, skins: SKINS, jump: POSES }, null, 2);
+  // 앵커도 같이 뽑는다 — 아이템 103종은 이 좌표 위에 그려진다
+  const anc = {
+    rule: ANCHOR,
+    baby: babyParts(SKINS[0]).anchors,
+    teen: slimeParts(SKINS[0]).anchors,
+    awake: slimeParts(SKINS[0], { awake: true }).anchors,
+  };
+  out.value = JSON.stringify({ version: 4, style: "reference", cell: CELL, baseline: B, viewBox: VIEWBOX,
+    params: P, skins: SKINS, jump: POSES, anchors: anc }, null, 2);
   out.select();
 });
 

@@ -2246,14 +2246,9 @@ function guessGrid(d, w, h, force) {
     return { ok: true, ...best };
   };
   const gx = axis(EX, w), gy = axis(EY, h);
-  if (!gx.ok || !gy.ok) {
-    /* 확신은 없어도 제일 그럴듯한 간격은 있다. 거절하는 대신 그걸로 밀어붙여
-       보여 주고 "흐릿하다"고 말한다 — 되는지 아닌지는 눈으로 보는 게 제일 빠르다. */
+  if (!gx.ok || !gy.ok) {                      // 왜 못 찾았는지만 남기고 칸 수로 맞추기로 넘긴다
     const bad = !gx.ok ? gx.top : gy.top;
-    const a = gx.ok ? gx : gx.top, b = gy.ok ? gy : gy.top;
-    const weak = a.k >= 4 && b.k >= 4
-      ? { kx: a.k, ox: a.off, ky: b.k, oy: b.off, sc: Math.min(a.sc, b.sc) } : null;
-    return { ok: false, weak, k: Math.round(bad.k * 10) / 10, sc: bad.sc, lift: bad.sc - bad.base };
+    return { ok: false, k: Math.round(bad.k * 10) / 10, sc: bad.sc, lift: bad.sc - bad.base };
   }
   return { ok: true, kx: gx.k, ox: gx.off, ky: gy.k, oy: gy.off, sc: Math.min(gx.sc, gy.sc) };
 }
@@ -2331,8 +2326,64 @@ function splitBlobs(px, w, h, gap) {
   return out.sort((a, b) => b.size - a.size);
 }
 
+/* ---------- 칸 수로 맞추기 ----------
+   격자가 아예 없는 그림이 온다. 겉보기만 도트고 칸마다 크기가 제각각인,
+   "도트풍 그림"이다 (2026-08-05, 1254×1254 에서 어떤 간격도 안 잡혔다).
+   격자를 찾을 수 없으면 찾기를 포기하고 **우리가 아는 칸 수에 맞춰 다시 뜬다.**
+   아이템 크기는 규격서 §2 에 이미 정해져 있으니, 덩어리 하나를 그 칸 수로 나눠
+   칸마다 평균색을 뽑으면 된다. 격자가 있든 없든 통한다. */
+
+// 원본 해상도에서 덩어리를 찾는다 (성글게 훑어 빠르게)
+function blobsRaw(d, w, h) {
+  const s = Math.max(1, Math.round(Math.min(w, h) / 260));      // 훑는 간격
+  const W = Math.ceil(w / s), H = Math.ceil(h / s), on = new Uint8Array(W * H);
+  for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
+    let n = 0;
+    for (let y = Y * s; y < Math.min(h, (Y + 1) * s); y++)
+      for (let x = X * s; x < Math.min(w, (X + 1) * s); x++) if (d[(y * w + x) * 4 + 3] >= 128) n++;
+    if (n) on[Y * W + X] = 1;
+  }
+  const seen = new Uint8Array(W * H), out = [];
+  for (let i = 0; i < W * H; i++) {
+    if (!on[i] || seen[i]) continue;
+    const q = [i]; seen[i] = 1;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, n = 0;
+    while (q.length) {
+      const j = q.pop(), X = j % W, Y = (j - X) / W;
+      n++;
+      if (X < x0) x0 = X; if (X > x1) x1 = X; if (Y < y0) y0 = Y; if (Y > y1) y1 = Y;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const nx = X + dx, ny = Y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const m = ny * W + nx;
+        if (on[m] && !seen[m]) { seen[m] = 1; q.push(m); }
+      }
+    }
+    if (n >= 9) out.push({ x0: x0 * s, y0: y0 * s, x1: (x1 + 1) * s - 1, y1: (y1 + 1) * s - 1, n });
+  }
+  return out.sort((a, b) => b.n - a.n);
+}
+
+// 덩어리 하나를 CW×CH 칸으로 다시 뜬다 — 칸마다 평균색
+function resampleTo(d, w, h, b, CW, CH) {
+  const bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1, px = new Map();
+  for (let Y = 0; Y < CH; Y++) for (let X = 0; X < CW; X++) {
+    const x0 = b.x0 + Math.floor(X * bw / CW), x1 = b.x0 + Math.ceil((X + 1) * bw / CW) - 1;
+    const y0 = b.y0 + Math.floor(Y * bh / CH), y1 = b.y0 + Math.ceil((Y + 1) * bh / CH) - 1;
+    let r = 0, g = 0, bl = 0, n = 0, all = 0;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = (y * w + x) * 4; all++;
+      if (d[i + 3] < 128) continue;
+      r += d[i]; g += d[i + 1]; bl += d[i + 2]; n++;
+    }
+    if (all && n / all >= 0.5)
+      px.set(X + "," + Y, "#" + [r / n, g / n, bl / n].map((v) => Math.round(v).toString(16).padStart(2, "0")).join(""));
+  }
+  return px;
+}
+
 /* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
-function readPng(img, fix, force) {
+function readPng(img, fix, force, slot, want) {
   const cv = document.createElement("canvas");
   cv.width = img.naturalWidth; cv.height = img.naturalHeight;
   const cx = cv.getContext("2d", { willReadFrequently: true });
@@ -2345,12 +2396,24 @@ function readPng(img, fix, force) {
     const auto = guessGrid(d, cv.width, cv.height, force);
     const g = auto.ok ? auto
             : cv.width * cv.height <= 40000 ? { kx: 1, ky: 1, ox: 0, oy: 0, sc: 0 }   // 이미 1픽셀=1칸
-            : auto.weak || null;                                     // 흐릿해도 일단 밀어붙인다
-    /* 격자를 못 찾으면 여기서 멈춘다. 예전엔 그대로 밀고 나가 100만 칸짜리 격자로
-       덩어리 쪼개기·색 줄이기를 돌려 브라우저가 굳었다. */
-    if (!g) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, ...auto } };
-    const cells = (cv.width / g.kx) * (cv.height / g.ky);
-    if (cells > 40000) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, k: g.kx, sc: 1 } };
+            : null;                                                  // 아래 칸 수로 맞추기로 간다
+    /* 격자를 못 찾거나 말이 안 되는 크기가 나오면 **칸 수로 맞추기**로 넘어간다.
+       (예전엔 여기서 그대로 밀고 나가 100만 칸짜리 격자를 돌려 브라우저가 굳었다.) */
+    const cells = g ? (cv.width / g.kx) * (cv.height / g.ky) : Infinity;
+    if (!g || cells > 40000) {
+      const raw = blobsRaw(d, cv.width, cv.height).slice(0, 3);
+      if (!raw.length) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, k: g ? g.kx : 0, sc: 0, ...(g ? {} : auto) } };
+      const order = raw.length === 3 ? ["awake", "teen", "baby"] : null;   // 세 벌이면 큰 것부터
+      const parts = raw.map((b, i) => {
+        const st = order ? order[i] : want && want !== "auto" ? want : "teen";
+        const rec = IMP_REC[st][slot || "head"];
+        const CW = rec[0], CH = Math.max(1, Math.round(CW * (b.y1 - b.y0 + 1) / (b.x1 - b.x0 + 1)));
+        const px = resampleTo(d, cv.width, cv.height, b, CW, CH);
+        const n = quantize(px, IMP_COLORS);
+        return { px, colors: new Set(px.values()), soft: 0, w: CW, h: CH, quantized: n, stage: order ? st : null };
+      });
+      return { fixed: true, byCount: true, bg, parts };
+    }
     const down = downscale(d, cv.width, cv.height, g);
     const blobs = splitBlobs(down.px, down.w, down.h);
     const parts = blobs.map((cell) => {
@@ -2428,7 +2491,7 @@ function impSvg(r, slot, anchor, a, shade) {
       const img = new Image();
       img.onload = () => {
         const res = readPng(img, document.getElementById("impFix").checked,
-                            +document.getElementById("impBlock").value || 0);
+                            +document.getElementById("impBlock").value || 0, slot, stage);
         if (res.stuck) {                     // 되돌리기 실패 — 밀고 나가면 브라우저가 굳는다
           const s = res.stuck, gw = Math.round(s.w / s.k), gh = Math.round(s.h / s.k);
           report.insertAdjacentHTML("beforeend",
@@ -2444,12 +2507,17 @@ function impSvg(r, slot, anchor, a, shade) {
         if (res.fixed) {
           const head = document.createElement("div");
           const px1 = (v) => Math.round(v * 10) / 10;
-          head.innerHTML = `<b style="color:#9CC4EC">↻ ${f.name}</b> — 한 칸 <b>${px1(res.block)}` +
-            (px1(res.blockY) !== px1(res.block) ? `×${px1(res.blockY)}` : "") + `px</b> 로 재서 줄임` +
-            (res.fit ? ` <span style="color:#7d776b">(맞춘 정도 ${Math.round(res.fit * 100)}%)</span>` : "") +
-            (res.weak ? ` <b style="color:#f0a33c">· 격자가 흐릿하다 — 눈으로 확인할 것</b>` : "") +
-            (res.bg ? ` · 배경 ${res.bg.toLocaleString()}픽셀 제거` : "") +
-            (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "");
+          head.innerHTML = res.byCount
+            ? `<b style="color:#f0a33c">↻ ${f.name}</b> — 일정한 칸 격자가 없다. ` +
+              `<b>규격 칸 수에 맞춰 다시 떴다</b> <span style="color:#7d776b">(격자 찾기 대신 칸 수로 맞추기)</span>` +
+              (res.bg ? ` · 배경 ${res.bg.toLocaleString()}픽셀 제거` : "") +
+              (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "")
+            : `<b style="color:#9CC4EC">↻ ${f.name}</b> — 한 칸 <b>${px1(res.block)}` +
+              (px1(res.blockY) !== px1(res.block) ? `×${px1(res.blockY)}` : "") + `px</b> 로 재서 줄임` +
+              (res.fit ? ` <span style="color:#7d776b">(맞춘 정도 ${Math.round(res.fit * 100)}%)</span>` : "") +
+              (res.weak ? ` <b style="color:#f0a33c">· 격자가 흐릿하다 — 눈으로 확인할 것</b>` : "") +
+              (res.bg ? ` · 배경 ${res.bg.toLocaleString()}픽셀 제거` : "") +
+              (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "");
           report.appendChild(head);
           if (!res.parts.length) {           // 줄이긴 했는데 건질 게 없다 — 말없이 끝내면 안 된다
             report.insertAdjacentHTML("beforeend",
@@ -2462,7 +2530,7 @@ function impSvg(r, slot, anchor, a, shade) {
         const auto = stage === "auto";
         const trio = auto && res.parts.length === 3 ? ["awake", "teen", "baby"] : null;
         res.parts.forEach((r, pi) => {
-          const st = trio ? trio[pi] : auto ? pickStage(r, slot) : stage;
+          const st = r.stage || (trio ? trio[pi] : auto ? pickStage(r, slot) : stage);
           showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed, st, auto);
         });
       };

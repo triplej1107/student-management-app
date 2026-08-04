@@ -483,6 +483,11 @@
         <input type="number" id="impBlock" min="0" max="64" step="0.1" value="0"
                style="width:52px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
         <span style="color:#7d776b">px · 0이면 자동</span></label>
+      <label style="font-size:12px;color:#9a9488">되돌리는 법
+        <select id="impMode" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+          <option value="grid">격자 먼저 (기본)</option>
+          <option value="count">규격 칸 수로 맞추기</option>
+        </select></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
@@ -501,9 +506,14 @@
           <option value="rare">레어</option><option value="epic">에픽</option>
           <option value="legendary">레전더리</option>
         </select></label>
-      <button id="impSavePng" class="imp">정리된 PNG 받기</button>
-      <button id="impSaveJson" class="imp">items.json 조각 복사</button>
+      <button id="impSaveAll" class="imp">이 아이템 담기 (PNG + 앵커)</button>
+      <button id="impSaveJson" class="imp">items.json 받기</button>
       <span id="impSaveMsg" style="font-size:12px;color:#9BD468"></span>
+    </div>
+    <div id="impBox" style="font-size:12px;color:#9a9488;margin-bottom:10px;display:none">
+      <b style="color:#f0a33c">담아 둔 아이템</b> <span style="color:#7d776b">— 랩을 닫아도 남는다.
+      다 담으면 「items.json 받기」 한 번이면 된다</span>
+      <div id="impList" style="margin-top:5px"></div>
     </div>
     <div id="impReport" style="font-size:12px;line-height:1.9;color:#9a9488">
       PNG 를 고르면 검사 결과가 여기 뜬다.
@@ -2166,10 +2176,14 @@ const IMP_LIMIT = {                      // 단계 × 슬롯 크기 상한 (칸)
   teen:  { head: [30, 16], face: [32, 12], right: [14, 26], left: [17, 23], fx: [52, 20] },
   awake: { head: [38, 20], face: [40, 15], right: [18, 33], left: [21, 29], fx: [65, 25] },
 };
-const IMP_REC = {                        // 권장 크기 (칸) · 규격서 §2 — 단계 자동 판별에 쓴다
+/* 권장 크기 (칸) · 규격서 §2 — 단계 자동 판별과 칸 수로 맞추기에 쓴다.
+   머리는 **몸통 가로와 같게** 잡는다 (베이비 24 · 틴 28 · 각성 34).
+   처음엔 24 / 26 / 32 이었는데 실제로 씌워 보니 베이비만 맞고 나머지는 작아 보였다.
+   재 보니 베이비만 몸통 폭의 100%, 나머지는 93~94% 였다 — 비율이 안 맞았던 것이다. */
+const IMP_REC = {
   baby:  { head: [24, 11], face: [24, 7], right: [8, 18], left: [11, 16], fx: [41, 14] },
-  teen:  { head: [26, 12], face: [26, 8], right: [9, 20], left: [12, 17], fx: [45, 15] },
-  awake: { head: [32, 15], face: [32, 10], right: [11, 25], left: [15, 21], fx: [56, 19] },
+  teen:  { head: [28, 13], face: [26, 8], right: [9, 20], left: [12, 17], fx: [45, 15] },
+  awake: { head: [34, 16], face: [32, 10], right: [11, 25], left: [15, 21], fx: [56, 19] },
 };
 const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
 const IMP_COLORS = 12;
@@ -2426,7 +2440,7 @@ function resampleTo(d, w, h, b, CW, CH) {
 }
 
 /* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
-function readPng(img, fix, force, slot, want) {
+function readPng(img, fix, force, slot, want, mode) {
   const cv = document.createElement("canvas");
   cv.width = img.naturalWidth; cv.height = img.naturalHeight;
   const cx = cv.getContext("2d", { willReadFrequently: true });
@@ -2436,8 +2450,9 @@ function readPng(img, fix, force, slot, want) {
 
   if (fix) {                                   // 확대본 되돌리기
     const bg = stripBg(d, cv.width, cv.height);
-    const auto = guessGrid(d, cv.width, cv.height, force);
+    const auto = mode === "count" ? { ok: false, k: 0, sc: 0 } : guessGrid(d, cv.width, cv.height, force);
     const g = auto.ok ? auto
+            : mode === "count" ? null                                 // 격자를 아예 안 본다
             : cv.width * cv.height <= 40000 ? { kx: 1, ky: 1, ox: 0, oy: 0, sc: 0 }   // 이미 1픽셀=1칸
             : null;                                                  // 아래 칸 수로 맞추기로 간다
     /* 격자를 못 찾거나 말이 안 되는 크기가 나오면 **칸 수로 맞추기**로 넘어간다.
@@ -2541,7 +2556,8 @@ function impSvg(r, slot, anchor, a, shade) {
       const img = new Image();
       img.onload = () => {
         const res = readPng(img, document.getElementById("impFix").checked,
-                            +document.getElementById("impBlock").value || 0, slot, stage);
+                            +document.getElementById("impBlock").value || 0, slot, stage,
+                            document.getElementById("impMode").value);
         if (res.stuck) {                     // 되돌리기 실패 — 밀고 나가면 브라우저가 굳는다
           const s = res.stuck, gw = Math.round(s.w / s.k), gh = Math.round(s.h / s.k);
           report.insertAdjacentHTML("beforeend",
@@ -2638,18 +2654,43 @@ function impSvg(r, slot, anchor, a, shade) {
   document.getElementById("impStage").addEventListener("change", run);
   document.getElementById("impFix").addEventListener("change", run);
   document.getElementById("impBlock").addEventListener("change", run);
+  document.getElementById("impMode").addEventListener("change", run);
   document.getElementById("impDX").addEventListener("input", run);
   document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);
 
   /* ---------- 저장 ----------
-     반입기는 검사만 하고 끝나서 맞춘 값이 어디에도 안 남았다. 두 가지를 뱉는다.
-     ① 정리된 PNG — 한 칸이 딱 1픽셀인 원본. 이게 게임에 들어가는 파일이다
-     ② items.json 조각 — 미세조정까지 반영된 앵커. 규격서 §4 모양 그대로 */
+     반입기는 검사만 하고 끝나서 맞춘 값이 어디에도 안 남았다. 손으로 배열에 붙이는
+     일까지 없애려고 **담아 두는 목록**을 뒀다. 아이템마다 「담기」를 누르면 PNG 는
+     받아지고 앵커는 브라우저에 쌓인다. 다 담은 뒤 「items.json 받기」 한 번이면
+     완성된 파일이 나온다 — 배열을 손으로 만질 일이 없다. */
+  const ILKEY = "slimeLabV4items";
+  const loadItems = () => { try { return JSON.parse(localStorage.getItem(ILKEY)) || []; } catch (e) { return []; } };
+  const saveItems = (v) => { try { localStorage.setItem(ILKEY, JSON.stringify(v)); } catch (e) {} };
   const codeOf = () => (document.getElementById("impCode").value.trim() ||
     `${{ normal: "nm", magic: "mg", rare: "rr", epic: "ep", legendary: "lg" }[document.getElementById("impTier").value]}` +
     `_${document.getElementById("impSlot").value}_item`);
   const flash = (t, bad) => { msg.style.color = bad ? "#f5785c" : "#9BD468"; msg.textContent = t; };
+
+  function drawList() {
+    const box = document.getElementById("impBox"), list = document.getElementById("impList");
+    const items = loadItems();
+    box.style.display = items.length ? "" : "none";
+    list.innerHTML = "";
+    items.forEach((it, i) => {
+      const stages = ["baby", "teen", "awake"].filter((s) => it[s]).map((s) => IMP_KO[s]).join("·");
+      const row = document.createElement("div");
+      row.innerHTML = `<b style="color:#e8e4dc">${it.code}</b> <span style="color:#7d776b">${it.ko} · ` +
+        `${it.slot} · ${it.tier} · ${stages}</span> `;
+      const del = document.createElement("button");
+      del.className = "imp"; del.textContent = "빼기";
+      del.style.cssText = "padding:1px 7px;font-size:11px;margin-left:4px";
+      del.onclick = () => { const v = loadItems(); v.splice(i, 1); saveItems(v); drawList(); };
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+  drawList();
 
   function partPng(r) {                        // 한 칸 = 1픽셀. 확대 없이 그대로 뜬다
     const cv = document.createElement("canvas");
@@ -2661,21 +2702,15 @@ function impSvg(r, slot, anchor, a, shade) {
     }
     return cv;
   }
-  document.getElementById("impSavePng").addEventListener("click", () => {
-    if (!done.length) return flash("넣어서 통과한 게 없다", true);
-    const code = codeOf();
-    done.forEach(({ r, stage }) => {
-      partPng(r).toBlob((b) => {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(b);
-        a.download = `${code}_${stage}.png`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      });
-    });
-    flash(`${done.length}장 받는 중 — ${code}_*.png`);
-  });
-  document.getElementById("impSaveJson").addEventListener("click", async () => {
+  const grab = (blob, name) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  document.getElementById("impSaveAll").addEventListener("click", () => {
     if (!done.length) return flash("넣어서 통과한 게 없다", true);
     const code = codeOf();
     const item = {
@@ -2685,19 +2720,24 @@ function impSvg(r, slot, anchor, a, shade) {
     };
     for (const st of ["baby", "teen", "awake"]) {                // 규격서 §4 와 같은 순서
       const hit = done.find((d) => d.stage === st);
-      if (hit) item[st] = { png: `${code}_${st}.png`, anchor: hit.anchor };
+      if (!hit) continue;
+      item[st] = { png: `${code}_${st}.png`, anchor: hit.anchor };
+      partPng(hit.r).toBlob((b) => grab(b, `${code}_${st}.png`));
     }
-    const txt = JSON.stringify(item, null, 2)
+    const items = loadItems();
+    const at = items.findIndex((v) => v.code === code);           // 같은 코드는 덮어쓴다
+    if (at >= 0) items[at] = item; else items.push(item);
+    saveItems(items); drawList();
+    flash(`${code} 담았다 — PNG ${done.length}장 · 목록 ${items.length}개`);
+  });
+
+  document.getElementById("impSaveJson").addEventListener("click", () => {
+    const items = loadItems();
+    if (!items.length) return flash("담아 둔 게 없다", true);
+    const txt = JSON.stringify({ cell: 3, authoredFor: "teen", items }, null, 2)
       .replace(/\[\s+(-?\d+),\s+(-?\d+)\s+\]/g, "[$1, $2]");     // 앵커는 한 줄로
-    try { await navigator.clipboard.writeText(txt); flash(`복사됐다 — ${code}`); }
-    catch (e) {                                // 클립보드가 막힌 환경이면 눈으로 가져가게 띄운다
-      const ta = document.createElement("textarea");
-      ta.value = txt;
-      ta.style.cssText = "width:100%;height:150px;margin-top:8px;background:#0e1014;color:#8b8578;" +
-        "border:1px solid #2b303b;border-radius:8px;padding:8px;font-size:11px;font-family:ui-monospace,monospace";
-      report.appendChild(ta); ta.select();
-      flash("클립보드가 막혀 아래에 띄웠다", true);
-    }
+    grab(new Blob([txt], { type: "application/json" }), "items.json");
+    flash(`items.json 받는 중 — ${items.length}개`);
   });
 })();
 

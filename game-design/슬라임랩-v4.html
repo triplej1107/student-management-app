@@ -463,6 +463,12 @@
           <option value="right">오른손</option><option value="left">왼손</option>
           <option value="fx">이펙트</option>
         </select></label>
+      <label style="font-size:12px;color:#9a9488">좌우
+        <input type="range" id="impDX" min="-10" max="10" step="1" value="0"
+               style="width:90px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDXv" style="color:#e8e4dc">0</b></label>
+      <label style="font-size:12px;color:#9a9488">위아래
+        <input type="range" id="impDY" min="-10" max="10" step="1" value="0"
+               style="width:90px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDYv" style="color:#e8e4dc">0</b></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impFix" checked style="accent-color:#f0a33c;vertical-align:-2px">
         확대본 정리해서 받기 <span style="color:#7d776b">— 배경 날리고 칸 크기 재서 줄인다</span></label>
@@ -2155,22 +2161,33 @@ function stripBg(d, w, h, tol) {
   return n;
 }
 
-// 칸 크기 — 같은 색이 가로로 몇 칸씩 이어지는지 세서 제일 흔한 길이를 고른다
+/* 칸 크기 — 같은 색이 이어지는 길이는 항상 "한 칸"의 배수다.
+   그래서 최빈값이 아니라 **공약수**를 찾아야 한다. 최빈값을 쓰면 긴 획(모자 챙 같은)
+   하나에 끌려가 엉뚱한 값이 나온다. 세로도 같이 봐서 가로로만 긴 그림에 안 속는다. */
 function guessBlock(d, w, h) {
-  const tally = new Map();
   const key = (i) => d[i * 4 + 3] === 0 ? "t" : `${d[i*4]},${d[i*4+1]},${d[i*4+2]}`;
-  for (let y = 0; y < h; y++) {
-    let run = 1;
-    for (let x = 1; x <= w; x++) {
-      const same = x < w && key(y * w + x) === key(y * w + x - 1);
-      if (same) { run++; continue; }
-      if (key(y * w + x - 1) !== "t") tally.set(run, (tally.get(run) || 0) + 1);
-      run = 1;
+  const runs = [];
+  const scan = (n, m, at) => {                 // n줄 × m칸을 훑으며 런 길이를 모은다
+    for (let a = 0; a < n; a++) {
+      let run = 1;
+      for (let b = 1; b <= m; b++) {
+        const same = b < m && key(at(a, b)) === key(at(a, b - 1));
+        if (same) { run++; continue; }
+        if (key(at(a, b - 1)) !== "t") runs.push(run);
+        run = 1;
+      }
     }
+  };
+  scan(h, w, (y, x) => y * w + x);
+  scan(w, h, (x, y) => y * w + x);
+  if (!runs.length) return 1;
+  const total = runs.reduce((a, b) => a + b, 0);
+  let best = 1;
+  for (let k = 2; k <= 64; k++) {
+    let ok = 0;
+    for (const r of runs) if (r % k === 0) ok += r;
+    if (ok / total >= 0.92) best = k;          // 거의 다 k의 배수면 k가 한 칸이다
   }
-  // 짧은 런은 경계 잡음이라 빈도에 길이를 곱해 무게를 준다
-  let best = 1, bw = 0;
-  for (const [len, cnt] of tally) { const wgt = cnt * Math.min(len, 12); if (len > 1 && wgt > bw) { bw = wgt; best = len; } }
   return best;
 }
 
@@ -2280,7 +2297,14 @@ function guessAnchor(r, slot) {
   const xs = [...r.px.keys()].map((k) => +k.split(",")[0]);
   const ys = [...r.px.keys()].map((k) => +k.split(",")[1]);
   const cx = Math.round((Math.min(...xs) + Math.max(...xs)) / 2);
-  if (slot === "head") return [cx, Math.max(...ys)];          // 아래 테두리 가운데
+  if (slot === "head") {
+    // 챙이 한쪽으로 튀어나온 모자는 전체 가운데를 쓰면 옆으로 밀린다.
+    // 위쪽 절반(돔)만 보고 가운데를 잡는다.
+    const top = Math.min(...ys), bot = Math.max(...ys), mid = top + (bot - top) * 0.5;
+    const dom = [...r.px.keys()].map((k) => k.split(",").map(Number)).filter(([, y]) => y <= mid);
+    const dxs = dom.length ? dom.map(([x]) => x) : xs;
+    return [Math.round((Math.min(...dxs) + Math.max(...dxs)) / 2), bot];
+  }
   if (slot === "fx") return [cx, Math.max(...ys)];
   if (slot === "face") return [cx, Math.round((Math.min(...ys) + Math.max(...ys)) / 2)];
   return [cx, Math.round(Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * 0.78)];  // 쥐는 자리
@@ -2309,6 +2333,9 @@ function impSvg(r, slot, anchor, a, shade) {
     const slot = document.getElementById("impSlot").value;
     const stage = document.getElementById("impStage").value;
     const shade = document.getElementById("impShade").checked;
+    const nudge = [+document.getElementById("impDX").value, +document.getElementById("impDY").value];
+    document.getElementById("impDXv").textContent = nudge[0];
+    document.getElementById("impDYv").textContent = nudge[1];
     const lim = IMP_LIMIT[stage][slot];
     report.innerHTML = "";
     wear.innerHTML = ""; wear.style.display = "none";
@@ -2327,6 +2354,7 @@ function impSvg(r, slot, anchor, a, shade) {
       };
       img.src = URL.createObjectURL(f);
     });
+    function anchorOf(r) { const g = guessAnchor(r, slot); return [g[0] - nudge[0], g[1] - nudge[1]]; }
     function showOne(r, name, fixed) {
         const bad = [];
         if (r.soft) bad.push(`안티앨리어싱 <b style="color:#f5785c">${r.soft}픽셀</b> — 알파가 0·255 가 아니다`);
@@ -2336,10 +2364,12 @@ function impSvg(r, slot, anchor, a, shade) {
         line.style.paddingLeft = fixed ? "14px" : "0";
         line.innerHTML = bad.length
           ? `<b style="color:#f5785c">✕ ${name}</b> — ${bad.join(" · ")}`
-          : `<b style="color:#9BD468">✓ ${name}</b> — ${IMP_KO[stage]}용 ${r.w}×${r.h}칸 · ${r.colors.size}색 · 들어간다`;
+          : `<b style="color:#9BD468">✓ ${name}</b> — ${IMP_KO[stage]}용 ${r.w}×${r.h}칸 · ${r.colors.size}색 · 들어간다` +
+            ` <span style="color:#7d776b">· 앵커 [${anchorOf(r).join(", ")}]</span>`;
         report.appendChild(line);
         if (bad.length) return;
-        const anchor = guessAnchor(r, slot);
+        const g0 = guessAnchor(r, slot);
+        const anchor = [g0[0] - nudge[0], g0[1] - nudge[1]];   // 미세조정은 앵커를 반대로 민다
         wear.style.display = "";
         const G = { baby: babyParts(SKINS[sel]), teen: slimeParts(SKINS[sel]),
                     awake: slimeParts(SKINS[sel], { awake: true }) };
@@ -2361,6 +2391,8 @@ function impSvg(r, slot, anchor, a, shade) {
   document.getElementById("impSlot").addEventListener("change", run);
   document.getElementById("impStage").addEventListener("change", run);
   document.getElementById("impFix").addEventListener("change", run);
+  document.getElementById("impDX").addEventListener("input", run);
+  document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);
 })();
 

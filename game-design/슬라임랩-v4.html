@@ -472,10 +472,10 @@
         </select></label>
       <label style="font-size:12px;color:#9a9488">좌우
         <input type="range" id="impDX" min="-20" max="20" step="1" value="0"
-               style="width:90px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDXv" style="color:#e8e4dc">0</b></label>
+               style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDXv" style="color:#e8e4dc">0</b></label>
       <label style="font-size:12px;color:#9a9488">위아래
         <input type="range" id="impDY" min="-20" max="20" step="1" value="0"
-               style="width:90px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDYv" style="color:#e8e4dc">0</b></label>
+               style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDYv" style="color:#e8e4dc">0</b></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impFix" checked style="accent-color:#f0a33c;vertical-align:-2px">
         확대본 정리해서 받기 <span style="color:#7d776b">— 배경 날리고 칸 크기 재서 줄인다</span></label>
@@ -502,6 +502,24 @@
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impGhost" style="accent-color:#f0a33c;vertical-align:-2px">
         반투명으로 보기 <span style="color:#7d776b">— 가려진 눈·얼굴 자리를 확인한다</span></label>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:12px;color:#9a9488">
+      <span>단계별 더 밀기 <span style="color:#7d776b">— 위 슬라이더에 더해진다 (좌우 / 위아래, 칸)</span></span>
+      <label style="color:#c9a06a">베이비
+        <input type="number" id="impNXb" min="-20" max="20" step="1" value="0"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px">
+        <input type="number" id="impNYb" min="-20" max="20" step="1" value="0"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px"></label>
+      <label style="color:#c9a06a">틴
+        <input type="number" id="impNXt" min="-20" max="20" step="1" value="0"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px">
+        <input type="number" id="impNYt" min="-20" max="20" step="1" value="0"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px"></label>
+      <label style="color:#c9a06a">각성
+        <input type="number" id="impNXa" min="-20" max="20" step="1" value="0"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px">
+        <input type="number" id="impNYa" min="-20" max="20" step="1" value="0"
+               style="width:44px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px"></label>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;
                 padding-top:9px;border-top:1px solid #2a2f3a">
@@ -2617,7 +2635,11 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
   const report = document.getElementById("impReport"), wear = document.getElementById("impWear");
   const msg = document.getElementById("impSaveMsg");
   let done = [];                               // 검사를 통과해 화면에 얹힌 것들 — 저장 대상
+  /* PNG 읽기가 비동기라, 슬라이더를 연달아 움직이면 앞 회차의 onload 가 뒤늦게
+     들어와 결과가 두 벌씩 쌓인다. 회차 번호를 달아 지난 회차는 버린다. */
+  let runId = 0;
   const run = () => {
+    const my = ++runId;
     done = [];
     msg.textContent = "";
     const files = [...fileEl.files];
@@ -2629,11 +2651,18 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
     const nudge = [+document.getElementById("impDX").value, +document.getElementById("impDY").value];
     document.getElementById("impDXv").textContent = nudge[0];
     document.getElementById("impDYv").textContent = nudge[1];
+    /* 단계별 더 밀기 — 한 벌이 맞아도 나머지 둘이 어긋날 수 있다. 그림마다 알 위치가
+       조금씩 다르기 때문이다. 전체 슬라이더 위에 단계별 값을 더해서 쓴다. */
+    const V = (id) => +document.getElementById(id).value || 0;
+    const per = { baby: [V("impNXb"), V("impNYb")], teen: [V("impNXt"), V("impNYt")],
+                  awake: [V("impNXa"), V("impNYa")] };
+    const nudgeOf = (st) => [nudge[0] + per[st][0], nudge[1] + per[st][1]];
     report.innerHTML = "";
     wear.innerHTML = ""; wear.style.display = "none";
     files.forEach((f) => {
       const img = new Image();
       img.onload = () => {
+        if (my !== runId) return;              // 지난 회차 결과는 버린다
         const res = readPng(img, document.getElementById("impFix").checked,
                             +document.getElementById("impBlock").value || 0, slot, stage,
                             document.getElementById("impMode").value,
@@ -2684,7 +2713,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
       };
       img.src = URL.createObjectURL(f);
     });
-    function anchorOf(r) { const g = guessAnchor(r, slot); return [g[0] - nudge[0], g[1] - nudge[1]]; }
+    function anchorOf(r, st) { const g = guessAnchor(r, slot), n = nudgeOf(st); return [g[0] - n[0], g[1] - n[1]]; }
     function showOne(r, name, fixed, stage, auto) {
         const lim = IMP_LIMIT[stage][slot];
         const bad = [];
@@ -2696,11 +2725,10 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
         line.innerHTML = bad.length
           ? `<b style="color:#f5785c">✕ ${name}</b> — ${bad.join(" · ")}`
           : `<b style="color:#9BD468">✓ ${name}</b> — ${IMP_KO[stage]}용${auto ? "(자동)" : ""} ${r.w}×${r.h}칸 · ${r.colors.size}색 · 들어간다` +
-            ` <span style="color:#7d776b">· 앵커 [${anchorOf(r).join(", ")}]</span>`;
+            ` <span style="color:#7d776b">· 앵커 [${anchorOf(r, stage).join(", ")}]</span>`;
         report.appendChild(line);
         if (bad.length) return;
-        const g0 = guessAnchor(r, slot);
-        const anchor = [g0[0] - nudge[0], g0[1] - nudge[1]];   // 미세조정은 앵커를 반대로 민다
+        const anchor = anchorOf(r, stage);   // 미세조정은 앵커를 반대로 민다
         done.push({ r, stage, anchor });                       // 저장 버튼이 쓸 목록
         wear.style.display = "";
         const G = { baby: babyParts(SKINS[sel]), teen: slimeParts(SKINS[sel]),
@@ -2742,6 +2770,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
   document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);
   document.getElementById("impGhost").addEventListener("change", run);
+  ["impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"]
+    .forEach((id) => document.getElementById(id).addEventListener("input", run));
 
   /* ---------- 저장 ----------
      반입기는 검사만 하고 끝나서 맞춘 값이 어디에도 안 남았다. 손으로 배열에 붙이는

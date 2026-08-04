@@ -2167,18 +2167,37 @@ function pickStage(r, slot) {
    그 안에 도트처럼 보이게 그린다. 프롬프트로 될 일이 아니므로 받아서 되돌린다.
    ① 흰(혹은 단색) 배경을 날리고 ② 칸 크기를 재서 줄이고 ③ 색을 줄인다. */
 
-// 배경 — 네 귀퉁이가 같은 색이면 그 색을 배경으로 본다
+/* 배경 — 테두리 한 줄을 다 훑어서 배경색을 잡는다.
+   네 귀퉁이만 보던 이전 방식은 **투명 체크무늬가 구워진 PNG** 를 못 걷어냈다.
+   뷰어가 그려 주는 줄 알았던 그 회백색 바둑판이 파일에 들어 있는 경우가 있다
+   (2026-08-05 실제 파일). 그러면 배경이 안 날아가고, 체크무늬가 4px 격자로 잡히고,
+   아이템 셋이 배경으로 이어져 한 덩어리가 된다 — 세 증상이 한 원인이었다.
+   테두리 색이 두세 가지로 다 설명되면(단색이든 바둑판이든) 그 색들을 날린다. */
 function stripBg(d, w, h, tol) {
   tol = tol || 26;
   const at = (x, y) => { const i = (y * w + x) * 4; return [d[i], d[i + 1], d[i + 2], d[i + 3]]; };
-  const cs = [at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)];
-  if (cs.some((c) => c[3] === 0)) return 0;               // 이미 투명이면 둘 필요 없다
-  const [r0, g0, b0] = cs[0];
-  if (!cs.every((c) => Math.abs(c[0] - r0) + Math.abs(c[1] - g0) + Math.abs(c[2] - b0) < tol)) return 0;
+  if ([at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)].some((c) => c[3] === 0)) return 0;  // 이미 투명
+
+  const frame = [];
+  for (let x = 0; x < w; x++) { frame.push(at(x, 0), at(x, h - 1)); }
+  for (let y = 1; y < h - 1; y++) { frame.push(at(0, y), at(w - 1, y)); }
+  const near = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) < tol;
+  const cl = [];
+  for (const c of frame) {
+    const hit = cl.find((g) => near(g.c, c));
+    if (hit) hit.n++; else if (cl.length >= 8) return 0; else cl.push({ c, n: 1 });
+  }
+  cl.sort((a, b) => b.n - a.n);
+  const keep = [];
+  let cov = 0;
+  for (const g of cl) { keep.push(g.c); cov += g.n; if (cov / frame.length >= 0.98) break; }
+  if (cov / frame.length < 0.98 || keep.length > 3) return 0;   // 테두리가 그림이면 손대지 않는다
+
   let n = 0;
   for (let i = 0; i < w * h; i++) {
     const j = i * 4;
-    if (Math.abs(d[j] - r0) + Math.abs(d[j + 1] - g0) + Math.abs(d[j + 2] - b0) < tol) { d[j + 3] = 0; n++; }
+    for (const c of keep)
+      if (Math.abs(d[j] - c[0]) + Math.abs(d[j + 1] - c[1]) + Math.abs(d[j + 2] - c[2]) < tol) { d[j + 3] = 0; n++; break; }
   }
   return n;
 }

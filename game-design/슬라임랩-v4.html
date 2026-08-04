@@ -1231,8 +1231,11 @@ function facePixels(buf, set, skin, rx, ry, key, signY) {
 // 2026-08-04 원장 확정값 — 랩에서 직접 맞춘 값을 그대로 옮긴 것. 임의로 바꾸지 말 것.
 const DEF = {
   // ---- 틴 (원형 블롭 · 점프) ----
-  // 베이비 24칸 대비 1.5배(36칸)로 확대. 가로/세로 비(1.135)는 그대로 유지.
-  rx: 54, ry: 47, nTop: 1.6, nBot: 2.55,
+  // 24 → 28 → 34칸 (원장 2026-08-04). 전에는 24 → 36 → 38 이라 베이비→틴이 ×1.50 인데
+  // 틴→각성이 ×1.06 뿐이라 각성이 안 커 보였다. 두 계단을 ×1.17 / ×1.21 로 고르게 나눈다.
+  // 겉보기(몸+오라) 45칸 자리를 비워 두는 뜻도 있다 — 훗날 초각성 단계가 들어갈 자리다.
+  // 가로/세로 비(1.149)는 그대로 유지.
+  rx: 42, ry: 37, nTop: 1.6, nBot: 2.55,
   lineT: 1, darkT: 1,                        // 외곽선 / 속테 두께 (칸)
   lightY: 0.52, lightK: 0.26, lightC: -0.3,  // 밝은 톤 경계 (높이 / 기울기 / 곡률)
   shadeY: 0.16,                              // 아래 그림자 높이
@@ -1255,8 +1258,8 @@ const DEF = {
   hatchMs: 4000,                             // 부화 한 바퀴
   // ---- 각성 (틴과 같은 블롭 문법 · 크기만 확대 + 속성 발현) ----
   // 오라(5칸)까지 점프 자세로 늘어나면 화면을 넘는다 → 몸을 줄여 자리를 낸다.
-  // 겉보기(몸+오라)는 49칸이라 오히려 커진다. 틴 36칸 대비 1.35배.
-  awRx: 58, awRy: 50,                        // 몸통 39칸
+  // 겉보기(몸+오라)는 44칸. 틴 28칸 대비 1.21배.
+  awRx: 52, awRy: 45,                        // 몸통 34칸
   // 장비 5슬롯을 끼우면 몸 위는 다 가려진다. 테두리는 실루엣 바깥이라 절대 안 가려지므로
   // 두껍게 둘러야 속성이 계속 읽힌다 (원장 지시 2026-08-04).
   awRim: 5,                                  // 오라 테두리 두께(칸)
@@ -2420,7 +2423,7 @@ function render() {
    검사에서 걸리면 넣지 않는다 — 어중간하게 들어가 103종을 나중에 다시 손대는 것보다 낫다.
    ============================================================ */
 const IMP_LIMIT = {                      // 슬롯별 크기 상한 (칸) · 규격서 §2
-  head:  [40, 20], face: [40, 14], right: [18, 34], left: [22, 30], fx: [70, 26],
+  head:  [30, 16], face: [32, 12], right: [14, 26], left: [17, 23], fx: [52, 20],
 };
 const IMP_COLORS = 12;
 
@@ -2492,8 +2495,8 @@ function impSvg(r, slot, anchor, a, shade) {
         line.innerHTML = bad.length
           ? `<b style="color:#f5785c">✕ ${f.name}</b> — ${bad.join(" · ")}`
           : `<b style="color:#9BD468">✓ ${f.name}</b> — ${r.w}×${r.h}칸 · ${r.colors.size}색 · 그대로 들어간다` +
-            (r.w > 2 * babyParts(SKINS[0]).anchors.headHw / CELL
-              ? ` <span style="color:#E8C98A">· 베이비엔 크다 → 별도 PNG 필요 (틴의 약 70%)</span>` : "");
+            (r.w < 2 * slimeParts(SKINS[0], { awake: true }).anchors.headHw / CELL * 0.85
+              ? ` <span style="color:#E8C98A">· 각성엔 작다 → 각성용 별도 PNG 필요 (틴의 1.25배)</span>` : "");
         report.appendChild(line);
         if (bad.length) return;
         const anchor = guessAnchor(r, slot);

@@ -923,12 +923,11 @@ const EYE_ART = {
   // 획은 두 칸 두께가 기본이다. 한 칸으로 그리면 몸통 음영에 묻혀 눈이 얇아 보인다
   // (원장 지시 2026-08-04). 레퍼런스 눈도 전부 두 칸이다.
   arch:      [".......", "..KKK..", ".KKKKK.", "KKK.KKK", "KK...KK", "......."],  // 감고 웃는 눈 ∩
-  // 울기는 웃는 눈을 위아래로 뒤집은 ∪. ∩ 그대로 쓰면 웃으면서 우는 그림이 된다.
-  archDown:  [".......", "KK...KK", "KKK.KKK", ".KKKKK.", "..KKK..", "......."],  // 울기 ∪
+  // 웃는 눈을 위아래로 뒤집은 ∪. ∩ 그대로 쓰면 웃으면서 우는 그림이 된다.
+  // 울기와 졸기가 같이 쓴다 — 가르는 건 눈물이냐 Z 냐다 (원장 지시 2026-08-04).
+  archDown:  [".......", "KK...KK", "KKK.KKK", ".KKKKK.", "..KKK..", "......."],  // 울기·졸기 ∪
   round:     [".KKKK.", "KWWKKK", "KWWKKK", "KKKKKK", "KKKKKK", ".KKKK."],        // 크게 뜬 눈
   shiny:     [".KKKK.", "KWWWWK", "KWWWWK", "KKWWKK", "KKKKKK", ".KKKK."],        // 글썽이는 눈
-  // 기울인 획은 눈이 아니라 수염으로 읽힌다 → 위는 평평하고 아래로 좁아지는 무거운 눈꺼풀
-  sleepy:    [".......", ".......", "KKKKKKK", ".KKKKK.", "..KKK..", "......."],  // 졸기
   // 하품은 꽉 감은 눈. 웃는 ∩ 을 쓰면 웃으면서 하품하는 그림이 된다.
   squeeze:   [".......", ".......", "KK...KK", "KKK.KKK", ".KKKKK.", "......."],  // 하품
   // 윗눈꺼풀 + 아래 작은 눈동자. 삼각형으로 채우면 선글라스가 된다.
@@ -994,7 +993,7 @@ const FACES = [
   { key: "basic",    ko: "기본",     },                                        // 슬라이더 값 그대로
   { key: "smile",    ko: "웃기",     eye: "arch",      sign: "heart" },        // 레퍼런스 ^^ + 하트
   { key: "cry",      ko: "울기",     eye: "archDown",  tear: 1 },
-  { key: "sleepy",   ko: "졸기",     eye: "sleepy",    sign: "zzz" },
+  { key: "sleepy",   ko: "졸기",     eye: "archDown",  sign: "zzz" },
   { key: "yawn",     ko: "하품",     eye: "squeeze",   sign: "zzz2", mouth: 1 },
   { key: "wink",     ko: "윙크",     eye: "basic",     eyeR: "arch", sign: "spark" },
   { key: "surprise", ko: "놀람",     eye: "round",     sign: "bang" },

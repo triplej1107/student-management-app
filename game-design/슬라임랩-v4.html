@@ -306,6 +306,85 @@
     border: 1px solid #2b303b; border-radius: 10px; padding: 10px; font-size: 11px;
     font-family: ui-monospace, Menlo, Consolas, monospace; resize: vertical; display: none;
   }
+
+  /* ============================================================
+     핸드폰 작업용 레이어 — 랩의 기존 다크 톤·주황 액센트를 그대로 쓰고
+     조작성만 손본다. 미리보기만 밝은 판이라 도트를 판단하기 좋다.
+     ============================================================ */
+  .navbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding: 9px 0 10px; margin-bottom: 2px;
+    background: rgba(20, 22, 28, .94); backdrop-filter: blur(8px);
+    border-bottom: 1px solid #2b303b; scrollbar-width: none;
+  }
+  .navbar::-webkit-scrollbar { display: none; }
+  .navbar a {
+    flex: 0 0 auto; padding: 8px 13px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap;
+    border: 1px solid #333944; background: #232833; color: #9a9488;
+  }
+  .navbar a:focus-visible { outline: 2px solid #f0a33c; outline-offset: 2px; }
+  .navbar a[data-k="egg"]   { border-color: #6d5730; color: #E8C98A; }
+  .navbar a[data-k="baby"]  { border-color: #375a26; color: #9BD468; }
+  .navbar a[data-k="teen"]  { border-color: #2f5578; color: #9CC4EC; }
+  .navbar a[data-k="awake"] { border-color: #6d3a35; color: #F2A08C; }
+
+  .howto {
+    margin-top: 10px; padding: 11px 13px; border-radius: 12px;
+    border: 1px solid #3a2d18; background: #23200f; color: #cfc0a0;
+    font-size: 12.5px; line-height: 1.7;
+  }
+  .howto b { color: #f5b95e; }
+
+  .fab {
+    position: fixed; right: 14px; bottom: 14px; z-index: 50;
+    padding: 13px 18px; border-radius: 999px; border: 1px solid #f0a33c;
+    background: #3a2d18; color: #f5b95e; font-family: inherit;
+    font-size: 13.5px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+  }
+  .fab:active { transform: translateY(1px); }
+
+  /* 손가락으로 끌 수 있는 슬라이더 */
+  @media (pointer: coarse) {
+    .ctl input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      height: 34px; background: transparent; margin-top: 0;
+    }
+    .ctl input[type=range]::-webkit-slider-runnable-track {
+      height: 6px; border-radius: 3px; background: #333944;
+    }
+    .ctl input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px;
+      border-radius: 50%; background: #f0a33c; border: 2px solid #14161c;
+    }
+    .ctl input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: #333944; }
+    .ctl input[type=range]::-moz-range-thumb {
+      width: 26px; height: 26px; border-radius: 50%; background: #f0a33c; border: 2px solid #14161c;
+    }
+    .ctl label { font-size: 13px; }
+    .ctl label b { font-size: 14.5px; }
+    .sheet button { padding: 6px 6px 8px; }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 0 12px 92px; }
+    main { max-width: 100%; }
+    h1 { font-size: 18px; }
+    .card { padding: 12px; }
+    .grid { grid-template-columns: 1fr; gap: 10px; }
+    h2 .mini { float: none; display: block; width: 100%; margin-top: 8px; padding: 8px; }
+    /* 가로로 쓸어 넘긴다 — 좁은 화면에서 줄바꿈되면 뒤죽박죽이 된다 */
+    .sheet .row, .players {
+      flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+      padding-bottom: 8px; -webkit-overflow-scrolling: touch;
+    }
+    .sheet .row > *, .players > * { flex: 0 0 auto; }
+    .build { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+    .btns { flex-direction: column; }
+    button.act { width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -1548,6 +1627,80 @@ document.getElementById("exportBtn").addEventListener("click", () => {
 });
 
 load(); buildAllSliders(); render();
+</script>
+
+<script>
+/* 핸드폰 작업용 — 섹션 이동 바 + 값 복사 버튼 */
+(function () {
+  "use strict";
+  // 아티팩트 래퍼가 head 를 대신 만들어 주므로 viewport 메타가 없을 수 있다.
+  // 없으면 폰에서 980px 레이아웃으로 잡혀 미디어쿼리가 안 먹는다.
+  if (!document.querySelector("meta[name=viewport]")) {
+    const m = document.createElement("meta");
+    m.name = "viewport";
+    m.content = "width=device-width, initial-scale=1";
+    document.head.appendChild(m);
+  }
+  const main = document.querySelector("main");
+  const KIND = [
+    [/알/, "egg"], [/베이비/, "baby"], [/틴|원형 블롭|확대|구성|점프|움직임/, "teen"], [/각성/, "awake"],
+  ];
+  const nav = document.createElement("nav");
+  nav.className = "navbar";
+  nav.setAttribute("aria-label", "섹션 이동");
+
+  [...main.querySelectorAll("section.card")].forEach((sec, i) => {
+    const h = sec.querySelector("h2");
+    if (!h) return;
+    if (!sec.id) sec.id = "sec" + i;
+    // 제목에서 배지와 부연을 걷어내고 핵심만 남긴다
+    const tag = h.querySelector(".tag");
+    const em = h.querySelector("em");
+    const plain = [...h.childNodes]
+      .filter((n) => n !== em && n !== tag && n.nodeName !== "BUTTON")
+      .map((n) => n.textContent).join("").trim();
+    const label = (tag ? tag.textContent + " " : "") + plain.replace(/\s+/g, " ");
+    const a = document.createElement("a");
+    a.href = "#" + sec.id;
+    a.textContent = label.slice(0, 14);
+    const k = KIND.find(([re]) => re.test(label));
+    if (k) a.dataset.k = k[1];
+    nav.appendChild(a);
+  });
+  main.insertBefore(nav, main.firstChild);
+
+  const tip = document.createElement("div");
+  tip.className = "howto";
+  tip.innerHTML =
+    "<b>폰에서 맞춘 값을 돌려보내는 법</b> — 슬라이더로 조정한 뒤 오른쪽 아래 " +
+    "<b>값 복사</b>를 누르면 스펙 JSON이 클립보드에 담깁니다. 그대로 대화창에 붙여넣으면 " +
+    "저장소 원본에 반영합니다. 조정값은 이 페이지에 자동 저장되니 껐다 켜도 남습니다.";
+  nav.after(tip);
+
+  const fab = document.createElement("button");
+  fab.className = "fab";
+  fab.type = "button";
+  fab.textContent = "값 복사";
+  fab.addEventListener("click", async () => {
+    const json = JSON.stringify({
+      version: 4, style: "reference", cell: CELL, baseline: B, viewBox: VIEWBOX,
+      params: P, skins: SKINS, eggSkins: EGG_SKINS, jump: POSES,
+    }, null, 2);
+    const out = document.getElementById("out");
+    try {
+      await navigator.clipboard.writeText(json);
+      fab.textContent = "복사됨";
+    } catch (e) {
+      out.style.display = "block";
+      out.value = json;
+      out.scrollIntoView({ block: "center" });
+      out.select();
+      fab.textContent = "상자에서 복사";
+    }
+    setTimeout(() => { fab.textContent = "값 복사"; }, 2000);
+  });
+  document.body.appendChild(fab);
+})();
 </script>
 </body>
 </html>

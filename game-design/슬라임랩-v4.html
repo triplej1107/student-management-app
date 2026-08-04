@@ -464,6 +464,9 @@
           <option value="fx">이펙트</option>
         </select></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
+        <input type="checkbox" id="impFix" checked style="accent-color:#f0a33c;vertical-align:-2px">
+        확대본 정리해서 받기 <span style="color:#7d776b">— 배경 날리고 칸 크기 재서 줄인다</span></label>
+      <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
     </div>
@@ -2131,14 +2134,135 @@ const IMP_LIMIT = {                      // 단계 × 슬롯 크기 상한 (칸)
 const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
 const IMP_COLORS = 12;
 
+/* ---------- 확대본 되돌리기 ----------
+   이미지 생성 모델은 "가로 26픽셀 PNG" 를 못 만든다. 아무리 시켜도 큰 래스터를 만들고
+   그 안에 도트처럼 보이게 그린다. 프롬프트로 될 일이 아니므로 받아서 되돌린다.
+   ① 흰(혹은 단색) 배경을 날리고 ② 칸 크기를 재서 줄이고 ③ 색을 줄인다. */
+
+// 배경 — 네 귀퉁이가 같은 색이면 그 색을 배경으로 본다
+function stripBg(d, w, h, tol) {
+  tol = tol || 26;
+  const at = (x, y) => { const i = (y * w + x) * 4; return [d[i], d[i + 1], d[i + 2], d[i + 3]]; };
+  const cs = [at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)];
+  if (cs.some((c) => c[3] === 0)) return 0;               // 이미 투명이면 둘 필요 없다
+  const [r0, g0, b0] = cs[0];
+  if (!cs.every((c) => Math.abs(c[0] - r0) + Math.abs(c[1] - g0) + Math.abs(c[2] - b0) < tol)) return 0;
+  let n = 0;
+  for (let i = 0; i < w * h; i++) {
+    const j = i * 4;
+    if (Math.abs(d[j] - r0) + Math.abs(d[j + 1] - g0) + Math.abs(d[j + 2] - b0) < tol) { d[j + 3] = 0; n++; }
+  }
+  return n;
+}
+
+// 칸 크기 — 같은 색이 가로로 몇 칸씩 이어지는지 세서 제일 흔한 길이를 고른다
+function guessBlock(d, w, h) {
+  const tally = new Map();
+  const key = (i) => d[i * 4 + 3] === 0 ? "t" : `${d[i*4]},${d[i*4+1]},${d[i*4+2]}`;
+  for (let y = 0; y < h; y++) {
+    let run = 1;
+    for (let x = 1; x <= w; x++) {
+      const same = x < w && key(y * w + x) === key(y * w + x - 1);
+      if (same) { run++; continue; }
+      if (key(y * w + x - 1) !== "t") tally.set(run, (tally.get(run) || 0) + 1);
+      run = 1;
+    }
+  }
+  // 짧은 런은 경계 잡음이라 빈도에 길이를 곱해 무게를 준다
+  let best = 1, bw = 0;
+  for (const [len, cnt] of tally) { const wgt = cnt * Math.min(len, 12); if (len > 1 && wgt > bw) { bw = wgt; best = len; } }
+  return best;
+}
+
+/* 확대본을 원래 격자로 줄인다. 한 칸에서 제일 많이 나온 색을 고른다. */
+function downscale(d, w, h, k) {
+  const W = Math.round(w / k), H = Math.round(h / k), px = new Map();
+  for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
+    const vote = new Map();
+    for (let y = Y * k; y < Math.min(h, (Y + 1) * k); y++)
+      for (let x = X * k; x < Math.min(w, (X + 1) * k); x++) {
+        const i = (y * w + x) * 4;
+        if (d[i + 3] < 128) continue;
+        const c = "#" + [d[i], d[i + 1], d[i + 2]].map((v) => v.toString(16).padStart(2, "0")).join("");
+        vote.set(c, (vote.get(c) || 0) + 1);
+      }
+    let top = null, n = 0;
+    for (const [c, v] of vote) if (v > n) { n = v; top = c; }
+    if (top && n >= k * k * 0.34) px.set(X + "," + Y, top);
+  }
+  return { px, w: W, h: H };
+}
+
+/* 색 줄이기 — 가장 적게 쓰인 색을 가장 가까운 색으로 흡수시킨다 */
+function quantize(px, max) {
+  const cnt = new Map();
+  for (const c of px.values()) cnt.set(c, (cnt.get(c) || 0) + 1);
+  const rgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  while (cnt.size > max) {
+    const order = [...cnt].sort((a, b) => a[1] - b[1]);
+    const [victim] = order[0];
+    const v = rgb(victim);
+    let near = null, nd = Infinity;
+    for (const [c] of cnt) {
+      if (c === victim) continue;
+      const o = rgb(c), dd = (o[0]-v[0])**2 + (o[1]-v[1])**2 + (o[2]-v[2])**2;
+      if (dd < nd) { nd = dd; near = c; }
+    }
+    for (const [k, c] of px) if (c === victim) px.set(k, near);
+    cnt.set(near, cnt.get(near) + cnt.get(victim));
+    cnt.delete(victim);
+  }
+  return cnt.size;
+}
+
+/* 여러 개가 한 장에 붙어 있으면 덩어리로 쪼갠다 (GPT 는 셋을 나란히 그려 준다) */
+function splitBlobs(px, w, h, gap) {
+  gap = gap || 2;
+  const seen = new Set(), out = [];
+  for (const start of px.keys()) {
+    if (seen.has(start)) continue;
+    const q = [start], cell = new Map();
+    seen.add(start);
+    while (q.length) {
+      const k = q.pop(), [x, y] = k.split(",").map(Number);
+      cell.set(k, px.get(k));
+      for (let dy = -gap; dy <= gap; dy++) for (let dx = -gap; dx <= gap; dx++) {
+        const n = (x + dx) + "," + (y + dy);
+        if (px.has(n) && !seen.has(n)) { seen.add(n); q.push(n); }
+      }
+    }
+    if (cell.size >= 12) out.push(cell);        // 라벨 조각 같은 부스러기는 버린다
+  }
+  return out.sort((a, b) => b.size - a.size);
+}
+
 /* PNG → 격자. 알파 0/255 가 아닌 픽셀은 안티앨리어싱으로 세어 돌려준다. */
-function readPng(img) {
+function readPng(img, fix) {
   const cv = document.createElement("canvas");
   cv.width = img.naturalWidth; cv.height = img.naturalHeight;
   const cx = cv.getContext("2d", { willReadFrequently: true });
   cx.imageSmoothingEnabled = false;
   cx.drawImage(img, 0, 0);
   const d = cx.getImageData(0, 0, cv.width, cv.height).data;
+
+  if (fix) {                                   // 확대본 되돌리기
+    const bg = stripBg(d, cv.width, cv.height);
+    const k = guessBlock(d, cv.width, cv.height);
+    const down = downscale(d, cv.width, cv.height, k);
+    const blobs = splitBlobs(down.px, down.w, down.h);
+    const parts = blobs.map((cell) => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const key of cell.keys()) { const [x, y] = key.split(",").map(Number);
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      const px = new Map();
+      for (const [key, c] of cell) { const [x, y] = key.split(",").map(Number);
+        px.set((x - x0) + "," + (y - y0), c); }
+      const n = quantize(px, IMP_COLORS);
+      return { px, colors: new Set(px.values()), soft: 0, w: x1 - x0 + 1, h: y1 - y0 + 1, quantized: n };
+    });
+    return { fixed: true, block: k, bg, parts };
+  }
+
   const px = new Map(), colors = new Set();
   let soft = 0;
   for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) {
@@ -2148,7 +2272,7 @@ function readPng(img) {
     const hex = "#" + [d[i], d[i + 1], d[i + 2]].map((v) => v.toString(16).padStart(2, "0")).join("");
     px.set(x + "," + y, hex); colors.add(hex);
   }
-  return { px, colors, soft, w: cv.width, h: cv.height };
+  return { parts: [{ px, colors, soft, w: cv.width, h: cv.height }] };
 }
 
 /* 앵커를 안 준 경우의 기본값 — 슬롯이 몸에 닿는 쪽을 잡는다 */
@@ -2191,15 +2315,28 @@ function impSvg(r, slot, anchor, a, shade) {
     files.forEach((f) => {
       const img = new Image();
       img.onload = () => {
-        const r = readPng(img);
+        const res = readPng(img, document.getElementById("impFix").checked);
+        if (res.fixed) {
+          const head = document.createElement("div");
+          head.innerHTML = `<b style="color:#9CC4EC">↻ ${f.name}</b> — 한 칸 <b>${res.block}px</b> 로 재서 줄임` +
+            (res.bg ? ` · 배경 ${res.bg.toLocaleString()}픽셀 제거` : "") +
+            (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "");
+          report.appendChild(head);
+        }
+        res.parts.forEach((r, pi) => showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed));
+      };
+      img.src = URL.createObjectURL(f);
+    });
+    function showOne(r, name, fixed) {
         const bad = [];
         if (r.soft) bad.push(`안티앨리어싱 <b style="color:#f5785c">${r.soft}픽셀</b> — 알파가 0·255 가 아니다`);
         if (r.colors.size > IMP_COLORS) bad.push(`색 <b style="color:#f5785c">${r.colors.size}</b>가지 — ${IMP_COLORS} 이하로`);
         if (r.w > lim[0] || r.h > lim[1]) bad.push(`크기 <b style="color:#f5785c">${r.w}×${r.h}</b> — ${IMP_KO[stage]} 상한 ${lim[0]}×${lim[1]}`);
         const line = document.createElement("div");
+        line.style.paddingLeft = fixed ? "14px" : "0";
         line.innerHTML = bad.length
-          ? `<b style="color:#f5785c">✕ ${f.name}</b> — ${bad.join(" · ")}`
-          : `<b style="color:#9BD468">✓ ${f.name}</b> — ${IMP_KO[stage]}용 ${r.w}×${r.h}칸 · ${r.colors.size}색 · 그대로 들어간다`;
+          ? `<b style="color:#f5785c">✕ ${name}</b> — ${bad.join(" · ")}`
+          : `<b style="color:#9BD468">✓ ${name}</b> — ${IMP_KO[stage]}용 ${r.w}×${r.h}칸 · ${r.colors.size}색 · 들어간다`;
         report.appendChild(line);
         if (bad.length) return;
         const anchor = guessAnchor(r, slot);
@@ -2218,13 +2355,12 @@ function impSvg(r, slot, anchor, a, shade) {
           row.appendChild(fig);
         });
         wear.appendChild(row);
-      };
-      img.src = URL.createObjectURL(f);
-    });
+    }
   };
   fileEl.addEventListener("change", run);
   document.getElementById("impSlot").addEventListener("change", run);
   document.getElementById("impStage").addEventListener("change", run);
+  document.getElementById("impFix").addEventListener("change", run);
   document.getElementById("impShade").addEventListener("change", run);
 })();
 

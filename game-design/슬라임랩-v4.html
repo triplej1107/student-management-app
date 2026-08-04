@@ -2183,70 +2183,77 @@ function stripBg(d, w, h, tol) {
   return n;
 }
 
-/* 격자 찾기 — 색이 바뀌는 **자리**를 모아 그 자리들이 몇 픽셀 간격에 얹히는지 본다.
-   두 번 고쳐 여기까지 왔다.
+/* 격자 찾기 — 세 번 고쳐 여기까지 왔다. 앞의 둘은 왜 틀렸는지 남겨 둔다.
    ① 런 길이의 공약수 → 경계가 흐려지면 길이가 k±1 로 흩어져 무너졌다
-   ② 정수 간격만 허용 → 생성 모델의 캔버스(1024·1232px)에 칸 수가 안 떨어지면
+   ② 정수 간격만 허용 → 생성 모델 캔버스(1024·1254px)에 칸 수가 안 떨어지면
       한 칸이 23.7px 같은 소수가 된다. 정수만 보니 하나도 못 맞췄다
-   그래서 지금은 **간격을 소수까지 훑고**, 시작점도 같이 찾는다. 가로·세로 따로 잰다. */
-function guessGrid(d, w, h, force) {
-  const sig = (i, j) => {                      // 두 픽셀 사이가 "칸 경계"인가
-    const ai = d[i * 4 + 3] >= 128, aj = d[j * 4 + 3] >= 128;
-    if (ai !== aj) return true;
-    if (!ai) return false;
-    return Math.abs(d[i*4] - d[j*4]) + Math.abs(d[i*4+1] - d[j*4+1]) + Math.abs(d[i*4+2] - d[j*4+2]) > 34;
-  };
-  // 흐린 경계는 2~3픽셀에 걸쳐 나오므로 뭉쳐서 가운데를 쓴다
-  const collect = (n, m, at) => {
-    const pos = [];
-    for (let a = 0; a < n; a++) {
-      let s = -1;
-      for (let b = 1; b <= m; b++) {
-        if (b < m && sig(at(a, b - 1), at(a, b))) { if (s < 0) s = b; continue; }
-        if (s >= 0) { pos.push((s + b - 1) / 2); s = -1; }
-      }
-    }
-    return pos;
-  };
-  const thin = (a) => a.length <= 20000 ? a : a.filter((_, i) => i % Math.ceil(a.length / 20000) === 0);
-  const PX = thin(collect(h, w, (y, x) => y * w + x));
-  const PY = thin(collect(w, h, (x, y) => y * w + x));
-  if (PX.length < 20 || PY.length < 20) return { ok: false, k: 0, sc: 0 };
+   ③ 경계를 "있다/없다"로 세기 → 음영이 매끄러운 그림에서는 칸 안에서도 문턱을
+      넘는 자리가 사방에 생겨, 진짜 칸선이 잡음에 파묻혔다 (1254×1254 실패 건)
 
-  const NB = 96;                               // 한 칸을 96등분해 위상 히스토그램을 만든다
-  const fit = (pos, k) => {
-    const hist = new Array(NB).fill(0);
-    for (const p of pos) hist[Math.floor((p % k) / k * NB) % NB]++;
-    const win = Math.max(1, Math.round(Math.max(1.2, k * 0.16) / k * NB));   // 경계가 흐려도 견디게
+   지금은 **변화량의 세기를 그대로 쓴다.** 세로줄마다 좌우 픽셀 차이를 세로로 다
+   더하면(ex[x]), 진짜 칸선은 그 줄 전체에서 한꺼번에 변하니 큰 값이 되고 칸 안의
+   잔물결은 서로 뭉개져 작게 남는다. 그 힘이 어느 간격의 격자선에 몰리는지를 본다. */
+function guessGrid(d, w, h, force) {
+  const diff = (i, j) => {                     // 두 픽셀이 얼마나 다른가 (투명↔불투명은 큰 값)
+    const ai = d[i * 4 + 3] >= 128, aj = d[j * 4 + 3] >= 128;
+    if (!ai && !aj) return 0;
+    if (ai !== aj) return 300;
+    return Math.abs(d[i*4] - d[j*4]) + Math.abs(d[i*4+1] - d[j*4+1]) + Math.abs(d[i*4+2] - d[j*4+2]);
+  };
+  const EX = new Float64Array(w), EY = new Float64Array(h);
+  for (let y = 0; y < h; y++) { const r = y * w; for (let x = 1; x < w; x++) EX[x] += diff(r + x - 1, r + x); }
+  for (let y = 1; y < h; y++) for (let x = 0; x < w; x++) EY[y] += diff((y - 1) * w + x, y * w + x);
+
+  const NB = 128;                              // 한 칸을 128등분해 위상 히스토그램을 만든다
+  const fit = (E, k) => {
+    const hist = new Float64Array(NB);
+    let tot = 0;
+    for (let i = 1; i < E.length; i++) {
+      const m = E[i];
+      if (m <= 0) continue;
+      tot += m;
+      hist[Math.floor(((i - 0.5) % k) / k * NB) % NB] += m;   // 경계는 픽셀 사이(-0.5)에 있다
+    }
+    if (!tot) return { sc: 0, off: 0, base: 1 };
+    const win = Math.max(1, Math.round(Math.max(1.5, k * 0.14) / k * NB));
     let best = 0, bo = 0;
     for (let o = 0; o < NB; o++) {
       let s = 0;
       for (let j = -win; j <= win; j++) s += hist[(o + j + NB) % NB];
       if (s > best) { best = s; bo = o; }
     }
-    return { sc: best / pos.length, off: (bo + 0.5) / NB * k };
+    return { sc: best / tot, off: (bo + 0.5) / NB * k, base: (2 * win + 1) / NB };
   };
-  const axis = (pos, span) => {                // 통과하는 것 중 제일 큰 간격이 한 칸
-    if (force > 1) return { ok: true, k: force, ...fit(pos, force) };   // 손으로 준 값은 그대로 쓰되 시작점만 찾는다
-    let out = null, top = { k: 0, sc: 0 };
-    const kMax = Math.min(64, span / 4);
-    for (let k = 4; k <= kMax; k += 0.25) {
-      const f = fit(pos, k);
-      if (f.sc > top.sc) top = { k, ...f };
-      if (f.sc >= 0.86) out = { k, ...f };
-    }
-    if (!out) return { ok: false, top };
-    let best = out;                            // 0.05 단위로 한 번 더 다듬는다
+  /* 점수는 "창 안에 몰린 힘의 비율"이라 창 넓이(base)만큼은 거저 얻는다. 그래서
+     절대값이 아니라 **거저 얻는 몫을 뺀 값**(=몰린 정도)으로 겨룬다. 칸 안 그라데이션이
+     힘의 1/4쯤을 차지하므로 맞는 간격이라도 절대값은 0.75 언저리에서 멎는다.
+     맞는 간격의 절반·1/4 도 똑같이 몰리므로(격자선이 다 얹힌다) 비긴 것 중 제일 큰 것을 고른다. */
+  const axis = (E, span) => {
+    if (force > 1) return { ok: true, k: force, ...fit(E, force) };   // 손으로 준 값은 시작점만 찾는다
+    const kMax = Math.min(64, span / 4), cand = [];
+    for (let k = 4; k <= kMax; k += 0.25) { const f = fit(E, k); cand.push({ k, ...f, lift: f.sc - f.base }); }
+    if (!cand.length) return { ok: false, top: { k: 0, sc: 0, base: 0 } };   // 그림이 너무 작다
+    let M = 0, top = cand[0];
+    for (const c of cand) if (c.lift > M) { M = c.lift; top = c; }
+    if (M < 0.34) return { ok: false, top };
+    let out = top;
+    for (const c of cand) if (c.lift >= M * 0.97) out = c;            // 비긴 것 중 제일 큰 간격
+    let best = out;                                                  // 0.05 단위로 다듬는다
     for (let k = out.k - 0.25; k <= out.k + 0.25; k += 0.05) {
-      const f = fit(pos, k);
+      const f = fit(E, k);
       if (f.sc >= best.sc) best = { k, ...f };
     }
     return { ok: true, ...best };
   };
-  const gx = axis(PX, w), gy = axis(PY, h);
-  if (!gx.ok || !gy.ok) {                      // 왜 못 찾았는지 알려 줄 만큼은 남긴다
+  const gx = axis(EX, w), gy = axis(EY, h);
+  if (!gx.ok || !gy.ok) {
+    /* 확신은 없어도 제일 그럴듯한 간격은 있다. 거절하는 대신 그걸로 밀어붙여
+       보여 주고 "흐릿하다"고 말한다 — 되는지 아닌지는 눈으로 보는 게 제일 빠르다. */
     const bad = !gx.ok ? gx.top : gy.top;
-    return { ok: false, k: Math.round(bad.k * 10) / 10, sc: bad.sc };
+    const a = gx.ok ? gx : gx.top, b = gy.ok ? gy : gy.top;
+    const weak = a.k >= 4 && b.k >= 4
+      ? { kx: a.k, ox: a.off, ky: b.k, oy: b.off, sc: Math.min(a.sc, b.sc) } : null;
+    return { ok: false, weak, k: Math.round(bad.k * 10) / 10, sc: bad.sc, lift: bad.sc - bad.base };
   }
   return { ok: true, kx: gx.k, ox: gx.off, ky: gy.k, oy: gy.off, sc: Math.min(gx.sc, gy.sc) };
 }
@@ -2338,7 +2345,7 @@ function readPng(img, fix, force) {
     const auto = guessGrid(d, cv.width, cv.height, force);
     const g = auto.ok ? auto
             : cv.width * cv.height <= 40000 ? { kx: 1, ky: 1, ox: 0, oy: 0, sc: 0 }   // 이미 1픽셀=1칸
-            : null;
+            : auto.weak || null;                                     // 흐릿해도 일단 밀어붙인다
     /* 격자를 못 찾으면 여기서 멈춘다. 예전엔 그대로 밀고 나가 100만 칸짜리 격자로
        덩어리 쪼개기·색 줄이기를 돌려 브라우저가 굳었다. */
     if (!g) return { fixed: true, bg, parts: [], stuck: { w: cv.width, h: cv.height, ...auto } };
@@ -2356,7 +2363,7 @@ function readPng(img, fix, force) {
       const n = quantize(px, IMP_COLORS);
       return { px, colors: new Set(px.values()), soft: 0, w: x1 - x0 + 1, h: y1 - y0 + 1, quantized: n };
     });
-    return { fixed: true, block: g.kx, blockY: g.ky, fit: g.sc, bg, parts };
+    return { fixed: true, block: g.kx, blockY: g.ky, fit: g.sc, weak: !auto.ok && !!auto.weak, bg, parts };
   }
 
   const px = new Map(), colors = new Set();
@@ -2427,9 +2434,9 @@ function impSvg(r, slot, anchor, a, shade) {
           report.insertAdjacentHTML("beforeend",
             `<div><b style="color:#f5785c">✕ ${f.name}</b> — ${s.w}×${s.h}px, ` + (s.sc >= 0.86
               ? `한 칸 ${s.k}px 로 쟀는데 줄여도 <b>${gw}×${gh}칸</b>이다. 아이템 하나는 아무리 커도 65칸이다 — 칸 크기를 잘못 쟀다.`
-              : `<b>칸 격자를 못 찾았다.</b> 제일 그럴듯한 간격이 ${s.k || "?"}px 인데 칸 경계의 ` +
-                `<b>${Math.round(s.sc * 100)}%</b>만 거기 얹힌다(86% 넘어야 한다). ` +
-                `한 칸 크기가 일정하지 않거나 칸 안에 그라데이션이 있다.`) +
+              : `<b>칸 격자를 못 찾았다.</b> 제일 그럴듯한 간격이 ${s.k || "?"}px 인데 칸 경계의 힘이 ` +
+                `거기 몰린 정도가 <b>${Math.round((s.lift || 0) * 100)}</b>밖에 안 된다(34 넘어야 한다). ` +
+                `한 칸 크기가 그림 안에서 제각각이다.`) +
             `<br><span style="color:#7d776b">　한 칸이 몇 px 인지 알면 위 「한 칸」에 적어서 강제로 재게 할 수 있다. ` +
             `모르면 그린 쪽에 <b>칸 크기를 일정하게, 칸 안은 단색으로</b> 다시 그려 달라고 해야 한다.</span></div>`);
           return;
@@ -2440,6 +2447,7 @@ function impSvg(r, slot, anchor, a, shade) {
           head.innerHTML = `<b style="color:#9CC4EC">↻ ${f.name}</b> — 한 칸 <b>${px1(res.block)}` +
             (px1(res.blockY) !== px1(res.block) ? `×${px1(res.blockY)}` : "") + `px</b> 로 재서 줄임` +
             (res.fit ? ` <span style="color:#7d776b">(맞춘 정도 ${Math.round(res.fit * 100)}%)</span>` : "") +
+            (res.weak ? ` <b style="color:#f0a33c">· 격자가 흐릿하다 — 눈으로 확인할 것</b>` : "") +
             (res.bg ? ` · 배경 ${res.bg.toLocaleString()}픽셀 제거` : "") +
             (res.parts.length > 1 ? ` · <b>${res.parts.length}덩어리</b>로 쪼갬` : "");
           report.appendChild(head);

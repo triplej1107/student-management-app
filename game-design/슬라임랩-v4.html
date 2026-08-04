@@ -471,10 +471,10 @@
           <option value="fx">이펙트</option>
         </select></label>
       <label style="font-size:12px;color:#9a9488">좌우
-        <input type="range" id="impDX" min="-10" max="10" step="1" value="0"
+        <input type="range" id="impDX" min="-20" max="20" step="1" value="0"
                style="width:90px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDXv" style="color:#e8e4dc">0</b></label>
       <label style="font-size:12px;color:#9a9488">위아래
-        <input type="range" id="impDY" min="-10" max="10" step="1" value="0"
+        <input type="range" id="impDY" min="-20" max="20" step="1" value="0"
                style="width:90px;accent-color:#f0a33c;vertical-align:-4px"><b id="impDYv" style="color:#e8e4dc">0</b></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impFix" checked style="accent-color:#f0a33c;vertical-align:-2px">
@@ -499,6 +499,9 @@
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
+      <label style="font-size:12px;color:#9a9488;cursor:pointer">
+        <input type="checkbox" id="impGhost" style="accent-color:#f0a33c;vertical-align:-2px">
+        반투명으로 보기 <span style="color:#7d776b">— 가려진 눈·얼굴 자리를 확인한다</span></label>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;
                 padding-top:9px;border-top:1px solid #2a2f3a">
@@ -2580,12 +2583,22 @@ function guessAnchor(r, slot) {
     return [Math.round((Math.min(...dxs) + Math.max(...dxs)) / 2), bot - sink];
   }
   if (slot === "fx") return [cx, Math.max(...ys)];
-  if (slot === "face") return [cx, Math.round((Math.min(...ys) + Math.max(...ys)) / 2)];
+  if (slot === "face") {
+    /* 안경은 **알이 있는 줄**이 눈에 맞아야 한다. 전체 높이의 한가운데를 쓰면
+       안경다리·안대 끈처럼 위아래로 삐죽한 것에 끌려가 위로 밀린다.
+       가로로 제일 넓게 찬 줄(=알이 있는 줄)의 가운데를 눈높이로 본다. */
+    const byRow = new Map();
+    for (const k of r.px.keys()) { const y = +k.split(",")[1]; byRow.set(y, (byRow.get(y) || 0) + 1); }
+    let best = 0;
+    for (const n of byRow.values()) if (n > best) best = n;
+    const rows = [...byRow].filter(([, n]) => n >= best * 0.6).map(([y]) => y);
+    return [cx, Math.round((Math.min(...rows) + Math.max(...rows)) / 2)];
+  }
   return [cx, Math.round(Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * 0.78)];  // 쥐는 자리
 }
 
 /* 격자를 앵커에 맞춰 몸 좌표로 옮겨 그린다 */
-function impSvg(r, slot, anchor, a, shade) {
+function impSvg(r, slot, anchor, a, shade, ghost) {
   const b = new IBuf();
   const at = { head: a.head, face: a.face, fx: a.foot,
                right: [a.hand[0], a.hand[1]], left: [-a.hand[0], a.hand[1]] }[slot];
@@ -2594,7 +2607,8 @@ function impSvg(r, slot, anchor, a, shade) {
     b.px(at[0] + (x - anchor[0]) * ICELL, at[1] + (y - anchor[1]) * ICELL, hex);
   }
   if (shade) shadeItem(b);
-  return b.svg();
+  // 아이템이 얼굴을 덮으면 자리가 맞는지 눈으로 못 본다 — 반투명으로 비춰 보게 한다
+  return ghost ? `<g opacity="0.5">${b.svg()}</g>` : b.svg();
 }
 
 (function () {
@@ -2611,6 +2625,7 @@ function impSvg(r, slot, anchor, a, shade) {
     const slot = document.getElementById("impSlot").value;
     const stage = document.getElementById("impStage").value;
     const shade = document.getElementById("impShade").checked;
+    const ghost = document.getElementById("impGhost").checked;
     const nudge = [+document.getElementById("impDX").value, +document.getElementById("impDY").value];
     document.getElementById("impDXv").textContent = nudge[0];
     document.getElementById("impDYv").textContent = nudge[1];
@@ -2697,7 +2712,7 @@ function impSvg(r, slot, anchor, a, shade) {
           const g = G[stage];
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
-          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade), 190) +
+          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), 190) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[stage]}</figcaption>`;
           row.appendChild(fig);
           return;
@@ -2708,7 +2723,7 @@ function impSvg(r, slot, anchor, a, shade) {
           const on = st === stage, g = G[st];
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;opacity:${on ? 1 : .45}`;
-          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade), on ? 200 : 120) +
+          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), on ? 200 : 120) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:${on ? "#c05a2e" : "#6b655c"}">` +
             `${IMP_KO[st]}${on ? " ← 이 장" : ""}</figcaption>`;
           row.appendChild(fig);
@@ -2726,6 +2741,7 @@ function impSvg(r, slot, anchor, a, shade) {
   document.getElementById("impDX").addEventListener("input", run);
   document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);
+  document.getElementById("impGhost").addEventListener("change", run);
 
   /* ---------- 저장 ----------
      반입기는 검사만 하고 끝나서 맞춘 값이 어디에도 안 남았다. 손으로 배열에 붙이는

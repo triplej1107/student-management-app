@@ -312,6 +312,12 @@
     border: 1px solid #333944; background: #232833; color: #9a9488;
   }
   button.act.primary { border-color: #f0a33c; background: #3a2d18; color: #f5b95e; }
+  button.imp {
+    border-radius: 8px; padding: 5px 11px; font-size: 12px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+    border: 1px solid #4a3a20; background: #3a2d18; color: #f5b95e;
+  }
+  button.imp:disabled { border-color: #333944; background: #232833; color: #6b655c; cursor: default; }
   textarea#out {
     width: 100%; height: 150px; margin-top: 10px; background: #0e1014; color: #8b8578;
     border: 1px solid #2b303b; border-radius: 10px; padding: 10px; font-size: 11px;
@@ -480,6 +486,24 @@
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;
+                padding-top:9px;border-top:1px solid #2a2f3a">
+      <label style="font-size:12px;color:#9a9488">코드
+        <input type="text" id="impCode" placeholder="nm_head_cap" spellcheck="false"
+               style="width:150px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px"></label>
+      <label style="font-size:12px;color:#9a9488">이름
+        <input type="text" id="impKo" placeholder="야구모자"
+               style="width:110px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px"></label>
+      <label style="font-size:12px;color:#9a9488">등급
+        <select id="impTier" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+          <option value="normal">노말</option><option value="magic">매직</option>
+          <option value="rare">레어</option><option value="epic">에픽</option>
+          <option value="legendary">레전더리</option>
+        </select></label>
+      <button id="impSavePng" class="imp">정리된 PNG 받기</button>
+      <button id="impSaveJson" class="imp">items.json 조각 복사</button>
+      <span id="impSaveMsg" style="font-size:12px;color:#9BD468"></span>
     </div>
     <div id="impReport" style="font-size:12px;line-height:1.9;color:#9a9488">
       PNG 를 고르면 검사 결과가 여기 뜬다.
@@ -2498,7 +2522,11 @@ function impSvg(r, slot, anchor, a, shade) {
   const fileEl = document.getElementById("impFile");
   if (!fileEl) return;
   const report = document.getElementById("impReport"), wear = document.getElementById("impWear");
+  const msg = document.getElementById("impSaveMsg");
+  let done = [];                               // 검사를 통과해 화면에 얹힌 것들 — 저장 대상
   const run = () => {
+    done = [];
+    msg.textContent = "";
     const files = [...fileEl.files];
     if (!files.length) return;
     const slot = document.getElementById("impSlot").value;
@@ -2575,6 +2603,7 @@ function impSvg(r, slot, anchor, a, shade) {
         if (bad.length) return;
         const g0 = guessAnchor(r, slot);
         const anchor = [g0[0] - nudge[0], g0[1] - nudge[1]];   // 미세조정은 앵커를 반대로 민다
+        done.push({ r, stage, anchor });                       // 저장 버튼이 쓸 목록
         wear.style.display = "";
         const G = { baby: babyParts(SKINS[sel]), teen: slimeParts(SKINS[sel]),
                     awake: slimeParts(SKINS[sel], { awake: true }) };
@@ -2612,6 +2641,64 @@ function impSvg(r, slot, anchor, a, shade) {
   document.getElementById("impDX").addEventListener("input", run);
   document.getElementById("impDY").addEventListener("input", run);
   document.getElementById("impShade").addEventListener("change", run);
+
+  /* ---------- 저장 ----------
+     반입기는 검사만 하고 끝나서 맞춘 값이 어디에도 안 남았다. 두 가지를 뱉는다.
+     ① 정리된 PNG — 한 칸이 딱 1픽셀인 원본. 이게 게임에 들어가는 파일이다
+     ② items.json 조각 — 미세조정까지 반영된 앵커. 규격서 §4 모양 그대로 */
+  const codeOf = () => (document.getElementById("impCode").value.trim() ||
+    `${{ normal: "nm", magic: "mg", rare: "rr", epic: "ep", legendary: "lg" }[document.getElementById("impTier").value]}` +
+    `_${document.getElementById("impSlot").value}_item`);
+  const flash = (t, bad) => { msg.style.color = bad ? "#f5785c" : "#9BD468"; msg.textContent = t; };
+
+  function partPng(r) {                        // 한 칸 = 1픽셀. 확대 없이 그대로 뜬다
+    const cv = document.createElement("canvas");
+    cv.width = r.w; cv.height = r.h;
+    const cx = cv.getContext("2d");
+    for (const [k, hex] of r.px) {
+      const [x, y] = k.split(",").map(Number);
+      cx.fillStyle = hex; cx.fillRect(x, y, 1, 1);
+    }
+    return cv;
+  }
+  document.getElementById("impSavePng").addEventListener("click", () => {
+    if (!done.length) return flash("넣어서 통과한 게 없다", true);
+    const code = codeOf();
+    done.forEach(({ r, stage }) => {
+      partPng(r).toBlob((b) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = `${code}_${stage}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+    });
+    flash(`${done.length}장 받는 중 — ${code}_*.png`);
+  });
+  document.getElementById("impSaveJson").addEventListener("click", async () => {
+    if (!done.length) return flash("넣어서 통과한 게 없다", true);
+    const code = codeOf();
+    const item = {
+      code, ko: document.getElementById("impKo").value.trim() || code,
+      slot: document.getElementById("impSlot").value,
+      tier: document.getElementById("impTier").value,
+    };
+    for (const st of ["baby", "teen", "awake"]) {                // 규격서 §4 와 같은 순서
+      const hit = done.find((d) => d.stage === st);
+      if (hit) item[st] = { png: `${code}_${st}.png`, anchor: hit.anchor };
+    }
+    const txt = JSON.stringify(item, null, 2)
+      .replace(/\[\s+(-?\d+),\s+(-?\d+)\s+\]/g, "[$1, $2]");     // 앵커는 한 줄로
+    try { await navigator.clipboard.writeText(txt); flash(`복사됐다 — ${code}`); }
+    catch (e) {                                // 클립보드가 막힌 환경이면 눈으로 가져가게 띄운다
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      ta.style.cssText = "width:100%;height:150px;margin-top:8px;background:#0e1014;color:#8b8578;" +
+        "border:1px solid #2b303b;border-radius:8px;padding:8px;font-size:11px;font-family:ui-monospace,monospace";
+      report.appendChild(ta); ta.select();
+      flash("클립보드가 막혀 아래에 띄웠다", true);
+    }
+  });
 })();
 
 const KEY = "slimeLabV4ref";

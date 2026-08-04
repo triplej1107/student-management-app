@@ -2252,11 +2252,53 @@ function stripBg(d, w, h, tol) {
   for (const g of cl) { keep.push(g.c); cov += g.n; if (cov / frame.length >= 0.98) break; }
   if (cov / frame.length < 0.98 || keep.length > 3) return 0;   // 테두리가 그림이면 손대지 않는다
 
-  let n = 0;
-  for (let i = 0; i < w * h; i++) {
+  /* 색이 맞는다고 다 지우면 안 된다 — **배경색과 같은 색이 그림 안에도 있다.**
+     흰 모자를 흰 바탕에 그려 오면 몸통이 통째로 날아가 외곽선만 남는다 (2026-08-05 실측).
+     그래서 색이 아니라 **테두리에서 이어진 데까지만** 지운다. 그림 안쪽 흰색은
+     어두운 외곽선에 막혀 테두리와 안 이어지므로 살아남는다. */
+  const which = (i) => {                       // 이 픽셀이 배경색 중 하나인가 (-1 = 아니다)
     const j = i * 4;
-    for (const c of keep)
-      if (Math.abs(d[j] - c[0]) + Math.abs(d[j + 1] - c[1]) + Math.abs(d[j + 2] - c[2]) < tol) { d[j + 3] = 0; n++; break; }
+    for (let m = 0; m < keep.length; m++) {
+      const c = keep[m];
+      if (Math.abs(d[j] - c[0]) + Math.abs(d[j + 1] - c[1]) + Math.abs(d[j + 2] - c[2]) < tol) return m;
+    }
+    return -1;
+  };
+  const seen = new Uint8Array(w * h), stack = new Int32Array(w * h);
+  let sp = 0, n = 0;
+  const push = (i) => { if (!seen[i] && which(i) >= 0) { seen[i] = 1; stack[sp++] = i; } };
+  for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+  while (sp) {
+    const i = stack[--sp], x = i % w, y = (i - x) / w;
+    d[i * 4 + 3] = 0; n++;
+    if (x > 0) push(i - 1);
+    if (x < w - 1) push(i + 1);
+    if (y > 0) push(i - w);
+    if (y < h - 1) push(i + w);
+  }
+
+  /* 그림에 둘러싸인 배경(고리 안쪽 같은 곳)은 위에서 못 지운다. 거기가 **바둑판이면**
+     지운다. 판정은 "배경색이 둘 이상 섞였나"가 아니라 **둘 다 넉넉히 있나**로 한다 —
+     흰 몸통 가장자리의 흐린 픽셀 몇 개가 회색으로 읽혀 통째로 지워진 적이 있다
+     (2026-08-05, 흰 모자). 진짜 바둑판은 두 색이 반반이고, 흰 몸통은 회색이 몇 %다. */
+  if (keep.length >= 2) {
+    for (let s0 = 0; s0 < w * h; s0++) {
+      if (seen[s0] || which(s0) < 0) continue;
+      const cell = [], cnt = new Array(keep.length).fill(0);
+      seen[s0] = 1; stack[sp++] = s0;
+      while (sp) {
+        const i = stack[--sp], x = i % w, y = (i - x) / w;
+        cell.push(i); cnt[which(i)]++;
+        if (x > 0) push(i - 1);
+        if (x < w - 1) push(i + 1);
+        if (y > 0) push(i - w);
+        if (y < h - 1) push(i + w);
+      }
+      const sorted = [...cnt].sort((a, b) => b - a);
+      if (cell.length >= 64 && sorted[1] / cell.length >= 0.25)      // 둘째 색이 1/4 넘어야 무늬
+        for (const i of cell) { d[i * 4 + 3] = 0; n++; }
+    }
   }
   return n;
 }

@@ -448,6 +448,17 @@
   </section>
 
   <section class="card">
+    <h2>노말 아이템 33종 <em>— 몸(셀 3)보다 두 배 촘촘한 셀 1.5.
+      눌러서 아래 세 단계에 얹어 본다</em></h2>
+    <div class="sheet" id="itemSheet"></div>
+  </section>
+
+  <section class="card">
+    <h2>아이템 착용 <em>— 같은 아이템이 앵커만 바뀌어 세 단계에 맞는다</em></h2>
+    <div class="sheet" id="itemWear"></div>
+  </section>
+
+  <section class="card">
     <h2>구성 순서 <em>— 레퍼런스 BUILDING A SLIME 과 같은 순서로 쌓인다</em></h2>
     <div class="build" id="build"></div>
   </section>
@@ -599,7 +610,8 @@ function Buf() { this.m = new Map(); }
 Buf.prototype.setIn = function (set, x, y, f) { const k = x + "_" + y; if (set.has(k)) this.m.set(k, f); };
 
 // 가로 런렝스 병합
-function toRects(buf) {
+function toRects(buf, cell) {
+  cell = cell || CELL;                 // 아이템은 몸보다 촘촘한 격자를 쓴다
   const rows = new Map();
   for (const [k, v] of buf.m) {
     const i = k.indexOf("_");
@@ -614,8 +626,8 @@ function toRects(buf) {
     let i = 0;
     while (i < arr.length) {
       let j = i;
-      while (j + 1 < arr.length && arr[j + 1][0] === arr[j][0] + CELL && arr[j + 1][1] === arr[i][1]) j++;
-      out += `<rect x="${arr[i][0]}" y="${y}" width="${(j - i + 1) * CELL}" height="${CELL}" fill="${arr[i][1]}"/>`;
+      while (j + 1 < arr.length && Math.abs(arr[j + 1][0] - arr[j][0] - cell) < 1e-6 && arr[j + 1][1] === arr[i][1]) j++;
+      out += `<rect x="${arr[i][0]}" y="${y}" width="${(j - i + 1) * cell}" height="${cell}" fill="${arr[i][1]}"/>`;
       n++; i = j + 1;
     }
   }
@@ -708,7 +720,7 @@ function hwAt(set, y) {
   return hw;
 }
 
-function anchorsOf(set, eyeCY) {
+function anchorsOf(set, eyeCY, eyeCX) {
   const bb = bboxOf(set);
   const top = bb.y0, Hb = B - top;
   const handY = snap(B - ANCHOR.handF * Hb);
@@ -721,9 +733,10 @@ function anchorsOf(set, eyeCY) {
     // 정수리에 맞추면 모자가 머리 위에 떠 버린다 — 정수리에서는 폭이 0이기 때문.
     head: [0, headY], headHw: hwAt(set, headY),
     crown: [0, top],                 // 정수리 — 후광처럼 머리 위에 뜨는 것만 여기 쓴다
-    face: [0, faceY], faceHw: hwAt(set, faceY),
+    face: [0, faceY], faceHw: hwAt(set, faceY), eyeX: gsnap(eyeCX),
     hand: [handX, handY],            // 오른손 (왼손은 x 부호만 뒤집는다)
     foot: [0, B],                    // 이펙트 — 발밑
+    s: hwAt(set, headY) / 42,        // 아이템 배율 — 틴이 1.00 이다
   };
 }
 
@@ -771,7 +784,7 @@ function babyParts(skin, opts) {
     inner: r.out, n: r.n, raw: r.raw,
     cells: Math.round((2 * bx.hw) / CELL) + 1,   // 실제 최대 폭 (rx 는 taper 전 값)
     top: B - H, rx, H, set,
-    anchors: anchorsOf(set, snap(B - P.babyEyeY * H) + P.babyEyeH * CELL / 2),
+    anchors: anchorsOf(set, snap(B - P.babyEyeY * H) + P.babyEyeH * CELL / 2, P.babyEyeGap * rx),
   };
 }
 
@@ -1273,7 +1286,7 @@ function slimeParts(skin, opts) {
     B - 2 * ry - (opts.awake ? P.awRim * CELL : 0) - 3 * CELL);
 
   const r = toRects(buf);
-  const anchors = anchorsOf(set, snap(B - P.eyeY * 2 * ry) + P.eyeH * CELL / 2);
+  const anchors = anchorsOf(set, snap(B - P.eyeY * 2 * ry) + P.eyeH * CELL / 2, P.eyeGap * rx);
   return { inner: r.out, n: r.n, raw: r.raw, cells: Math.round((2 * rx) / CELL), top: B - 2 * ry, set, rx, ry, cy, anchors };
 }
 function wrap(inner, width, extra) {
@@ -1667,6 +1680,264 @@ function gearRigid(a) {
 }
 function gearSvg(a) { return gearSoft(a) + gearRigid(a); }
 
+/* ============================================================
+   아이템 — 몸보다 두 배 촘촘한 격자에 그린다 (원장 지시 2026-08-04).
+
+   ※ 핸드오프 §2-② 는 "셀 크기를 하나로 통일한다"였다. 그때 문제는 아이템 등급끼리
+     셀이 달랐던 것(노말 7 / 에픽 3.5)이고, 여기서는 몸 3 / 아이템 전부 1.5 로
+     두 층만 쓴다. 어색하면 ICELL 을 CELL 로 되돌리면 그대로 한 층이 된다.
+
+   모든 아이템은 앵커에서 자리를 받고, 앵커의 머리 폭으로 배율을 잡는다.
+   그래서 한 번 그린 아이템이 베이비·틴·각성 세 단계에 자동으로 맞는다.
+   ============================================================ */
+const ICELL = CELL / 2;
+const isnap = (v) => Math.round(v / ICELL) * ICELL;
+
+function IBuf() { this.m = new Map(); }
+IBuf.prototype.px = function (x, y, f) { this.m.set(isnap(x) + "_" + isnap(y), f); };
+IBuf.prototype.svg = function () { return toRects(this, ICELL).out; };
+
+function iRect(b, x, y, w, h, f) {
+  for (let yy = isnap(y); yy < y + h - 1e-6; yy += ICELL)
+    for (let xx = isnap(x); xx < x + w - 1e-6; xx += ICELL) b.px(xx, yy, f);
+}
+/* 초타원 — n=2 타원, n 이 크면 모서리가 각진 사각. half: "top" | "bot" 이면 반쪽만 */
+function iEll(b, cx, cy, rx, ry, f, n, half) {
+  n = n || 2;
+  for (let y = isnap(cy - ry); y <= cy + ry; y += ICELL) {
+    const my = y + ICELL / 2;
+    if (half === "top" && my > cy) continue;
+    if (half === "bot" && my < cy) continue;
+    for (let x = isnap(cx - rx); x <= cx + rx; x += ICELL) {
+      const u = Math.abs(x + ICELL / 2 - cx) / rx, v = Math.abs(my - cy) / ry;
+      if (Math.pow(u, n) + Math.pow(v, n) <= 1) b.px(x, y, f);
+    }
+  }
+}
+/* 테두리만 남긴 초타원 — 안경알·고리 */
+function iRing(b, cx, cy, rx, ry, t, f, n) {
+  const inn = new IBuf();
+  iEll(inn, cx, cy, rx - t, ry - t, "x", n);
+  const out = new IBuf();
+  iEll(out, cx, cy, rx, ry, "x", n);
+  for (const k of out.m.keys()) if (!inn.m.has(k)) b.m.set(k, f);
+}
+/* 굵기 있는 선분 — 연필 몸통·띠·손잡이 */
+function iSeg(b, x1, y1, x2, y2, t, f) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
+  const nx = -dy / L * t / 2, ny = dx / L * t / 2;
+  for (let s = 0; s <= L; s += ICELL / 2)
+    for (let o = -1; o <= 1; o += 0.25)
+      b.px(x1 + dx * s / L + nx * o * 2, y1 + dy * s / L + ny * o * 2, f);
+}
+
+/* 노말 33종. 학용품·잡화라 색은 차분하게 — 화려한 건 매직 위로 남긴다. */
+const IP = {
+  K: "#2B2B33", W: "#F2F0EB", GY: "#5B6270",
+  WD: "#C08A4A", WD2: "#8A5F2E", ST: "#DFC271", ST2: "#B99442",
+  MT: "#C9CDD4", MT2: "#8A9099", YE: "#E8C13A", YE2: "#B08A12",
+  RD: "#C43B3B", RD2: "#8E2020", BL: "#3C6FA8", BL2: "#25476E",
+  GR: "#4E9A4E", GR2: "#2E6B2E", PK: "#E88AA0", GL: "#A8D8EC", TN: "#E8C9A0",
+};
+
+/* 머리 — 기준선 y 에 테를 얹고 위로 쌓는다. hw = 그 높이의 머리 반폭. */
+const HEAD_ITEMS = [
+  ["nm_head_cap", "야구모자", (b, a) => { const { headHw: hw, s } = a, y = a.head[1];
+    iEll(b, 0, y, hw, 20 * s, IP.BL, 2.3, "top");
+    iEll(b, 0, y - 20 * s, 4 * s, 2.5 * s, IP.BL2);                       // 꼭지 단추
+    iRect(b, -hw, y - 3 * s, 2 * hw, 3 * s, IP.BL2);                    // 테
+    iEll(b, 0, y + 1 * s, hw * 1.28, 8 * s, IP.BL2, 2.6, "bot"); }],   // 챙
+  ["nm_head_straw", "밀짚모자", (b, a) => { const { headHw: hw, s } = a, y = a.head[1];
+    iEll(b, 0, y, hw * 0.82, 15 * s, IP.ST, 2.4, "top");
+    iRect(b, -hw * 0.82, y - 4 * s, hw * 1.64, 3 * s, IP.RD2);          // 리본 띠
+    iEll(b, 0, y, hw * 1.45, 7 * s, IP.ST, 2);                          // 넓은 챙
+    iEll(b, 0, y, hw * 1.45, 7 * s, IP.ST2, 2, "bot"); }],
+  ["nm_head_bucket", "챙모자", (b, a) => { const { headHw: hw, s } = a, y = a.head[1];
+    iEll(b, 0, y, hw * 0.94, 21 * s, IP.GR, 2.6, "top");
+    iEll(b, 0, y, hw * 1.2, 6 * s, IP.GR2, 2.2); }],
+  ["nm_head_beanie", "비니", (b, a) => { const { headHw: hw, s } = a, y = a.head[1];
+    iEll(b, 0, y, hw, 21 * s, IP.RD, 2.2, "top");
+    iEll(b, 0, y - 23 * s, 5.5 * s, 5 * s, IP.RD2);
+    iEll(b, 0, y - 23 * s, 4 * s, 3.5 * s, IP.W);                     // 방울
+    iRect(b, -hw, y - 5 * s, 2 * hw, 5 * s, IP.RD2); }],                // 접힌 단
+  ["nm_head_mesh", "메쉬캡", (b, a) => { const { headHw: hw, s } = a, y = a.head[1];
+    iEll(b, 0, y, hw, 20 * s, IP.W, 2.3, "top");
+    iRect(b, -hw, y - 20 * s, hw, 20 * s, IP.GY);                       // 뒤통수 망사
+    for (let x = -hw + 2 * s; x < -1 * s; x += 3 * s)
+      for (let yy = y - 18 * s; yy < y - 3 * s; yy += 3 * s) iRect(b, x, yy, 1.5 * s, 1.5 * s, IP.W);
+    iRect(b, -hw, y - 3 * s, 2 * hw, 3 * s, IP.K);
+    iEll(b, 0, y + 1 * s, hw * 1.28, 8 * s, IP.K, 2.6, "bot"); }],
+  ["nm_head_band", "헤어밴드", (b, a) => { const { headHw: hw, s } = a, y = a.head[1];
+    iRing(b, 0, y + 3 * s, hw * 1.02, 13 * s, 3.5 * s, IP.PK, 2.3);
+    iRect(b, -hw * 1.1, y + 3 * s, hw * 2.2, 14 * s, "");               // 아래 절반 지우기용
+    for (const k of [...b.m.keys()]) if (+k.slice(k.indexOf("_") + 1) > y + 2 * s) b.m.delete(k); }],
+];
+
+/* 얼굴 — 눈높이 기준. eyeX 는 실제 눈 중심이라 안경알이 눈에 정확히 걸린다. */
+function lens(b, a, rx, ry, n, rim, fill) {
+  const { eyeX: ex, s } = a, y = a.face[1];
+  for (const sd of [-1, 1]) {
+    // 알을 통째로 채우면 눈을 덮어 얼굴이 사라진다 → 위쪽 반사 한 줄만 넣는다
+    if (fill) iRect(b, sd * ex - rx * 0.55, y - ry * 0.55, rx * 0.8, 1.5 * s, fill);
+    if (rim) iRing(b, sd * ex, y, rx, ry, 1.5 * s, rim, n);
+  }
+  if (rim) iRect(b, -ex + rx - 1 * s, y - 1 * s, 2 * (ex - rx) + 2 * s, 1.5 * s, rim);   // 코걸이
+  if (rim) for (const sd of [-1, 1])
+    iRect(b, sd < 0 ? -a.faceHw : ex + rx, y - 1.5 * s, a.faceHw - ex - rx, 1.5 * s, rim);
+}
+const FACE_ITEMS = [
+  // 채우면 눈을 덮으니 테만 — 아래로 좁아지는 사다리꼴 프레임
+  ["nm_face_tri", "세모안경", (b, a) => { const { eyeX: ex, s } = a, y = a.face[1];
+    const w = 11 * s, h = 6.5 * s;
+    for (const sd of [-1, 1]) {
+      const cx = sd * ex;
+      iRect(b, cx - w, y - h, 2 * w, 1.6 * s, IP.K);
+      iRect(b, cx - w * 0.35, y + h - 1.6 * s, w * 0.7, 1.6 * s, IP.K);
+      for (let i = 0; i <= 8; i++) { const t = i / 8, xx = w * (1 - t * 0.65);
+        iRect(b, cx - xx, y - h + t * 2 * h, 1.6 * s, 1.8 * s, IP.K);
+        iRect(b, cx + xx - 1.6 * s, y - h + t * 2 * h, 1.6 * s, 1.8 * s, IP.K); }
+    }
+    iRect(b, -ex + w * 0.5, y - h * 0.6, 2 * (ex - w * 0.5), 1.6 * s, IP.K);
+    for (const sd of [-1, 1])
+      iRect(b, sd < 0 ? -a.faceHw : ex + w, y - h * 0.8, a.faceHw - ex - w, 1.6 * s, IP.K); }],
+  ["nm_face_flat", "일자안경", (b, a) => lens(b, a, 11 * a.s, 6.5 * a.s, 6, IP.MT2, IP.W)],
+  ["nm_face_horn", "뿔테안경", (b, a) => { lens(b, a, 12 * a.s, 8 * a.s, 3, IP.K, IP.W);
+    iRect(b, -a.eyeX - 12 * a.s, a.face[1] - 8 * a.s, 2 * a.eyeX + 24 * a.s, 2.5 * a.s, IP.K); }],
+  ["nm_face_rimless", "무테안경", (b, a) => lens(b, a, 11 * a.s, 7 * a.s, 2.6, IP.MT2, IP.W)],
+  ["nm_face_patch", "안대", (b, a) => { const { eyeX: ex, s } = a, y = a.face[1];
+    iRect(b, -a.faceHw, y - 4 * s, 2 * a.faceHw, 2.5 * s, IP.K);        // 끈
+    iEll(b, -ex, y, 12 * s, 9.5 * s, IP.K, 2.8); }],
+  ["nm_face_bandaid", "밴드에이드", (b, a) => { const { eyeX: ex, s } = a, y = a.face[1];
+    const cx = -ex - 9 * s, cy = y - 9 * s;
+    for (let i = -7; i <= 7; i++) iRect(b, cx + i * 1.5 * s, cy - i * 1.0 * s - 2.5 * s, 1.5 * s, 5 * s, IP.TN);
+    for (let i = -2; i <= 2; i++) iRect(b, cx + i * 1.5 * s, cy - i * 1.0 * s - 3.5 * s, 1.5 * s, 7 * s, IP.ST2); }],
+  ["nm_face_blush", "홍조 스티커", (b, a) => { const { eyeX: ex, s } = a, y = a.face[1];
+    for (const sd of [-1, 1]) iEll(b, sd * (ex + 9 * s), y + 4 * s, 5.5 * s, 3.5 * s, IP.PK, 2.2); }],
+];
+
+/* 손 — (hx, hy) 가 쥐는 자리. 위로 뻗는 것은 그 위로, 드는 것은 그 옆으로 쌓는다. */
+const RIGHT_ITEMS = [
+  ["nm_right_pencil", "연필", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 2 * s, y - 34 * s, 4 * s, 26 * s, IP.YE);
+    iRect(b, x + 1 * s, y - 34 * s, 1.5 * s, 26 * s, IP.YE2);
+    iRect(b, x - 2 * s, y - 38 * s, 4 * s, 4 * s, IP.PK);               // 지우개
+    iRect(b, x - 2 * s, y - 35 * s, 4 * s, 1.5 * s, IP.MT2);
+    for (let i = 0; i < 4; i++) iRect(b, x - 2 * s + i * 0.5 * s, y - 8 * s + i * 1.5 * s, 4 * s - i * 1 * s, 1.5 * s, IP.WD);
+    iRect(b, x - 0.5 * s, y - 2 * s, 1.5 * s, 2 * s, IP.K); }],
+  ["nm_right_sharp", "샤프", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 1.5 * s, y - 32 * s, 3.5 * s, 26 * s, IP.GY);
+    iRect(b, x - 1.5 * s, y - 34 * s, 3.5 * s, 2 * s, IP.BL);
+    iRect(b, x + 2 * s, y - 30 * s, 1.5 * s, 8 * s, IP.MT);             // 클립
+    iRect(b, x - 1 * s, y - 6 * s, 2.5 * s, 4 * s, IP.MT2);
+    iRect(b, x - 0.25 * s, y - 2.5 * s, 1 * s, 2.5 * s, IP.K); }],
+  ["nm_right_cutter", "커터칼", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 3 * s, y - 20 * s, 6 * s, 20 * s, IP.YE);
+    iRect(b, x - 3 * s, y - 20 * s, 2 * s, 20 * s, IP.YE2);
+    iRect(b, x - 2 * s, y - 30 * s, 4 * s, 10 * s, IP.MT);
+    for (let i = 0; i < 5; i++) iRect(b, x - 2 * s + i * 1 * s, y - 30 * s + i * 2 * s, 1 * s, 1 * s, IP.MT2); }],
+  ["nm_right_phone", "스마트폰", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iEll(b, x, y - 13 * s, 8 * s, 14 * s, IP.K, 5);
+    iEll(b, x, y - 13 * s, 6 * s, 11.5 * s, IP.GL, 5);
+    iRect(b, x - 2 * s, y - 26 * s, 4 * s, 1.5 * s, IP.GY); }],
+  ["nm_right_ballpen", "볼펜", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 2 * s, y - 30 * s, 4 * s, 24 * s, IP.BL);
+    iRect(b, x + 1 * s, y - 30 * s, 1.5 * s, 24 * s, IP.BL2);
+    iRect(b, x - 2 * s, y - 32 * s, 4 * s, 3 * s, IP.W);
+    iRect(b, x + 2 * s, y - 28 * s, 1.5 * s, 7 * s, IP.MT);
+    for (let i = 0; i < 3; i++) iRect(b, x - 2 * s + i * 0.6 * s, y - 6 * s + i * 1.5 * s, 4 * s - i * 1.2 * s, 1.5 * s, IP.MT2);
+    iRect(b, x - 0.25 * s, y - 2 * s, 1 * s, 2 * s, IP.K); }],
+  ["nm_right_fountain", "만년필", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 2.5 * s, y - 30 * s, 5 * s, 22 * s, IP.K);
+    iRect(b, x - 2.5 * s, y - 18 * s, 5 * s, 2.5 * s, IP.YE);           // 금테
+    iRect(b, x + 2.5 * s, y - 28 * s, 1.5 * s, 8 * s, IP.YE);
+    for (let i = 0; i < 6; i++) iRect(b, x - 2.5 * s + i * 0.4 * s, y - 8 * s + i * 1.3 * s, 5 * s - i * 0.8 * s, 1.3 * s, IP.YE2);
+    iRect(b, x - 0.25 * s, y - 1 * s, 1 * s, 1 * s, IP.K); }],
+  ["nm_right_staff", "지팡이", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 2 * s, y - 34 * s, 4 * s, 36 * s, IP.WD);
+    iRect(b, x + 1 * s, y - 34 * s, 1.5 * s, 36 * s, IP.WD2);
+    iEll(b, x, y - 36 * s, 6 * s, 5 * s, IP.WD);
+    iEll(b, x - 1.5 * s, y - 37 * s, 2 * s, 1.5 * s, IP.ST); }],
+  ["nm_right_watergun", "물총", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 3 * s, y - 12 * s, 6 * s, 12 * s, IP.GR);              // 손잡이
+    iRect(b, x - 3 * s, y - 20 * s, 16 * s, 8 * s, IP.YE);              // 몸통
+    iRect(b, x + 9 * s, y - 17 * s, 6 * s, 3 * s, IP.MT);               // 총구
+    iEll(b, x + 1 * s, y - 24 * s, 5 * s, 4 * s, IP.GL, 2.4);           // 물탱크
+    iRect(b, x - 1 * s, y - 12 * s, 3 * s, 3 * s, IP.GR2); }],
+  ["nm_right_woodsword", "목검", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iRect(b, x - 3 * s, y - 40 * s, 6 * s, 32 * s, IP.WD);
+    iRect(b, x + 1 * s, y - 40 * s, 2 * s, 32 * s, IP.WD2);
+    iEll(b, x, y - 40 * s, 3 * s, 2 * s, IP.WD, 2.4, "top");
+    iRect(b, x - 6 * s, y - 9 * s, 12 * s, 2.5 * s, IP.WD2);            // 코등이
+    iRect(b, x - 2 * s, y - 6.5 * s, 4 * s, 7 * s, IP.K); }],
+  ["nm_right_twig", "작은 나뭇가지", (b, a) => { const s = a.s, x = a.hand[0], y = a.hand[1];
+    iSeg(b, x, y, x - 2 * s, y - 26 * s, 2.5 * s, IP.WD2);
+    iSeg(b, x - 1.5 * s, y - 18 * s, x + 5 * s, y - 24 * s, 1.5 * s, IP.WD2);
+    iEll(b, x + 6 * s, y - 25 * s, 4 * s, 2.5 * s, IP.GR);
+    iEll(b, x - 5 * s, y - 22 * s, 3.5 * s, 2.2 * s, IP.GR);
+    iEll(b, x - 1 * s, y - 29 * s, 3 * s, 4 * s, IP.GR2); }],
+];
+
+const LEFT_ITEMS = [
+  ["nm_left_shield", "방패", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iEll(b, x, y - 12 * s, 11 * s, 15 * s, IP.BL2, 2.6);
+    iEll(b, x, y - 12 * s, 8.5 * s, 12.5 * s, IP.BL, 2.6);
+    iEll(b, x, y - 12 * s, 3.5 * s, 3.5 * s, IP.YE); }],
+  ["nm_left_book", "책", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iRect(b, x - 9 * s, y - 22 * s, 18 * s, 22 * s, IP.RD2);
+    iRect(b, x - 7 * s, y - 20 * s, 14 * s, 18 * s, IP.RD);
+    iRect(b, x + 6 * s, y - 22 * s, 3 * s, 22 * s, IP.W); }],
+  ["nm_left_bag", "가방", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iEll(b, x, y - 12 * s, 11 * s, 13 * s, IP.GR2, 4);
+    iRect(b, x - 11 * s, y - 20 * s, 22 * s, 7 * s, IP.GR);             // 덮개
+    iRect(b, x - 2.5 * s, y - 15 * s, 5 * s, 4 * s, IP.YE);             // 버클
+    iSeg(b, x - 8 * s, y - 24 * s, x + 8 * s, y - 24 * s, 2 * s, IP.GR2); }],
+  ["nm_left_handbag", "핸드백", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iRect(b, x - 9 * s, y - 13 * s, 18 * s, 13 * s, IP.RD);
+    iRect(b, x - 9 * s, y - 13 * s, 18 * s, 2.5 * s, IP.RD2);
+    iRing(b, x, y - 17 * s, 6 * s, 7 * s, 2 * s, IP.WD2, 2.2);
+    for (const k of [...b.m.keys()]) if (+k.slice(k.indexOf("_") + 1) > y - 13 * s && +k.slice(0, k.indexOf("_")) > x - 7 * s && +k.slice(0, k.indexOf("_")) < x + 7 * s && b.m.get(k) === IP.WD2) b.m.delete(k); }],
+  ["nm_left_laptop", "노트북", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iRect(b, x - 11 * s, y - 22 * s, 22 * s, 16 * s, IP.GY);            // 화면
+    iRect(b, x - 9 * s, y - 20 * s, 18 * s, 12 * s, IP.GL);
+    iRect(b, x - 13 * s, y - 6 * s, 26 * s, 4 * s, IP.MT2); }],         // 바닥
+  ["nm_left_tablet", "아이패드", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iEll(b, x, y - 12 * s, 10 * s, 14 * s, IP.GY, 6);
+    iEll(b, x, y - 12 * s, 8 * s, 11.5 * s, IP.GL, 6); }],
+  ["nm_left_phone", "핸드폰", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iEll(b, x, y - 10 * s, 6 * s, 11 * s, IP.K, 5);
+    iEll(b, x, y - 10 * s, 4.5 * s, 9 * s, IP.GL, 5); }],
+  ["nm_left_note", "노트", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iRect(b, x - 8 * s, y - 21 * s, 16 * s, 21 * s, IP.W);
+    iRect(b, x - 8 * s, y - 21 * s, 16 * s, 2 * s, IP.YE);
+    for (let i = 0; i < 5; i++) iRect(b, x - 6 * s, y - 15 * s + i * 3 * s, 12 * s, 1 * s, IP.MT2);
+    for (let i = 0; i < 6; i++) iRect(b, x - 9.5 * s, y - 20 * s + i * 3.5 * s, 3 * s, 1.5 * s, IP.GY); }],
+  ["nm_left_novel", "소설책", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iRect(b, x - 8 * s, y - 24 * s, 16 * s, 24 * s, IP.BL2);
+    iRect(b, x - 6 * s, y - 22 * s, 12 * s, 20 * s, IP.BL);
+    iRect(b, x + 3 * s, y - 24 * s, 2.5 * s, 30 * s, IP.RD); }],        // 책갈피
+  ["nm_left_ecobag", "에코백", (b, a) => { const s = a.s, x = -a.hand[0], y = a.hand[1];
+    iRect(b, x - 9 * s, y - 16 * s, 18 * s, 16 * s, IP.ST);
+    iRect(b, x - 9 * s, y - 16 * s, 18 * s, 2 * s, IP.ST2);
+    iRing(b, x, y - 21 * s, 6.5 * s, 6 * s, 2 * s, IP.ST2, 2.2);
+    for (const k of [...b.m.keys()]) if (+k.slice(k.indexOf("_") + 1) > y - 16 * s && b.m.get(k) === IP.ST2 &&
+      Math.abs(+k.slice(0, k.indexOf("_")) - x) < 7 * s) b.m.delete(k);
+    iEll(b, x, y - 8 * s, 5 * s, 4 * s, IP.GR); }],                     // 잎사귀 프린트
+];
+
+const ITEMS = [].concat(
+  HEAD_ITEMS.map((r) => ({ code: r[0], ko: r[1], slot: "머리", draw: r[2] })),
+  FACE_ITEMS.map((r) => ({ code: r[0], ko: r[1], slot: "얼굴", draw: r[2] })),
+  RIGHT_ITEMS.map((r) => ({ code: r[0], ko: r[1], slot: "오른손", draw: r[2] })),
+  LEFT_ITEMS.map((r) => ({ code: r[0], ko: r[1], slot: "왼손", draw: r[2] })),
+);
+// 손에 드는 것은 머리·얼굴과 같은 배율로 그리면 몸에 비해 작아 안 읽힌다
+const SLOT_SCALE = { "오른손": 1.45, "왼손": 1.45 };
+function itemSvg(item, a) {
+  const b = new IBuf();
+  item.draw(b, Object.assign({}, a, { s: a.s * (SLOT_SCALE[item.slot] || 1) }));
+  return b.svg();
+}
+
 /* ---------- 앵커 눈으로 보기 ----------
    도트가 아니라 안내선이므로 격자에 맞추지 않는다 — 실제 좌표를 그대로 긋는다. */
 const ANC_COL = { crown: "#C0392B", face: "#8E44AD", hand: "#1E8449", foot: "#2E86C1" };
@@ -1742,6 +2013,7 @@ function jumpSplitSvg(skin, width, gear) {
    ============================================================ */
 let sel = 0;
 let faceSel = 0;
+let itemSel = 0;
 // 알 무늬 = 얼룩 확정 (2026-08-04 원장). EGG_SKINS 에서 blotch 의 위치.
 let eggSel = EGG_SKINS.findIndex((s) => s.pat === "blotch");
 
@@ -1874,6 +2146,47 @@ function render() {
         `<tr><td style="padding:2px 12px 2px 0;color:#7d776b">${ko}</td>` +
         STAGES.map(([, g]) => `<td style="padding:2px 14px 2px 0;color:#e8e4dc">${fn(g.anchors)}</td>`).join("") + `</tr>`)
       .join("") + `</table>`;
+
+  // 노말 33종 — 틴 앵커 기준으로 아이템만 크게 띄운다
+  const teenG = STAGES[1][1];
+  const isheet = document.getElementById("itemSheet");
+  isheet.innerHTML = "";
+  let lastSlot = null, irow = null;
+  ITEMS.forEach((it, i) => {
+    if (it.slot !== lastSlot) {
+      lastSlot = it.slot;
+      const h = document.createElement("div");
+      h.textContent = it.slot;
+      h.style.cssText = "width:100%;font-size:11.5px;font-weight:700;color:#6b655c;margin:6px 0 2px";
+      isheet.appendChild(h);
+      irow = document.createElement("div");
+      irow.className = "row";
+      irow.style.justifyContent = "flex-start";
+      isheet.appendChild(irow);
+    }
+    const b = document.createElement("button");
+    b.className = i === itemSel ? "sel" : "";
+    // 아이템만 보이게 앵커 둘레로 잘라 띄운다
+    b.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-96 -26 192 200" width="86">` +
+      `${itemSvg(it, teenG.anchors)}</svg><div style="font-size:11px">${it.ko}</div>`;
+    b.addEventListener("click", () => { itemSel = i; render(); });
+    irow.appendChild(b);
+  });
+  const item = ITEMS[itemSel];
+
+  // 착용 — 세 단계. 무른 것(머리·얼굴)은 몸과 같이, 손에 든 것은 따로 그린다.
+  const wear = document.getElementById("itemWear");
+  wear.innerHTML = "";
+  const wrow = document.createElement("div");
+  wrow.className = "row";
+  STAGES.forEach(([ko, g]) => {
+    const f = document.createElement("figure");
+    f.style.textAlign = "center";
+    f.innerHTML = wrap(g.inner + itemSvg(item, g.anchors), 200) +
+      `<figcaption style="font-size:12px;font-weight:700;color:#4a453d">${ko}</figcaption>`;
+    wrow.appendChild(f);
+  });
+  wear.appendChild(wrow);
 
   // 구성 순서
   const build = document.getElementById("build");

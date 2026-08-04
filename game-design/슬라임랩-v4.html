@@ -403,7 +403,7 @@
   <h1>슬라임 디자인 랩 <span>v4 · 레퍼런스 재현 + 점프</span></h1>
   <div class="sub">
     원형 블롭 · 1칸 외곽선 + 1칸 속테 · 위쪽 밝은 톤 · 각진 흰 하이라이트 · 짧은 세로 막대 눈.
-    기본 얼굴은 입·볼터치·꼭지 없음 — 입과 볼터치는 표정에서만 나옵니다.
+    입·볼터치·꼭지 없음 — 표정은 눈 모양과 머리 위 기호로만 나릅니다.
     수·금·목·토는 레퍼런스 색 그대로, 화만 같은 톤 규칙으로 새로 뽑았습니다.
   </div>
 
@@ -413,7 +413,7 @@
   </section>
 
   <section class="card">
-    <h2>표정 <em>— 레퍼런스 표정시트 17종. 눌러서 아래 확대에 반영.
+    <h2>표정 <em>— 눈 + 머리 위 기호 17종 (입 없음). 눌러서 아래 확대에 반영.
       틴·각성만 (베이비는 눈이 2×3칸이라 무늬가 안 들어간다)</em></h2>
     <div class="sheet" id="faceSheet"></div>
   </section>
@@ -901,9 +901,14 @@ function disk(buf, cx, cy, r, fill, set) {
 }
 
 /* ============================================================
-   표정 — 레퍼런스 표정시트(원장취향-표정시트-수.png) 17종 기준.
-   눈·입은 격자 무늬를 갈아끼우고, 몸 밖으로 나가는 부호(눈물·Zz·음표·느낌표·
-   반짝임·소용돌이·과자)는 따로 얹는다.
+   표정 — 원장 레퍼런스 3장(도트 슬라임 시트) 문법.
+
+   **입은 없다.** 감정은 두 가지로만 나른다: ① 눈 모양 ② 머리 위에 뜨는 기호.
+   레퍼런스 18마리 전부 입이 없고, 확정된 v4 몸통 문법도 "입·볼터치 없음"이다.
+   (2026-08-04 원장 지시 — 이전 판에서 입·볼터치를 넣었던 건 되돌렸다)
+
+   기호는 머리 **바로 위 가운데**에 뜬다. 각성의 속성 상징물은 좌상·우상·우하
+   세 방향에만 놓이므로(FX_DIRS) 정수리 위는 늘 비어 있다 — 겹치지 않는다.
 
    무늬는 가운데를 기준점으로 찍는다. 왼쪽 눈 무늬를 좌우로 뒤집어 오른쪽에 쓰되,
    윙크처럼 두 눈이 다른 표정은 eyeR 로 따로 준다.
@@ -911,9 +916,7 @@ function disk(buf, cx, cy, r, fill, set) {
    ※ 틴·각성 전용. 베이비는 눈이 2×3칸뿐이라 5×6칸 무늬가 얼굴을 덮는다 —
      베이비용 축소 무늬는 별도 작업으로 남긴다.
    ============================================================ */
-const M_IN = "#B03048";     // 입 안
-const TEAR = "#6FD0F2";     // 눈물
-const BLUSH = "#EE8FA0";    // 볼터치
+const TEAR = "#6FD0F2";     // 눈물 — 얼굴에 흐르는 것이라 입과 무관하다
 
 // 눈 — 5칸 × 6줄. K 진한색 · W 흰 하이라이트
 const EYE_ART = {
@@ -930,87 +933,100 @@ const EYE_ART = {
   narrow:    [".....", ".....", "KKKKK", ".....", ".....", "....."],  // 골똘히 — 가늘게 뜬 한 줄
   spiral:    [".KKK.", "K...K", "K.KK.", "K..K.", ".KK..", "....."],  // 어질어질
 };
-// 입 — 폭은 무늬마다 다르다. R 은 입 안
-const MOUTH_ART = {
-  grin:       [".KKKKK.", "KRRRRRK", "KRRRRRK", ".KKKKK."],
-  smallSmile: ["K.....K", ".KKKKK."],
-  wail:       ["..KKK..", ".KRRRK.", "KRRRRRK", ".KKKKK."],
-  yawn:       ["..KKK..", ".KRRRK.", "KRRRRRK", "KRRRRRK", ".KRRRK.", "..KKK.."],
-  oh:         [".KKK.", "KRRRK", ".KKK."],
-  frown:      ["..KKK..", ".K...K."],
-  wavy:       [".K.K.K.", "K.K.K.K"],
-  pout:       [".KK.KK.", "K..K..K"],
-  shout:      [".KKKKK.", "KRRRRRK", ".KKKKK."],
+/* 머리 위 기호 — 레퍼런스가 감정을 나르는 진짜 수단. 입이 없으니 여기가 다 한다.
+   K 외곽선 · R 본색 · W 밝은 톤 */
+const SIGN_ART = {
+  heart:  { pal: { K: "#7A1B2E", R: "#E2455C" }, art: [
+    ".KK.KK.", "KRRKRRK", "KRRRRRK", ".KRRRK.", "..KRK..", "...K..."] },
+  broken: { pal: { K: "#7A1B2E", R: "#E2455C" }, art: [
+    ".KK.KK.", "KRRK.RK", "KRR.RRK", ".KR.RK.", "..K.K..", "...K..."] },
+  spark:  { pal: { R: "#F5C63A", W: "#FFF3C0" }, art: [
+    "..R..", "..R..", "RRWRR", "..R..", "..R.."] },
+  star:   { pal: { R: "#F0A32E" }, art: [
+    "..R..", "RRRRR", ".RRR.", ".R.R.", "R...R"] },
+  bang:   { pal: { R: "#E23B3B" }, art: [
+    "RRR", "RRR", "RRR", "RRR", "...", "RRR"] },
+  quest:  { pal: { R: "#EE9422" }, art: [
+    ".RRR.", "R...R", "...RR", "..RR.", "..R..", ".....", "..R.."] },
+  speech: { pal: { R: "#3C74B8", W: "#FFFFFF" }, art: [
+    ".RRRRR.", "RRRRRRR", "RWRWRWR", "RRRRRRR", ".RRRRR.", "..R...."] },
+  phone:  { pal: { R: "#3C74B8" }, art: [
+    ".RRRRR.", "RR...RR", "R.....R", "RR...RR", "RR...RR", ".R...R."] },
+  flame:  { pal: { K: "#8E2410", R: "#E8501E", W: "#FFC02E" }, art: [
+    "..K..", ".KRK.", ".KRK.", "KRRRK", "KRWRK", ".KWK.", "..K.."] },
+  thumb:  { pal: { K: "#8A6A10", W: "#F5C63A" }, art: [
+    ".KK...", "KWWK..", "KWWKKK", "KWWWWK", "KWWWWK", "KWWWWK", ".KKKK."] },
+  zzz:    { pal: { R: "#5A6B8C" }, art: [
+    "RRRR", "..R.", ".R..", "RRRR"] },
+  zzz2:   { pal: { R: "#5A6B8C" }, art: [
+    "....RRR", ".....R.", "....RRR", "RRRR...", "..R....", ".R.....", "RRRR..."] },
+  swirl:  { pal: { R: "#5A6B8C" }, art: [
+    ".RRR.", "R...R", "R.RR.", "R..R.", ".RR.."] },
 };
 
+/* 표정 = 눈 + 기호. 입은 없다.
+   레퍼런스에서 그대로 가져온 짝은 주석에 표시했다. */
 const FACES = [
-  { key: "basic",    ko: "기본" },                                                   // 슬라이더 값 그대로
-  { key: "smile",    ko: "웃기",     eye: "arch",      mouth: "grin",       blush: 1 },
-  { key: "cry",      ko: "울기",     eye: "arch",      mouth: "wail",       tear: 1 },
-  { key: "sleepy",   ko: "졸기",     eye: "droop",     mouth: "frown",      zzz: 1 },
-  { key: "yawn",     ko: "하품",     eye: "arch",      mouth: "yawn",       blush: 1 },
-  { key: "wink",     ko: "윙크",     eye: "round", eyeR: "arch", mouth: "smallSmile", blush: 1, spark: 1 },
-  { key: "surprise", ko: "놀람",     eye: "round",     mouth: "oh",         bang: 1 },
-  { key: "sing",     ko: "노래",     eye: "arch",      mouth: "grin",       blush: 1, note: 1 },
-  { key: "wince",    ko: "찡긋",     eye: "squint",    mouth: "smallSmile", spark: 1 },
-  { key: "weary",    ko: "지침",     eye: "half",      mouth: "wavy",       sweat: 1 },
-  { key: "teary",    ko: "눈물글썽", eye: "shiny",     mouth: "frown",      tear: 1 },
-  { key: "pout",     ko: "뽀로통",   eye: "slantSoft", mouth: "pout",       blush: 1 },
-  { key: "fierce",   ko: "씩씩",     eye: "slantHard", mouth: "shout" },
-  { key: "think",    ko: "골똘히",   eye: "narrow",    mouth: "smallSmile" },
-  { key: "dizzy",    ko: "어질어질", eye: "spiral",    mouth: "wavy",       swirl: 1 },
-  { key: "eating",   ko: "먹는중",   eye: "arch",      mouth: "grin",       blush: 1, cookie: 1 },
-  { key: "proud",    ko: "뿌듯",     eye: "arch",      mouth: "smallSmile", blush: 1, spark: 1 },
+  { key: "basic",    ko: "기본",     },                                        // 슬라이더 값 그대로
+  { key: "smile",    ko: "웃기",     eye: "arch",      sign: "heart" },        // 레퍼런스 ^^ + 하트
+  { key: "cry",      ko: "울기",     eye: "arch",      tear: 1 },
+  { key: "sleepy",   ko: "졸기",     eye: "droop",     sign: "zzz" },
+  { key: "yawn",     ko: "하품",     eye: "squint",    sign: "zzz2" },
+  { key: "wink",     ko: "윙크",     eye: "round", eyeR: "arch", sign: "spark" },
+  { key: "surprise", ko: "놀람",     eye: "round",     sign: "bang" },
+  { key: "sing",     ko: "노래",     eye: "arch",      sign: "phone" },        // 레퍼런스 헤드폰
+  { key: "wince",    ko: "찡긋",     eye: "squint",    sign: "star" },
+  { key: "weary",    ko: "지침",     eye: "half",      sign: "speech", sweat: 1 },  // 레퍼런스 말줄임 말풍선
+  { key: "teary",    ko: "눈물글썽", eye: "shiny",     tear: 1 },
+  { key: "pout",     ko: "뽀로통",   eye: "slantSoft", sign: "broken" },       // 레퍼런스 뾰족눈 + 깨진 하트
+  { key: "fierce",   ko: "씩씩",     eye: "slantHard", sign: "flame" },
+  { key: "think",    ko: "골똘히",   eye: "narrow",    sign: "quest" },
+  { key: "dizzy",    ko: "어질어질", eye: "spiral",    sign: "swirl" },
+  { key: "eating",   ko: "먹는중",   eye: "arch",      cookie: 1 },
+  { key: "proud",    ko: "뿌듯",     eye: "arch",      sign: "thumb" },        // 레퍼런스 따봉
 ];
 
-/* 무늬 한 장을 격자에 찍는다. set 을 주면 실루엣 안쪽만 칠한다(얼굴), 없으면 밖도 칠한다(부호). */
-function stamp(buf, rows, ccx, ccy, pal, set) {
-  const x0 = snap(ccx - rows[0].length * CELL / 2), y0 = snap(ccy - rows.length * CELL / 2);
+/* 무늬 한 장을 격자에 찍는다. set 을 주면 실루엣 안쪽만 칠한다(얼굴), 없으면 밖도 칠한다(기호).
+   k = 한 무늬칸이 차지하는 격자 칸 수. 기호는 k=2 로 찍는다 — 레퍼런스의 기호는
+   몸 너비의 3분의 1쯤 되는데, 얼굴과 같은 1칸으로 그리면 그 절반밖에 안 나온다. */
+function stamp(buf, rows, ccx, ccy, pal, set, k) {
+  k = k || 1;
+  const x0 = snap(ccx - rows[0].length * k * CELL / 2), y0 = snap(ccy - rows.length * k * CELL / 2);
   rows.forEach((row, j) => [...row].forEach((ch, i) => {
     const f = pal[ch];
     if (!f) return;
-    const x = x0 + i * CELL, y = y0 + j * CELL;
-    if (set) buf.setIn(set, x, y, f); else buf.m.set(x + "_" + y, f);
+    for (let a = 0; a < k; a++) for (let b = 0; b < k; b++) {
+      const x = x0 + (i * k + a) * CELL, y = y0 + (j * k + b) * CELL;
+      if (set) buf.setIn(set, x, y, f); else buf.m.set(x + "_" + y, f);
+    }
   }));
 }
 const flipArt = (rows) => rows.map((r) => [...r].reverse().join(""));
 
-/* 몸 밖으로 나가는 부호들 — 감정을 한눈에 알리는 만화 기호.
-   머리 오른쪽 위가 기본 자리다(왼쪽은 하이라이트가 이미 쓰고 있다). */
-const SIGN_ART = {
-  zzz:   ["KKKK.", "...K.", "..K..", ".K...", "KKKK."],
-  note:  ["...KK", "..KKK", "...K.", "...K.", ".KKK.", ".KK.."],
-  bang:  ["KK", "KK", "KK", "KK", "..", "KK"],
-  spark: ["..K..", "..K..", "KKKKK", "..K..", "..K.."],
-  swirl: [".KKK.", "K...K", "K.KK.", "K.K..", ".KK.."],
-  sweat: ["K.K.K", "K.K.K"],
-};
+const SWEAT_ART = ["K.K.K", "K.K.K"];   // 관자놀이에 흐르는 땀 — 지침
+// 과자 — 오른쪽 위를 한 입 베어 물었다
+const COOKIE_ART = [".KKK..", "KWWKK.", "KWDWWK", "KWWDWK", "KWWWDK", ".KKKK."];
 
-/* 얼굴 한 장. 눈·입 자리는 파라미터에서 푼다. */
-function facePixels(buf, set, skin, rx, ry, key) {
+/* 얼굴 한 장. signY = 기호가 뜨는 높이(정수리 위, 각성이면 오라 바깥). */
+function facePixels(buf, set, skin, rx, ry, key, signY) {
   const f = FACES.find((x) => x.key === key);
   const eyeCX = P.eyeGap * rx;
-  const eyeCY = snap(B - P.eyeY * 2 * ry) + P.eyeH * CELL / 2;
-  const mouthCY = B - P.mouthY * 2 * ry;
-  const pal = { K: EYE, W: WHITE, R: M_IN, T: TEAR, P: BLUSH };
+  const eyeTop = snap(B - P.eyeY * 2 * ry);
+  const eyeCY = eyeTop + P.eyeH * CELL / 2;
+  const pal = { K: EYE, W: WHITE };
 
   // 기본 = 지금까지의 세로 막대. 슬라이더(눈 폭·길이)가 그대로 먹는다.
   if (!f || !f.eye) {
     for (const sd of [-1, 1]) {
       const ex = snap(sd * eyeCX - P.eyeW * CELL / 2);
       for (let a = 0; a < P.eyeW; a++)
-        for (let b = 0; b < P.eyeH; b++) buf.setIn(set, ex + a * CELL, snap(B - P.eyeY * 2 * ry) + b * CELL, EYE);
+        for (let b = 0; b < P.eyeH; b++) buf.setIn(set, ex + a * CELL, eyeTop + b * CELL, EYE);
     }
     return;
   }
 
-  if (f.blush) {                                   // 볼터치 — 눈 바깥 아래
-    for (const sd of [-1, 1])
-      disk(buf, sd * (eyeCX + 7 * CELL), eyeCY + 3 * CELL, 2.3 * CELL, BLUSH, set);
-  }
   stamp(buf, EYE_ART[f.eye], -eyeCX, eyeCY, pal, set);
   stamp(buf, flipArt(EYE_ART[f.eyeR || f.eye]), eyeCX, eyeCY, pal, set);
-  if (f.mouth) stamp(buf, MOUTH_ART[f.mouth], 0, mouthCY, pal, set);
 
   // 눈물 — 눈 아래로 흘러내린다. 볼을 타고 내려가므로 몸 안쪽에 클립한다.
   if (f.tear) {
@@ -1020,28 +1036,18 @@ function facePixels(buf, set, skin, rx, ry, key) {
       disk(buf, tx + CELL / 2, eyeCY + 8 * CELL, 1.6 * CELL, TEAR, set);
     }
   }
-  if (f.sweat) stamp(buf, SIGN_ART.sweat, -eyeCX - 6 * CELL, eyeCY - 5 * CELL, pal, set);
+  if (f.sweat) stamp(buf, SWEAT_ART, -eyeCX - 6 * CELL, eyeCY - 5 * CELL, pal, set);
 
-  // 머리 오른쪽 위 부호 — 몸 밖이라 밝은 판 위에 놓인다. 흰색으로 찍으면 사라지므로
-  // 속성 외곽선 색으로 찍어 어느 배경에서나 읽히게 한다.
-  const sign = { K: skin.line };
-  const sx = rx * 0.55, sy = B - 2 * ry - 3 * CELL;
-  for (const flag of ["zzz", "note", "bang", "swirl"])
-    if (f[flag]) stamp(buf, SIGN_ART[flag], sx, sy, sign);
-  if (f.spark) {                                   // 반짝임 셋 — 머리 둘레에 흩뿌린다
-    for (const [px, py] of [[rx * 0.74, sy + 3 * CELL], [-rx * 0.80, sy + 7 * CELL], [rx * 0.46, sy - 4 * CELL]]) {
-      stamp(buf, SIGN_ART.spark, px, py, sign);
-      buf.m.set(snap(px) + "_" + snap(py), WHITE);
-    }
+  // 머리 위 기호 — 정수리 바로 위 가운데. 각성 상징물은 이 자리를 안 쓴다.
+  if (f.sign) {
+    const s = SIGN_ART[f.sign], k = 2;
+    stamp(buf, s.art, 0, signY - s.art.length * k * CELL / 2, s.pal, null, k);
   }
-  // 과자 — 입가에 문다. 몸 밖으로 반쯤 나가야 "먹는 중"으로 읽힌다.
-  if (f.cookie) {
-    const kx = -rx * 0.52, ky = mouthCY + CELL;
-    disk(buf, kx, ky, 5.5 * CELL, "#3A2412");
-    disk(buf, kx, ky, 4.6 * CELL, "#C08A4A");
-    for (const [ox, oy] of [[-1.6, -1.2], [1.4, -0.4], [-0.2, 1.6], [2.0, 1.4]])
-      disk(buf, kx + ox * CELL, ky + oy * CELL, 0.9 * CELL, "#5B3A1E");
-  }
+  // 과자 — 얼굴 왼쪽 바깥. 얼굴 위에 올리면 눈을 덮어버린다.
+  // 입이 없으니 한 입 베어 문 자국으로 "먹는 중"을 알린다 —
+  // 온전한 원이면 그냥 굴러온 공으로 읽힌다.
+  if (f.cookie) stamp(buf, COOKIE_ART, -rx * 1.02, eyeCY + 3 * CELL,
+    { K: "#3A2412", W: "#C89158", D: "#5B3A1E" }, null, 2);
 }
 
 /* ---------- 파라미터 ---------- */
@@ -1055,7 +1061,6 @@ const DEF = {
   shadeY: 0.16,                              // 아래 그림자 높이
   hiX: -0.54, hiY: 0.83, hiK: 3,             // 하이라이트 위치·배수
   eyeGap: 0.32, eyeY: 0.45, eyeW: 3, eyeH: 6,
-  mouthY: 0.20,                              // 입 높이 (바닥에서 몸높이 비율) — 표정에서만 쓴다
   jumpMs: 900,                               // 점프 한 바퀴
   // ---- 베이비 (언덕형 돔 · 꼬물 모션 · 노말 아이템만) ----
   babyRx: 37, babyH: 50, babyShoulder: 2.0, babyCrown: 2.8,
@@ -1122,7 +1127,9 @@ function slimeParts(skin, opts) {
     });
   }
 
-  if (build >= 3) facePixels(buf, set, skin, rx, ry, opts.face || "basic");   // ③ 얼굴
+  // ③ 얼굴 — 기호는 정수리 위. 각성이면 오라 바깥으로 밀어 오라에 안 파묻히게 한다.
+  if (build >= 3) facePixels(buf, set, skin, rx, ry, opts.face || "basic",
+    B - 2 * ry - (opts.awake ? P.awRim * CELL : 0) - 3 * CELL);
 
   const r = toRects(buf);
   return { inner: r.out, n: r.n, raw: r.raw, cells: Math.round((2 * rx) / CELL), top: B - 2 * ry, set, rx, ry, cy };
@@ -1475,8 +1482,8 @@ function awakeGearFx(rx) {                       // 이펙트 슬롯 — 발밑 
 }
 
 /* 각성 한 마리 — 오라(뒤) + 몸통 + 떠다니는 상징물 (+ 테스트 장비) */
-function awakeSvg(skin, width, jump, gear) {
-  const g = slimeParts(skin, { awake: true });
+function awakeSvg(skin, width, jump, gear, face) {
+  const g = slimeParts(skin, { awake: true, face: face });
   const attr = skin.key;
   const soft = gear ? awakeGearSoft(g.rx, g.ry) : "";
   const rigid = gear ? awakeGearRigid(g.rx) : "";
@@ -1586,7 +1593,6 @@ const SLIDERS = [
   ["hiX", "하이라이트 X", -0.8, 0.2, 0.02], ["hiY", "하이라이트 Y", 0.4, 0.92, 0.01], ["hiK", "하이라이트 크기", 1, 3, 1],
   ["eyeGap", "눈 간격", 0.1, 0.6, 0.01], ["eyeY", "눈 높이", 0.25, 0.7, 0.01],
   ["eyeW", "눈 폭(칸)", 1, 3, 1], ["eyeH", "눈 길이(칸)", 2, 6, 1],
-  ["mouthY", "입 높이", 0.05, 0.4, 0.01],
   ["jumpMs", "점프 한 바퀴(ms)", 400, 2000, 50],
 ];
 const SLIDERS_BABY = [
@@ -1743,14 +1749,14 @@ function render() {
     arow.appendChild(b);
   });
   aw.appendChild(arow);
-  const awStill = awakeSvg(skin, 230, false, agear);
-  const awJump = awakeSvg(skin, 230, true, agear);
+  const awStill = awakeSvg(skin, 230, false, agear, faceKey);
+  const awJump = awakeSvg(skin, 230, true, agear, faceKey);
   document.getElementById("awakePlayers").innerHTML =
     `<div class="player"><div class="cap">${skin.ko} 각성 · 정지</div>${awStill}` +
     `<div class="note">${kb(awStill)}KB</div></div>` +
     `<div class="player"><div class="cap">${skin.ko} 각성 · 점프</div>${awJump}` +
     `<div class="note">${kb(awJump)}KB · B+ 구조 그대로</div></div>`;
-  document.getElementById("awakeTuneBox").innerHTML = awakeSvg(skin, 190, false, agear);
+  document.getElementById("awakeTuneBox").innerHTML = awakeSvg(skin, 190, false, agear, faceKey);
 
   // 알 무늬 6종 — 눌러서 선택
   const es = document.getElementById("eggSheet");

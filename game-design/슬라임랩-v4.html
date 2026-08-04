@@ -457,6 +457,13 @@
     <div class="players" id="players"></div>
   </section>
 
+  <section class="card baby-sec">
+    <h2><span class="tag baby">베이비</span> 표정
+      <em>— 오로지 눈으로만. 기호·입이 있어야 하는 표정은 베이비에 없다 (10종).
+        성장하며 표정이 늘어난다 → 틴·각성 17종</em></h2>
+    <div class="sheet" id="babyFaceSheet"></div>
+  </section>
+
   <section class="card">
     <h2>베이비 — 언덕형 + 꼬물 <em>— 점프 대신 기어다닌다. 노말 아이템만 착용</em></h2>
     <div class="sheet" id="babySheet"></div>
@@ -704,13 +711,7 @@ function babyParts(skin, opts) {
   // 우하단 밝은 줄기 (레퍼런스의 반사)
   for (let a = 0; a < 4 * k; a++) buf.setIn(set, snap(rx * 0.42) + a * CELL, snap(B - H * 0.30), skin.light);
 
-  // 짧은 세로 막대 눈
-  const ey = snap(B - P.babyEyeY * H);
-  for (const sd of [-1, 1]) {
-    const ex = snap(sd * P.babyEyeGap * rx);
-    for (let a = 0; a < P.babyEyeW; a++)
-      for (let b = 0; b < P.babyEyeH; b++) buf.setIn(set, ex + a * CELL, ey + b * CELL, EYE);
-  }
+  babyFacePixels(buf, set, rx, H, opts.face || "basic");   // 눈만으로 표현한다
 
   // 그립 앵커 — 바닥 쪽이 좁아졌으므로 rx 가 아니라 손 높이의 실제 몸통 폭에서 잡는다
   const gripY = snap(B - 8);
@@ -942,9 +943,10 @@ const EYE_ART = {
 };
 
 /* 소용돌이 — 중심에서 바깥으로 감기는 나선. 감는 간격이 획 굵기보다 넓어야
-   나선으로 읽히고, 좁으면 그냥 덩어리가 된다. */
-function spiralAt(buf, cx, cy, r, fill, set) {
-  const END = 2 * Math.PI * 2;                 // 두 바퀴
+   나선으로 읽히고, 좁으면 그냥 덩어리가 된다.
+   베이비는 눈이 작아 두 바퀴를 감으면 간격이 한 칸 밑으로 떨어진다 → 바퀴 수를 줄인다. */
+function spiralAt(buf, cx, cy, r, fill, set, turns) {
+  const END = (turns || 2) * Math.PI * 2;
   for (let t = 0; t <= END; t += 0.10) {
     const rr = r * (t / END);
     const x = snap(cx + rr * Math.cos(t)), y = snap(cy + rr * Math.sin(t));
@@ -990,20 +992,21 @@ const SIGN_ART = {
 /* 표정 = 눈 + 기호. 입은 없다.
    레퍼런스에서 그대로 가져온 짝은 주석에 표시했다. */
 const FACES = [
-  { key: "basic",    ko: "기본",     },                                        // 슬라이더 값 그대로
-  { key: "smile",    ko: "웃기",     eye: "arch",      sign: "heart" },        // 레퍼런스 ^^ + 하트
-  { key: "cry",      ko: "울기",     eye: "archDown",  tear: 1 },
-  { key: "sleepy",   ko: "졸기",     eye: "archDown",  sign: "zzz" },
+  { key: "basic",    ko: "기본",     babyEye: "basic" },                                        // 슬라이더 값 그대로
+  { key: "smile",    ko: "웃기",     eye: "arch",      sign: "heart",  babyEye: "archB" },        // 레퍼런스 ^^ + 하트
+  { key: "cry",      ko: "울기",     eye: "archDown",  tear: 1,        babyEye: "archDownB" },
+  { key: "sleepy",   ko: "졸기",     eye: "archDown",  sign: "zzz",    babyEye: "archDownB" },
   { key: "yawn",     ko: "하품",     eye: "squeeze",   sign: "zzz2", mouth: 1 },
-  { key: "wink",     ko: "윙크",     eye: "basic",     eyeR: "arch", sign: "spark" },
-  { key: "surprise", ko: "놀람",     eye: "round",     sign: "bang" },
+  { key: "wink",     ko: "윙크",     eye: "basic",     eyeR: "arch", sign: "spark",
+                                   babyEye: "basic", babyEyeR: "archB" },
+  { key: "surprise", ko: "놀람",     eye: "round",     sign: "bang",   babyEye: "roundB" },
   { key: "sing",     ko: "노래",     eye: "arch",      sign: "phone" },        // 레퍼런스 헤드폰
-  { key: "wince",    ko: "찡긋",     eye: "squint",    sign: "star" },
-  { key: "weary",    ko: "지침",     eye: "half",      sign: "speech", sweat: 1 },  // 레퍼런스 말줄임 말풍선
+  { key: "wince",    ko: "찡긋",     eye: "squint",    sign: "star",   babyEye: "squintB" },
+  { key: "weary",    ko: "지침",     eye: "half",      sign: "speech", sweat: 1, babyEye: "halfB" },  // 레퍼런스 말줄임 말풍선
   { key: "teary",    ko: "눈물글썽", eye: "shiny",     tear: 1 },
-  { key: "pout",     ko: "뽀로통",   eye: "slantSoft", sign: "broken" },       // 레퍼런스 뾰족눈 + 깨진 하트
+  { key: "pout",     ko: "뽀로통",   eye: "slantSoft", sign: "broken", babyEye: "slantB" },       // 레퍼런스 뾰족눈 + 깨진 하트
   { key: "fierce",   ko: "씩씩",     eye: "slantHard", sign: "flame" },
-  { key: "think",    ko: "골똘히",   eye: "narrow",    sign: "quest" },
+  { key: "think",    ko: "골똘히",   eye: "narrow",    sign: "quest",  babyEye: "narrowB" },
   { key: "dizzy",    ko: "어질어질", eye: "spiral",    sign: "swirl" },
   { key: "eating",   ko: "먹는중",   eye: "arch",      cookie: 1, mouth: 1 },
   { key: "proud",    ko: "뿌듯",     eye: "arch",      sign: "thumb" },        // 레퍼런스 따봉
@@ -1025,6 +1028,60 @@ function stamp(buf, rows, ccx, ccy, pal, set, k) {
   }));
 }
 const flipArt = (rows) => rows.map((r) => [...r].reverse().join(""));
+
+/* ============================================================
+   베이비 표정 — 오로지 눈으로만 (원장 지시 2026-08-04).
+   머리 위 기호도 입도 안 쓴다. 눈만으로 안 되는 표정은 베이비에 아예 없다:
+   성장하며 표정이 늘어나는 게 정상이라는 판단. 베이비 10 → 틴·각성 17.
+
+   빠진 일곱: 하품·먹는중(입이 있어야 함) · 노래·뿌듯(기호를 빼면 웃기와 같아짐) ·
+   눈물글썽(울기와 겹침) · 씩씩(이 해상도에서 뽀로통과 안 갈림) ·
+   어질어질(5칸 눈에서는 나선이 한 바퀴도 못 감겨 쉼표로 읽힌다).
+
+   무늬는 5칸 × 4줄. 틴의 7칸 무늬를 그대로 줄이면 획이 뭉개진다.
+   ============================================================ */
+// 베이비 눈은 2칸 막대 기준으로 간격(0.23)이 잡혀 있다. 표정 무늬는 5칸이라
+// 그 간격으로는 두 눈이 붙어 눈썹 한 줄로 보인다 → 표정일 때만 벌린다.
+const BABY_FACE_GAP = 0.31;
+const BABY_EYE_ART = {
+  archB:     [".....", ".KKK.", "KK.KK", "....."],   // 웃기 ∩
+  archDownB: [".....", "KK.KK", ".KKK.", "....."],   // 울기·졸기 ∪
+  roundB:    [".KKK.", "KWWKK", "KKKKK", ".KKK."],   // 놀람
+  squintB:   ["K...", ".KK.", ".KK.", "K..."],       // 찡긋 ><
+  halfB:     [".....", "KKKKK", "..K..", "....."],   // 지침
+  slantB:    [".....", "KK...", ".KKKK", "....."],   // 뽀로통
+  narrowB:   [".....", "KKKKK", "KKKKK", "....."],   // 골똘히
+};
+
+/* 베이비 얼굴. rx·H 는 몸통 실루엣 치수. */
+function babyFacePixels(buf, set, rx, H, key) {
+  const f = FACES.find((x) => x.key === key);
+  const eyeTop = snap(B - P.babyEyeY * H);
+  const art = f && f.babyEye;
+  const drawBar = (sd) => {
+    const ex = snap(sd * P.babyEyeGap * rx - P.babyEyeW * CELL / 2);
+    for (let a = 0; a < P.babyEyeW; a++)
+      for (let b = 0; b < P.babyEyeH; b++) buf.setIn(set, ex + a * CELL, eyeTop + b * CELL, EYE);
+  };
+  if (!art || art === "basic") { drawBar(-1); if (!f || !f.babyEyeR) { drawBar(1); return; } }
+
+  const gap = BABY_FACE_GAP * rx;
+  const cy = eyeTop + P.babyEyeH * CELL / 2;
+  const put = (a, sd) => {
+    if (a === "basic") { drawBar(sd); return; }
+    stamp(buf, sd < 0 ? BABY_EYE_ART[a] : flipArt(BABY_EYE_ART[a]), sd * gap, cy, { K: EYE, W: WHITE }, set);
+  };
+  if (art !== "basic") put(art, -1);
+  put(f.babyEyeR || art, 1);
+
+  // 눈물은 눈에서 나오는 것이라 "눈으로만"에 든다 — 울기와 졸기를 가르는 유일한 단서다
+  if (f.tear) {
+    for (const sd of [-1, 1]) {
+      const tx = snap(sd * gap);
+      for (let b = 0; b < 3; b++) buf.setIn(set, tx, snap(cy) + (2 + b) * CELL, TEAR);
+    }
+  }
+}
 
 const SWEAT_ART = ["K.K.K", "K.K.K"];   // 관자놀이에 흐르는 땀 — 지침
 // 과자 — 오른쪽 위를 한 입 베어 물었다
@@ -1751,6 +1808,20 @@ function render() {
     brow.appendChild(b);
   });
   bs.appendChild(brow);
+
+  // 베이비 표정 — 눈으로 되는 것만. 위 표정 시트에서 고른 것이 여기서도 선택된다.
+  const bf = document.getElementById("babyFaceSheet");
+  bf.innerHTML = "";
+  const bfrow = document.createElement("div");
+  bfrow.className = "row";
+  FACES.filter((fc) => fc.babyEye).forEach((fc) => {
+    const b = document.createElement("button");
+    b.className = fc.key === faceKey ? "sel" : "";
+    b.innerHTML = wrap(babyParts(skin, { face: fc.key }).inner, 96) + `<div>${fc.ko}</div>`;
+    b.addEventListener("click", () => { faceSel = FACES.indexOf(fc); render(); });
+    bfrow.appendChild(b);
+  });
+  bf.appendChild(bfrow);
 
   // 베이비 꼬물 — 제자리 / 기어다니기
   const bgear = document.getElementById("babyGearChk").checked;

@@ -2624,11 +2624,16 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
          - **덩어리 하나 + 단계 자동**이면 그 하나로 세 벌을 다 뜬다. 홍조처럼 단순한
            아이템은 한 장만 그려 와도 크기만 바꿔 세 단계를 만들 수 있다 (규격서 §7-나-3).
            예전엔 한 벌만 나와서 단계를 바꿔 가며 세 번 넣어야 했다 */
-      const order = raw.length === 3 ? ["awake", "teen", "baby"] : null;
+      const autoSt = !want || want === "auto";
+      /* 덩어리 **둘이면 각성·틴**이다 — 매직 이상은 베이비를 안 그리므로 두 벌이 규격이다
+         (규격서 §2). 이 규칙이 없어서 둘을 크기로 짐작하다가 둘 다 베이비로 붙은 적이
+         있다 (원장, 2026-08-05). 크기 짐작은 셋도 둘도 아닐 때만 쓴다. */
+      const order = autoSt
+        ? { 3: ["awake", "teen", "baby"], 2: ["awake", "teen"] }[raw.length] || null : null;
       const jobs = order ? raw.map((b, i) => [b, order[i]])
-        : raw.length === 1 && (!want || want === "auto")
+        : raw.length === 1 && autoSt
           ? ["baby", "teen", "awake"].map((st) => [raw[0], st])
-          : raw.map((b) => [b, want && want !== "auto" ? want : null]);
+          : raw.map((b) => [b, autoSt ? null : want]);
       const parts = jobs.map(([b, st0]) => {
         const st = st0 || "teen";
         const rec = recOf(st, slot || "head");
@@ -2844,10 +2849,13 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
            그 밖에는 자동이면 덩어리 셋을 큰 것부터 각성·틴·베이비로 본다. */
         const named = (f.name.match(/_(baby|teen|awake)\.png$/i) || [])[1];
         const auto = stage === "auto" && !named;
-        const trio = auto && res.parts.length === 3 ? ["awake", "teen", "baby"] : null;
+        /* 셋이면 각성·틴·베이비, **둘이면 각성·틴** (매직 이상은 베이비를 안 그린다).
+           둘일 때 규칙이 없어 크기로 짐작하다가 둘 다 베이비로 붙은 적이 있다. */
+        const byN = auto
+          ? { 3: ["awake", "teen", "baby"], 2: ["awake", "teen"] }[res.parts.length] || null : null;
         res.parts.forEach((r0, pi) => {
           const r = flipPart(r0, flipX, flipY);
-          const st = named || r.stage || (trio ? trio[pi] : auto ? pickStage(r, slot) : stage);
+          const st = named || r.stage || (byN ? byN[pi] : auto ? pickStage(r, slot) : stage);
           // 이름에서 단계를 읽은 경우도 한 줄로 모아 보여 준다 (파일 셋을 한꺼번에 넣으니까)
           showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed, st, auto, auto || !!named);
         });

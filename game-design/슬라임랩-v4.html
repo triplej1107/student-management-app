@@ -550,6 +550,7 @@
         </select></label>
       <button id="impSaveAll" class="imp">이 아이템 담기 (PNG + 앵커)</button>
       <button id="impSaveJson" class="imp">items.json 받기</button>
+      <button id="impFixSlot" class="imp" style="background:#2a2f3a;border-color:#3a4150;color:#9CC4EC">슬롯 고치기</button>
       <span id="impSaveMsg" style="font-size:12px;color:#9BD468"></span>
     </div>
     <div id="impBox" style="font-size:12px;color:#9a9488;margin-bottom:10px;display:none">
@@ -2941,6 +2942,38 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     if (at >= 0) items[at] = item; else items.push(item);
     saveItems(items); drawList();
     flash(`${code} 담았다 — PNG ${done.length}장 · 목록 ${items.length}개`);
+  });
+
+  /* 담아 둔 것의 슬롯을 고친다 — 다시 넣지 않고.
+     슬롯을 잘못 두고 넣었어도 **화면에서 눈으로 맞춘 자리는 맞다.** 앵커가 그 슬롯의
+     기준점에 대해 적혔을 뿐이다. 기준점끼리의 차이는 우리가 아는 값이므로
+     앵커를 그만큼 옮기면 보이던 자리가 그대로 유지된다.
+        원래:  기준A + (칸 - 앵커A)      →  고친 뒤: 기준B + (칸 - 앵커B)
+        같아지려면  앵커B = 앵커A + (기준B - 기준A) / 셀 */
+  const slotAt = (a, sl) => ({ head: a.head, face: a.face, fx: a.foot,
+    right: [a.hand[0], a.hand[1]], left: [-a.hand[0], a.hand[1]] }[sl]);
+  document.getElementById("impFixSlot").addEventListener("click", () => {
+    const items = loadItems();
+    if (!items.length) return flash("담아 둔 게 없다", true);
+    const G = { baby: babyParts(SKINS[sel]).anchors, teen: slimeParts(SKINS[sel]).anchors,
+                awake: slimeParts(SKINS[sel], { awake: true }).anchors };
+    const fixed = [];
+    for (const it of items) {
+      const m = it.code.match(/_(head|face|right|left|fx)_/) || it.code.match(/_(head|face|right|left|fx)$/);
+      if (!m || m[1] === it.slot) continue;
+      const from = it.slot, to = m[1];
+      for (const st of ["baby", "teen", "awake"]) {
+        if (!it[st]) continue;
+        const A = slotAt(G[st], from), B = slotAt(G[st], to);
+        it[st].anchor = [Math.round(it[st].anchor[0] + (B[0] - A[0]) / ICELL),
+                         Math.round(it[st].anchor[1] + (B[1] - A[1]) / ICELL)];
+      }
+      it.slot = to;
+      fixed.push(`${it.code} ${IMP_SLOT_KO[from]}→${IMP_SLOT_KO[to]}`);
+    }
+    if (!fixed.length) return flash("고칠 게 없다 — 코드와 슬롯이 다 맞다");
+    saveItems(items); drawList();
+    flash(`${fixed.length}개 고쳤다 · ${fixed.join(" · ")}`);
   });
 
   document.getElementById("impSaveJson").addEventListener("click", () => {

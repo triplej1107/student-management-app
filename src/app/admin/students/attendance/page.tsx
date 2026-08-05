@@ -9,6 +9,7 @@ import {
   getUnresolvedAutoAbsences,
 } from "@/lib/data";
 import { autoMarkLateStudents } from "@/lib/attendanceAuto";
+import { getBacklogWeeksByStudent } from "@/lib/clinicBacklog";
 import { DAY_ORDER } from "@/lib/types";
 import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { ScrollPillRow, PillLink } from "@/components/ui";
@@ -57,6 +58,14 @@ export default async function AdminAttendancePage({
   );
   const autoAbsenceTotal = autoAbsenceGroups.reduce((sum, g) => sum + g.entries.length, 0);
 
+  // 화면에 뜨는 학생만 밀림 계산 — 1주 밀림이면 노란 카드, 2주 이상이면 빨간 카드.
+  const backlogMap = await getBacklogWeeksByStudent([
+    ...new Set([
+      ...roster.map((r) => r.student.id),
+      ...autoAbsenceGroups.flatMap((g) => g.entries.map((e) => e.student.id)),
+    ]),
+  ]);
+
   return (
     <div>
       <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
@@ -103,6 +112,7 @@ export default async function AdminAttendancePage({
                       parentTexted={autoAbsenceTextedMaps[gi]?.get(entry.student.id)}
                       autoMarked
                       clinicHrefBase="/admin/students/approvals"
+                      backlogWeeks={backlogMap.get(entry.student.id)}
                     />
                   ))}
                 </div>
@@ -130,6 +140,7 @@ export default async function AdminAttendancePage({
               parentTexted={parentTextedMap.get(entry.student.id)}
               autoMarked={autoMarkedIds.has(entry.student.id)}
               clinicHrefBase="/admin/students/approvals"
+              backlogWeeks={backlogMap.get(entry.student.id)}
             />
           ),
         }))}

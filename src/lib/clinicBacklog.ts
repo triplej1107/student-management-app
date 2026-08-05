@@ -44,9 +44,19 @@ export interface ClinicBacklogEntry {
  * "7월 4주차")는 지금 한창 채점 중인 주라 아직 "밀렸다"고 볼 수 없다
  * (weeks.ts의 rollingClinicWeeks 주석 참고) — 그래서 한 주 더 뒤로 밀어
  * 채점 기간이 완전히 끝난 주부터 평가한다.
+ *
+ * onlyStudentIds를 주면 그 학생들만 계산한다 — 출결 화면처럼 그날 로스터
+ * 몇십 명만 필요한 곳에서 전교생 조회를 피하려는 용도. 판정 기준 자체는
+ * 밀림 관리 탭과 완전히 동일하다.
  */
-export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklogEntry[]> {
-  const students = await listStudents({ enrolledOnly: true });
+export async function getClinicBacklog(
+  lookbackWeeks = 10,
+  opts?: { onlyStudentIds?: number[] }
+): Promise<ClinicBacklogEntry[]> {
+  const allStudents = await listStudents({ enrolledOnly: true });
+  const only = opts?.onlyStudentIds ? new Set(opts.onlyStudentIds) : null;
+  const students = only ? allStudents.filter((s) => only.has(s.id)) : allStudents;
+  if (students.length === 0) return [];
   const weeksDesc = rollingClinicWeeks(lookbackWeeks + 1); // 최근 → 과거, 채점 중인 최신 주 포함
   const weeksAsc = weeksDesc.slice(1).reverse(); // 채점 중인 최신 주는 빼고, 과거 → 최근
   const studentIds = students.map((s) => s.id);
@@ -91,6 +101,19 @@ export async function getClinicBacklog(lookbackWeeks = 10): Promise<ClinicBacklo
 
   entries.sort((a, b) => b.weeksOverdue - a.weeksOverdue);
   return entries;
+}
+
+/**
+ * 출결 화면용 — 주어진 학생들의 "몇 주 밀렸는지"만 뽑아 map으로 돌려준다.
+ * 밀림이 없는 학생은 아예 키가 없다. 판정은 getClinicBacklog와 동일하므로
+ * 밀림 관리 탭 숫자와 항상 일치한다.
+ */
+export async function getBacklogWeeksByStudent(
+  studentIds: number[]
+): Promise<Map<number, number>> {
+  if (studentIds.length === 0) return new Map();
+  const entries = await getClinicBacklog(10, { onlyStudentIds: studentIds });
+  return new Map(entries.map((e) => [e.studentId, e.weeksOverdue]));
 }
 
 async function getClearedWeekSet(studentIds: number[]): Promise<Set<string>> {

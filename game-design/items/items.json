@@ -3,122 +3,355 @@
   "authoredFor": "teen",
   "items": [
     {
+      "code": "nm_head_beanie",
+      "ko": "비니",
+      "slot": "head",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_head_beanie_baby.png",
+        "anchor": [
+          10,
+          6
+        ]
+      },
+      "teen": {
+        "png": "nm_head_beanie_teen.png",
+        "anchor": [
+          14,
+          10
+        ]
+      },
+      "awake": {
+        "png": "nm_head_beanie_awake.png",
+        "anchor": [
+          16,
+          12
+        ]
+      }
+    },
+    {
       "code": "nm_head_cap",
       "ko": "야구모자",
       "slot": "head",
       "tier": "normal",
-      "baby":  { "png": "nm_head_cap_baby.png", "anchor": [14, 8] },
-      "teen":  { "png": "nm_head_cap_teen.png", "anchor": [19, 13] },
-      "awake": { "png": "nm_head_cap_awake.png", "anchor": [23, 16] }
+      "baby": {
+        "png": "nm_head_cap_baby.png",
+        "anchor": [
+          14,
+          8
+        ]
+      },
+      "teen": {
+        "png": "nm_head_cap_teen.png",
+        "anchor": [
+          19,
+          13
+        ]
+      },
+      "awake": {
+        "png": "nm_head_cap_awake.png",
+        "anchor": [
+          23,
+          16
+        ]
+      }
     },
     {
       "code": "nm_head_mesh",
       "ko": "메쉬캡",
       "slot": "head",
       "tier": "normal",
-      "baby":  { "png": "nm_head_mesh_baby.png", "anchor": [14, 10] },
-      "teen":  { "png": "nm_head_mesh_teen.png", "anchor": [18, 13] },
-      "awake": { "png": "nm_head_mesh_awake.png", "anchor": [24, 16] }
+      "baby": {
+        "png": "nm_head_mesh_baby.png",
+        "anchor": [
+          14,
+          10
+        ]
+      },
+      "teen": {
+        "png": "nm_head_mesh_teen.png",
+        "anchor": [
+          18,
+          13
+        ]
+      },
+      "awake": {
+        "png": "nm_head_mesh_awake.png",
+        "anchor": [
+          24,
+          16
+        ]
+      }
     },
     {
       "code": "nm_head_straw",
       "ko": "밀짚모자",
       "slot": "head",
       "tier": "normal",
-      "baby":  { "png": "nm_head_straw_baby.png", "anchor": [14, 11] },
-      "teen":  { "png": "nm_head_straw_teen.png", "anchor": [18, 13] },
-      "awake": { "png": "nm_head_straw_awake.png", "anchor": [22, 16] }
-    },
-    {
-      "code": "nm_head_widebrim",
-      "ko": "챙모자",
-      "slot": "head",
-      "tier": "normal",
-      "baby":  { "png": "nm_head_widebrim_baby.png", "anchor": [14, 7] },
-      "teen":  { "png": "nm_head_widebrim_teen.png", "anchor": [19, 11] },
-      "awake": { "png": "nm_head_widebrim_awake.png", "anchor": [23, 12] }
-    },
-    {
-      "code": "nm_head_beanie",
-      "ko": "비니",
-      "slot": "head",
-      "tier": "normal",
-      "baby":  { "png": "nm_head_beanie_baby.png", "anchor": [10, 6] },
-      "teen":  { "png": "nm_head_beanie_teen.png", "anchor": [14, 10] },
-      "awake": { "png": "nm_head_beanie_awake.png", "anchor": [16, 12] }
+      "baby": {
+        "png": "nm_head_straw_baby.png",
+        "anchor": [
+          14,
+          11
+        ]
+      },
+      "teen": {
+        "png": "nm_head_straw_teen.png",
+        "anchor": [
+          18,
+          13
+        ]
+      },
+      "awake": {
+        "png": "nm_head_straw_awake.png",
+        "anchor": [
+          22,
+          16
+        ]
+      }
     },
     {
       "code": "nm_head_twotone",
       "ko": "투톤캡",
       "slot": "head",
       "tier": "normal",
-      "baby":  { "png": "nm_head_twotone_baby.png", "anchor": [14, 7] },
-      "teen":  { "png": "nm_head_twotone_teen.png", "anchor": [18, 10] },
-      "awake": { "png": "nm_head_twotone_awake.png", "anchor": [22, 13] }
+      "baby": {
+        "png": "nm_head_twotone_baby.png",
+        "anchor": [
+          14,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_head_twotone_teen.png",
+        "anchor": [
+          18,
+          10
+        ]
+      },
+      "awake": {
+        "png": "nm_head_twotone_awake.png",
+        "anchor": [
+          22,
+          13
+        ]
+      }
     },
     {
-      "code": "nm_face_horn",
-      "ko": "뿔테안경",
-      "slot": "face",
+      "code": "nm_head_widebrim",
+      "ko": "챙모자",
+      "slot": "head",
       "tier": "normal",
-      "baby":  { "png": "nm_face_horn_baby.png", "anchor": [12, 3] },
-      "teen":  { "png": "nm_face_horn_teen.png", "anchor": [15, 4] },
-      "awake": { "png": "nm_face_horn_awake.png", "anchor": [18, 5] }
-    },
-    {
-      "code": "nm_face_rimless",
-      "ko": "무테안경",
-      "slot": "face",
-      "tier": "normal",
-      "baby":  { "png": "nm_face_rimless_baby.png", "anchor": [12, 2] },
-      "teen":  { "png": "nm_face_rimless_teen.png", "anchor": [15, 3] },
-      "awake": { "png": "nm_face_rimless_awake.png", "anchor": [18, 3] }
-    },
-    {
-      "code": "nm_face_sunglasses",
-      "ko": "선글라스",
-      "slot": "face",
-      "tier": "normal",
-      "baby":  { "png": "nm_face_sunglasses_baby.png", "anchor": [12, 3] },
-      "teen":  { "png": "nm_face_sunglasses_teen.png", "anchor": [15, 5] },
-      "awake": { "png": "nm_face_sunglasses_awake.png", "anchor": [18, 5] }
-    },
-    {
-      "code": "nm_face_patch",
-      "ko": "안대",
-      "slot": "face",
-      "tier": "normal",
-      "baby":  { "png": "nm_face_patch_baby.png", "anchor": [12, 5] },
-      "teen":  { "png": "nm_face_patch_teen.png", "anchor": [15, 6] },
-      "awake": { "png": "nm_face_patch_awake.png", "anchor": [18, 6] }
+      "baby": {
+        "png": "nm_head_widebrim_baby.png",
+        "anchor": [
+          14,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_head_widebrim_teen.png",
+        "anchor": [
+          19,
+          11
+        ]
+      },
+      "awake": {
+        "png": "nm_head_widebrim_awake.png",
+        "anchor": [
+          23,
+          12
+        ]
+      }
     },
     {
       "code": "nm_face_bandaid",
       "ko": "밴드에이드",
       "slot": "face",
       "tier": "normal",
-      "baby":  { "png": "nm_face_bandaid_baby.png", "anchor": [8, -2] },
-      "teen":  { "png": "nm_face_bandaid_teen.png", "anchor": [10, -3] },
-      "awake": { "png": "nm_face_bandaid_awake.png", "anchor": [11, -4] }
+      "baby": {
+        "png": "nm_face_bandaid_baby.png",
+        "anchor": [
+          8,
+          -2
+        ]
+      },
+      "teen": {
+        "png": "nm_face_bandaid_teen.png",
+        "anchor": [
+          10,
+          -3
+        ]
+      },
+      "awake": {
+        "png": "nm_face_bandaid_awake.png",
+        "anchor": [
+          11,
+          -4
+        ]
+      }
     },
     {
       "code": "nm_face_blush",
       "ko": "홍조 스티커",
       "slot": "face",
       "tier": "normal",
-      "baby":  { "png": "nm_face_blush_baby.png", "anchor": [8, -1] },
-      "teen":  { "png": "nm_face_blush_teen.png", "anchor": [11, -2] },
-      "awake": { "png": "nm_face_blush_awake.png", "anchor": [13, -3] }
+      "baby": {
+        "png": "nm_face_blush_baby.png",
+        "anchor": [
+          8,
+          -1
+        ]
+      },
+      "teen": {
+        "png": "nm_face_blush_teen.png",
+        "anchor": [
+          11,
+          -2
+        ]
+      },
+      "awake": {
+        "png": "nm_face_blush_awake.png",
+        "anchor": [
+          13,
+          -3
+        ]
+      }
     },
     {
-      "code": "nm_right_pencil",
-      "ko": "연필",
-      "slot": "right",
+      "code": "nm_face_horn",
+      "ko": "뿔테안경",
+      "slot": "face",
       "tier": "normal",
-      "rot": 14,
-      "baby":  { "png": "nm_right_pencil_baby.png", "anchor": [3, 11] },
-      "teen":  { "png": "nm_right_pencil_teen.png", "anchor": [1, 17] },
-      "awake": { "png": "nm_right_pencil_awake.png", "anchor": [0, 22] }
+      "baby": {
+        "png": "nm_face_horn_baby.png",
+        "anchor": [
+          12,
+          3
+        ]
+      },
+      "teen": {
+        "png": "nm_face_horn_teen.png",
+        "anchor": [
+          15,
+          4
+        ]
+      },
+      "awake": {
+        "png": "nm_face_horn_awake.png",
+        "anchor": [
+          18,
+          5
+        ]
+      }
+    },
+    {
+      "code": "nm_face_mask",
+      "ko": "마스크",
+      "slot": "face",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_face_mask_baby.png",
+        "anchor": [
+          7,
+          2
+        ]
+      },
+      "teen": {
+        "png": "nm_face_mask_teen.png",
+        "anchor": [
+          11,
+          4
+        ]
+      },
+      "awake": {
+        "png": "nm_face_mask_awake.png",
+        "anchor": [
+          12,
+          4
+        ]
+      }
+    },
+    {
+      "code": "nm_face_patch",
+      "ko": "안대",
+      "slot": "face",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_face_patch_baby.png",
+        "anchor": [
+          12,
+          5
+        ]
+      },
+      "teen": {
+        "png": "nm_face_patch_teen.png",
+        "anchor": [
+          15,
+          6
+        ]
+      },
+      "awake": {
+        "png": "nm_face_patch_awake.png",
+        "anchor": [
+          18,
+          6
+        ]
+      }
+    },
+    {
+      "code": "nm_face_rimless",
+      "ko": "무테안경",
+      "slot": "face",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_face_rimless_baby.png",
+        "anchor": [
+          12,
+          2
+        ]
+      },
+      "teen": {
+        "png": "nm_face_rimless_teen.png",
+        "anchor": [
+          15,
+          3
+        ]
+      },
+      "awake": {
+        "png": "nm_face_rimless_awake.png",
+        "anchor": [
+          18,
+          3
+        ]
+      }
+    },
+    {
+      "code": "nm_face_sunglasses",
+      "ko": "선글라스",
+      "slot": "face",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_face_sunglasses_baby.png",
+        "anchor": [
+          12,
+          3
+        ]
+      },
+      "teen": {
+        "png": "nm_face_sunglasses_teen.png",
+        "anchor": [
+          15,
+          5
+        ]
+      },
+      "awake": {
+        "png": "nm_face_sunglasses_awake.png",
+        "anchor": [
+          18,
+          5
+        ]
+      }
     },
     {
       "code": "nm_right_ballpen",
@@ -126,9 +359,545 @@
       "slot": "right",
       "tier": "normal",
       "rot": 9,
-      "baby":  { "png": "nm_right_ballpen_baby.png", "anchor": [4, 11] },
-      "teen":  { "png": "nm_right_ballpen_teen.png", "anchor": [2, 18] },
-      "awake": { "png": "nm_right_ballpen_awake.png", "anchor": [2, 21] }
+      "baby": {
+        "png": "nm_right_ballpen_baby.png",
+        "anchor": [
+          4,
+          11
+        ]
+      },
+      "teen": {
+        "png": "nm_right_ballpen_teen.png",
+        "anchor": [
+          2,
+          18
+        ]
+      },
+      "awake": {
+        "png": "nm_right_ballpen_awake.png",
+        "anchor": [
+          2,
+          21
+        ]
+      }
+    },
+    {
+      "code": "nm_right_cutter",
+      "ko": "커터칼",
+      "slot": "right",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_right_cutter_baby.png",
+        "anchor": [
+          4,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_cutter_teen.png",
+        "anchor": [
+          4,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_cutter_awake.png",
+        "anchor": [
+          5,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_right_fountain",
+      "ko": "만년필",
+      "slot": "right",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_right_fountain_baby.png",
+        "anchor": [
+          4,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_fountain_teen.png",
+        "anchor": [
+          4,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_fountain_awake.png",
+        "anchor": [
+          5,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_right_gun",
+      "ko": "총",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 8,
+      "baby": {
+        "png": "nm_right_gun_baby.png",
+        "anchor": [
+          3,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_gun_teen.png",
+        "anchor": [
+          4,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_gun_awake.png",
+        "anchor": [
+          5,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_right_pencil",
+      "ko": "연필",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 14,
+      "baby": {
+        "png": "nm_right_pencil_baby.png",
+        "anchor": [
+          3,
+          11
+        ]
+      },
+      "teen": {
+        "png": "nm_right_pencil_teen.png",
+        "anchor": [
+          1,
+          17
+        ]
+      },
+      "awake": {
+        "png": "nm_right_pencil_awake.png",
+        "anchor": [
+          0,
+          22
+        ]
+      }
+    },
+    {
+      "code": "nm_right_phone",
+      "ko": "스마트폰",
+      "slot": "right",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_right_phone_baby.png",
+        "anchor": [
+          4,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_phone_teen.png",
+        "anchor": [
+          4,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_phone_awake.png",
+        "anchor": [
+          5,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_right_sharp",
+      "ko": "샤프",
+      "slot": "right",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_right_sharp_baby.png",
+        "anchor": [
+          4,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_sharp_teen.png",
+        "anchor": [
+          5,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_sharp_awake.png",
+        "anchor": [
+          6,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_right_staff",
+      "ko": "지팡이",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 6,
+      "baby": {
+        "png": "nm_right_staff_baby.png",
+        "anchor": [
+          6,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_staff_teen.png",
+        "anchor": [
+          6,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_staff_awake.png",
+        "anchor": [
+          8,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_right_sword",
+      "ko": "칼",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 12,
+      "baby": {
+        "png": "nm_right_sword_baby.png",
+        "anchor": [
+          4,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_sword_teen.png",
+        "anchor": [
+          5,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_sword_awake.png",
+        "anchor": [
+          6,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_right_twig",
+      "ko": "작은 나뭇가지",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 10,
+      "baby": {
+        "png": "nm_right_twig_baby.png",
+        "anchor": [
+          4,
+          13
+        ]
+      },
+      "teen": {
+        "png": "nm_right_twig_teen.png",
+        "anchor": [
+          5,
+          15
+        ]
+      },
+      "awake": {
+        "png": "nm_right_twig_awake.png",
+        "anchor": [
+          6,
+          19
+        ]
+      }
+    },
+    {
+      "code": "nm_left_bag",
+      "ko": "가방",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_bag_baby.png",
+        "anchor": [
+          5,
+          2
+        ]
+      },
+      "teen": {
+        "png": "nm_left_bag_teen.png",
+        "anchor": [
+          6,
+          3
+        ]
+      },
+      "awake": {
+        "png": "nm_left_bag_awake.png",
+        "anchor": [
+          7,
+          4
+        ]
+      }
+    },
+    {
+      "code": "nm_left_book",
+      "ko": "책",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_book_baby.png",
+        "anchor": [
+          5,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_left_book_teen.png",
+        "anchor": [
+          6,
+          7
+        ]
+      },
+      "awake": {
+        "png": "nm_left_book_awake.png",
+        "anchor": [
+          7,
+          9
+        ]
+      }
+    },
+    {
+      "code": "nm_left_ecobag",
+      "ko": "에코백",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_ecobag_baby.png",
+        "anchor": [
+          5,
+          2
+        ]
+      },
+      "teen": {
+        "png": "nm_left_ecobag_teen.png",
+        "anchor": [
+          6,
+          2
+        ]
+      },
+      "awake": {
+        "png": "nm_left_ecobag_awake.png",
+        "anchor": [
+          7,
+          3
+        ]
+      }
+    },
+    {
+      "code": "nm_left_handbag",
+      "ko": "핸드백",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_handbag_baby.png",
+        "anchor": [
+          5,
+          2
+        ]
+      },
+      "teen": {
+        "png": "nm_left_handbag_teen.png",
+        "anchor": [
+          6,
+          2
+        ]
+      },
+      "awake": {
+        "png": "nm_left_handbag_awake.png",
+        "anchor": [
+          7,
+          2
+        ]
+      }
+    },
+    {
+      "code": "nm_left_laptop",
+      "ko": "노트북",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_laptop_baby.png",
+        "anchor": [
+          5,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_left_laptop_teen.png",
+        "anchor": [
+          6,
+          7
+        ]
+      },
+      "awake": {
+        "png": "nm_left_laptop_awake.png",
+        "anchor": [
+          7,
+          9
+        ]
+      }
+    },
+    {
+      "code": "nm_left_note",
+      "ko": "노트",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_note_baby.png",
+        "anchor": [
+          5,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_left_note_teen.png",
+        "anchor": [
+          6,
+          8
+        ]
+      },
+      "awake": {
+        "png": "nm_left_note_awake.png",
+        "anchor": [
+          7,
+          10
+        ]
+      }
+    },
+    {
+      "code": "nm_left_novel",
+      "ko": "소설책",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_novel_baby.png",
+        "anchor": [
+          5,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_left_novel_teen.png",
+        "anchor": [
+          6,
+          7
+        ]
+      },
+      "awake": {
+        "png": "nm_left_novel_awake.png",
+        "anchor": [
+          8,
+          9
+        ]
+      }
+    },
+    {
+      "code": "nm_left_phone",
+      "ko": "핸드폰",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_phone_baby.png",
+        "anchor": [
+          6,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_left_phone_teen.png",
+        "anchor": [
+          6,
+          7
+        ]
+      },
+      "awake": {
+        "png": "nm_left_phone_awake.png",
+        "anchor": [
+          7,
+          9
+        ]
+      }
+    },
+    {
+      "code": "nm_left_shield",
+      "ko": "방패",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_shield_baby.png",
+        "anchor": [
+          5,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_left_shield_teen.png",
+        "anchor": [
+          6,
+          7
+        ]
+      },
+      "awake": {
+        "png": "nm_left_shield_awake.png",
+        "anchor": [
+          7,
+          9
+        ]
+      }
+    },
+    {
+      "code": "nm_left_tablet",
+      "ko": "아이패드",
+      "slot": "left",
+      "tier": "normal",
+      "baby": {
+        "png": "nm_left_tablet_baby.png",
+        "anchor": [
+          5,
+          7
+        ]
+      },
+      "teen": {
+        "png": "nm_left_tablet_teen.png",
+        "anchor": [
+          6,
+          7
+        ]
+      },
+      "awake": {
+        "png": "nm_left_tablet_awake.png",
+        "anchor": [
+          7,
+          9
+        ]
+      }
     }
   ]
 }

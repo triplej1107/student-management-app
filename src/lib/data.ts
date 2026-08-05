@@ -1,6 +1,14 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { toISODate, weekLabel, dayLabelOf, mondayOf, parseISODate, kstToday } from "./weeks";
+import {
+  toISODate,
+  weekLabel,
+  dayLabelOf,
+  mondayOf,
+  parseISODate,
+  kstToday,
+  kstTimeHHMM,
+} from "./weeks";
 import { classKeyFor } from "./classKey";
 import { syncSlimeWeek } from "./slimeXp";
 import { SCHOOL_EXAMS } from "./types";
@@ -460,6 +468,11 @@ export async function getAttendanceMapForDate(
 export interface AttendanceLogEntry {
   dateISO: string;
   status: AttendanceStatus;
+  /** 그 출결이 기록된 시각(KST "HH:MM") — 조교가 버튼을 누른 시각, 또는
+   * 시스템이 자동 지각/결석 처리한 시각. 학생이 실제로 도착한 시각은 앱이
+   * 알 수 없어서(키오스크 쪽 정보) 이 값이 가장 가까운 근사치다.
+   * upsert가 created_at을 건드리지 않으므로 "최초로 기록된 시각"이 남는다. */
+  recordedAt: string;
   /** 그날 잡아둔 대체 일정 — 조정/결석 때 "언제로 옮겼는지"를 같이 보여준다.
    * 조교 전달사항(note)은 내부용이라 일부러 빼고 요일/시간만 담는다. */
   makeupDay: string | null;
@@ -476,7 +489,7 @@ export async function getAttendanceLogForStudent(
   const [records, makeups] = await Promise.all([
     supabase
       .from("attendance_records")
-      .select("session_date, status")
+      .select("session_date, status, created_at")
       .eq("student_id", studentId)
       .gte("session_date", sinceISO)
       .order("session_date", { ascending: false }),
@@ -492,11 +505,13 @@ export async function getAttendanceLogForStudent(
     makeupByDate.set(m.session_date, { makeup_day: m.makeup_day, makeup_time: m.makeup_time });
   }
 
-  return ((records.data as { session_date: string; status: AttendanceStatus }[]) ?? []).map((r) => {
+  type Row = { session_date: string; status: AttendanceStatus; created_at: string };
+  return ((records.data as Row[]) ?? []).map((r) => {
     const makeup = makeupByDate.get(r.session_date);
     return {
       dateISO: r.session_date,
       status: r.status,
+      recordedAt: kstTimeHHMM(r.created_at),
       makeupDay: makeup?.makeup_day ?? null,
       makeupTime: makeup?.makeup_time ?? null,
     };

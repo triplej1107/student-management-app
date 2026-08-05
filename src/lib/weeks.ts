@@ -157,6 +157,13 @@ export function kstToday(): Date {
   return new Date(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate());
 }
 
+/** timestamptz(예: "2026-08-01T06:12:33+00:00")를 KST 벽시계 "HH:MM"으로.
+ * 서버 타임존이 뭐든 UTC+9로 옮긴 뒤 UTC 게터로 읽는다(nowKST와 같은 요령). */
+export function kstTimeHHMM(timestamptz: string): string {
+  const k = new Date(new Date(timestamptz).getTime() + 9 * 60 * 60 * 1000);
+  return `${String(k.getUTCHours()).padStart(2, "0")}:${String(k.getUTCMinutes()).padStart(2, "0")}`;
+}
+
 /** "HH:MM" 문자열을 자정 기준 분으로 변환. */
 function minutesOf(hhmm: string): number {
   const [h, m] = hhmm.split(":").map((s) => Number(s.trim()));

@@ -13,6 +13,13 @@ export function parseISODate(iso: string): Date {
   return new Date(y, m - 1, d);
 }
 
+/** 'YYYY-MM-DD'의 다음 날 — 월말/연말도 Date가 알아서 넘겨준다. */
+export function nextDayISO(iso: string): string {
+  const d = parseISODate(iso);
+  d.setDate(d.getDate() + 1);
+  return toISODate(d);
+}
+
 /** Returns the Monday of the week containing `date` (local time). */
 export function mondayOf(date: Date): Date {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());

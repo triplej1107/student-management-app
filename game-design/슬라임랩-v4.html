@@ -456,6 +456,8 @@
   <section class="card">
     <h2>아이템 반입 <em>— 밖에서 그려온 PNG 를 떨구면 규격을 검사하고 세 단계에 얹어 본다.
       규격서는 <b style="color:#f0a33c">아이템-반입-규격.md</b></em></h2>
+    <div class="sheet" id="impWear" style="margin-bottom:12px;display:none;padding:8px 6px;
+         position:sticky;top:52px;z-index:5;box-shadow:0 6px 16px rgba(0,0,0,.35)"></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       <input type="file" id="impFile" accept="image/png" multiple
              style="font-family:inherit;font-size:12px;color:#9a9488">
@@ -558,7 +560,6 @@
     <div id="impReport" style="font-size:12px;line-height:1.9;color:#9a9488">
       PNG 를 고르면 검사 결과가 여기 뜬다.
     </div>
-    <div class="sheet" id="impWear" style="margin-top:10px;display:none"></div>
   </section>
 
   <section class="card">
@@ -2714,6 +2715,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
   if (!fileEl) return;
   const report = document.getElementById("impReport"), wear = document.getElementById("impWear");
   const msg = document.getElementById("impSaveMsg");
+  // svg 를 칸 폭에 맞춰 늘였다 줄인다 — 폰에서 세 단계가 한 줄에 들어가야 눈으로 맞춘다
+  const fit = (svg) => svg.replace(/ width="\d+"/, ' style="width:100%;height:auto"');
   let done = [];                               // 검사를 통과해 화면에 얹힌 것들 — 저장 대상
   /* PNG 읽기가 비동기라, 슬라이더를 연달아 움직이면 앞 회차의 onload 가 뒤늦게
      들어와 결과가 두 벌씩 쌓인다. 회차 번호를 달아 지난 회차는 버린다. */
@@ -2825,8 +2828,9 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
           if (!row) { row = document.createElement("div"); row.className = "row"; wear.appendChild(row); }
           const g = G[stage];
           const fig = document.createElement("figure");
-          fig.style.cssText = `text-align:center;order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
-          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), 190) +
+          fig.style.cssText = `text-align:center;flex:1 1 0;min-width:0;max-width:190px;` +
+            `order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
+          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), 190)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[stage]}</figcaption>`;
           row.appendChild(fig);
           return;
@@ -2837,7 +2841,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
           const on = st === stage, g = G[st];
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;opacity:${on ? 1 : .45}`;
-          fig.innerHTML = wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), on ? 200 : 120) +
+          fig.style.cssText += ";flex:1 1 0;min-width:0;max-width:200px";
+          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), on ? 200 : 120)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:${on ? "#c05a2e" : "#6b655c"}">` +
             `${IMP_KO[st]}${on ? " ← 이 장" : ""}</figcaption>`;
           row.appendChild(fig);

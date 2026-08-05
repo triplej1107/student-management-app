@@ -457,6 +457,52 @@ export async function getAttendanceMapForDate(
   return map;
 }
 
+export interface AttendanceLogEntry {
+  dateISO: string;
+  status: AttendanceStatus;
+  /** 그날 잡아둔 대체 일정 — 조정/결석 때 "언제로 옮겼는지"를 같이 보여준다.
+   * 조교 전달사항(note)은 내부용이라 일부러 빼고 요일/시간만 담는다. */
+  makeupDay: string | null;
+  makeupTime: string | null;
+}
+
+/** 학부모 홈의 "클리닉 출결 로그" — 그 학생의 출결 기록을 최신순으로.
+ * 학부모가 푸시 알림을 놓쳤거나 앱 설치에 실패했을 때 기록으로 확인하는
+ * 용도라, 알림을 보냈든 안 보냈든 남아있는 기록을 그대로 보여준다. */
+export async function getAttendanceLogForStudent(
+  studentId: number,
+  sinceISO: string
+): Promise<AttendanceLogEntry[]> {
+  const [records, makeups] = await Promise.all([
+    supabase
+      .from("attendance_records")
+      .select("session_date, status")
+      .eq("student_id", studentId)
+      .gte("session_date", sinceISO)
+      .order("session_date", { ascending: false }),
+    supabase
+      .from("makeup_schedules")
+      .select("session_date, makeup_day, makeup_time")
+      .eq("student_id", studentId)
+      .gte("session_date", sinceISO),
+  ]);
+
+  const makeupByDate = new Map<string, { makeup_day: string; makeup_time: string }>();
+  for (const m of makeups.data ?? []) {
+    makeupByDate.set(m.session_date, { makeup_day: m.makeup_day, makeup_time: m.makeup_time });
+  }
+
+  return ((records.data as { session_date: string; status: AttendanceStatus }[]) ?? []).map((r) => {
+    const makeup = makeupByDate.get(r.session_date);
+    return {
+      dateISO: r.session_date,
+      status: r.status,
+      makeupDay: makeup?.makeup_day ?? null,
+      makeupTime: makeup?.makeup_time ?? null,
+    };
+  });
+}
+
 export async function setAttendance(
   studentId: number,
   date: Date,

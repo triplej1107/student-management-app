@@ -1,14 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStudentSession } from "@/lib/authz";
-import { getStudentById, getClinicTemplate, getClinicCheck, listNoticesForClass, isBirthdayToday } from "@/lib/data";
+import {
+  getStudentById,
+  getClinicTemplate,
+  getClinicCheck,
+  listNoticesForClass,
+  isBirthdayToday,
+  getAttendanceLogForStudent,
+} from "@/lib/data";
 import { getUjcBalance, getUjcHistory } from "@/lib/ujc";
 import { getStudentTier } from "@/lib/ujcTier";
 import { getStudentBacklogDetail } from "@/lib/clinicBacklog";
 import { getParentQuestion } from "@/lib/parentQuestions";
 import { getRemindersForStudent } from "@/lib/reminders";
 import { getToday } from "@/lib/today";
-import { weekLabel, toISODate } from "@/lib/weeks";
+import { weekLabel, toISODate, addMonths } from "@/lib/weeks";
 import { ClinicChecklistSummaryCard } from "@/components/ClinicChecklistSummaryCard";
 import { UjcWalletCard } from "@/components/UjcWalletCard";
 import { SlimeIdle } from "@/components/SlimeIdle";
@@ -18,6 +25,7 @@ import { ATTR_LABELS, STAGE_LABELS, type SlimeAttr, type SlimeStage } from "@/li
 import { ParentQuestionCard } from "@/components/ParentQuestionCard";
 import { HomeModals } from "@/components/HomeModals";
 import { StudentReminderCard } from "@/components/StudentReminderCard";
+import { ParentAttendanceLogCard } from "@/components/ParentAttendanceLogCard";
 import { InstallSeenBeacon } from "@/components/InstallSeenBeacon";
 import { logoutAction } from "@/app/login/actions";
 import { submitParentQuestionAction } from "./actions";
@@ -51,6 +59,11 @@ export default async function StudentHomePage() {
     isStudent ? getStudentBacklogDetail(student.id) : Promise.resolve(null),
     isParent ? getParentQuestion(student.id, toISODate(questionWeekStart)) : Promise.resolve(null),
   ]);
+  // 학부모 홈 최상단 "클리닉 출결 로그" — 알림을 놓쳤거나 앱 설치에 실패한
+  // 학부모가 기록으로 확인할 수 있게. 반년치면 한 학기를 넉넉히 덮는다.
+  const attendanceLog = isParent
+    ? await getAttendanceLogForStudent(student.id, toISODate(addMonths(today, -6)))
+    : [];
   // 학생·학부모 모두에게 보여준다 — 챙겨야 할 돌발 일정은 집에서도 알아야 하므로.
   const reminders = isStudentOrParent
     ? await getRemindersForStudent(student.id, toISODate(today))
@@ -102,6 +115,12 @@ export default async function StudentHomePage() {
         backlog={isStudent ? backlog : null}
         showPushPrompt={isStudentOrParent}
       />
+
+      {isParent && (
+        <div className="mt-4">
+          <ParentAttendanceLogCard entries={attendanceLog} />
+        </div>
+      )}
 
       <StudentReminderCard reminders={reminders} />
 

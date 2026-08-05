@@ -558,6 +558,11 @@
           <option value="rare">레어</option><option value="epic">에픽</option>
           <option value="legendary">레전더리</option>
         </select></label>
+      <label style="font-size:12px;color:#9a9488" title="노말~레어 3 · 에픽·레전더리 1.5. 등급을 고르면 기본값이 들어오고 여기서 바꿀 수 있다">
+        칸 크기
+        <select id="impCell" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+          <option value="3">3 (노말~레어)</option><option value="1.5">1.5 (에픽·레전더리)</option>
+        </select></label>
       <label style="font-size:12px;color:#9a9488" title="등급이 높을수록 화면에서 크게. 등급을 고르면 기본값이 들어오고 여기서 더 조정한다">
         등급 덩치
         <input type="range" id="impBig" min="0.8" max="2.6" step="0.05" value="1"
@@ -2290,10 +2295,13 @@ let IMP_K = 1;                           // 「등급 덩치」 슬라이더가 
    그려진다. 애써 맞춰 놓은 크기가 다 작아졌다 (원장, 2026-08-05). 그래서
    **지금 반입 중인 아이템의 칸**만 따로 들고, 담긴 것은 저장된 제 칸으로 그린다. */
 const impCellOf = (tier) => (tier === "epic" || tier === "legendary") ? 1.5 : 3;
-/* 담긴 것의 칸은 **등급에서 다시 뽑는다.** 저장된 cell 을 믿지 않는 이유는, 칸 크기를
-   전역으로 만지던 시절에 잘못 박힌 값이 남아 있을 수 있어서다. 카탈로그 규칙이 절대
-   기준이므로 등급만 맞으면 언제나 옳다 — 잘못 담긴 것도 저절로 낫는다. */
-const cellOfItem = (it) => impCellOf(it && it.tier);
+/* 담긴 것은 **담을 때의 칸 그대로** 그린다. 등급에서 다시 뽑으면 안 된다 —
+   눈으로 맞춘 크기는 그때의 칸 위에서 맞춘 것이라, 나중에 규칙을 들이대면 그 수고가
+   통째로 어긋난다. 실제로 칸 3 에서 맞춘 헤일로가 레전더리라는 이유로 1.5 로 다시
+   그려져 절반이 됐다 (원장, 2026-08-05).
+   cell 이 없는 것은 그 필드가 생기기 전에 담은 것이고, 그때 전역 기본값이 3 이었다.
+   **등급은 새로 반입하는 것에만 적용된다. 담긴 것은 건드리지 않는다.** */
+const cellOfItem = (it) => (it && it.cell) || 3;
 let IMP_CELL = 3;
 /* 아이템 하나를 그 아이템의 칸 크기로 그린다. IBuf·toRects 가 전역 ICELL 을 보므로
    잠깐 바꿔 끼웠다가 되돌린다 — 몸통은 CELL 을 쓰니 영향이 없다. */
@@ -2807,6 +2815,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
     const ghost = document.getElementById("impGhost").checked;
     IMP_COLORS = +document.getElementById("impColors").value || 12;
     document.getElementById("impColorsv").textContent = IMP_COLORS;
+    IMP_CELL = +document.getElementById("impCell").value || 3;   // 이 아이템의 칸 크기
     IMP_K = +document.getElementById("impBig").value || 1;        // 등급 덩치 — 권장·상한을 통째로 키운다
     document.getElementById("impBigv").textContent = IMP_K.toFixed(2);
     const flipX = document.getElementById("impFlipX").checked;
@@ -2971,6 +2980,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
     document.getElementById("impBig").value = k;
     document.getElementById("impBigv").textContent = k.toFixed(2);
     IMP_CELL = impCellOf(tier);
+    document.getElementById("impCell").value = String(IMP_CELL);
     run();
   });
   document.getElementById("impSlot").addEventListener("change", run);
@@ -2997,7 +3007,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
      (앵커 자체는 이 값들에서 자동으로 나오므로, 설정이 같으면 앵커도 같다.) */
   const IPKEY = "slimeLabV4imp";
   const IMP_KEEP = ["impStage", "impSlot", "impDX", "impDY", "impFix", "impBlock", "impMode",
-    "impCWb", "impCWt", "impCWa", "impGrip", "impColors", "impLean", "impBig", "impTier",
+    "impCWb", "impCWt", "impCWa", "impGrip", "impColors", "impLean", "impBig", "impTier", "impCell",
     "impShade", "impFlipX", "impFlipY", "impOne", "impGhost",
     "impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"];
   const impRemember = () => {
@@ -3023,7 +3033,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       if (el && o) o.textContent = fix ? (+el.value).toFixed(fix) : el.value;
     }
   })();
-  IMP_CELL = impCellOf(document.getElementById("impTier").value);   // 되살린 등급에 칸을 맞춘다
+  IMP_CELL = +document.getElementById("impCell").value || 3;   // 되살린 값 그대로 (등급으로 덮지 않는다)
   IMP_KEEP.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener(el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input", impRemember);

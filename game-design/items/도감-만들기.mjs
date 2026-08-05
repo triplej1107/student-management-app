@@ -65,7 +65,7 @@ for (const it of drawable) {
         wrap(impLayer(g.inner, impSvgAt(cell, { px, w: im.width, h: im.height }, slot, anchor, g.anchors, false, false, deg), slot), 200)}</div>`;
       document.querySelector('#one svg').style.cssText = 'width:200px;height:auto;display:block';
       return [im.width, im.height];
-    }, { b64, slot: it.slot, anchor: it[st].anchor, cell: (it.tier === 'epic' || it.tier === 'legendary') ? 1.5 : 3,
+    }, { b64, slot: it.slot, anchor: it[st].anchor, cell: it.cell || man.cell || 3,        // 담을 때의 칸 그대로 (등급에서 다시 뽑지 않는다)
          deg: (it.slot === 'left' ? -1 : 1) * (it.rot || 0), st });
     const shot = await (await p.$('#one')).screenshot({ omitBackground: true });
     rec.stages.push({ st, ko: stKo, w: size[0], h: size[1], anchor: it[st].anchor,

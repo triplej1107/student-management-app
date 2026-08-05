@@ -2240,6 +2240,7 @@ const IMP_REC = {
   awake: { head: [36, 17], face: [24, 12], right: [11, 25], left: [15, 21], fx: [56, 19] },
 };
 const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
+const IMP_SLOT_KO = { head: "머리", face: "얼굴", right: "오른손", left: "왼손", fx: "이펙트" };
 /* 위 표는 **셀 3 기준 칸 수**다. 에픽·레전더리는 셀 1.5 로 두 배 촘촘하니 같은 물건이
    칸 수로는 두 배가 된다 — 그대로 재면 전부 상한에 걸린다. 셀 크기로 환산해서 쓴다. */
 const impScale = () => 3 / (ICELL || 3);
@@ -2880,7 +2881,7 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
       const stages = ["baby", "teen", "awake"].filter((s) => it[s]).map((s) => IMP_KO[s]).join("·");
       const row = document.createElement("div");
       row.innerHTML = `<b style="color:#e8e4dc">${it.code}</b> <span style="color:#7d776b">${it.ko} · ` +
-        `${it.slot} · ${it.tier} · ${stages}</span> `;
+        `<b style="color:#f0a33c">${IMP_SLOT_KO[it.slot] || it.slot}</b> · ${it.tier} · ${stages}</span> `;
       const del = document.createElement("button");
       del.className = "imp"; del.textContent = "빼기";
       del.style.cssText = "padding:1px 7px;font-size:11px;margin-left:4px";
@@ -2912,6 +2913,16 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
   document.getElementById("impSaveAll").addEventListener("click", () => {
     if (!done.length) return flash("넣어서 통과한 게 없다", true);
     const code = codeOf();
+    /* 코드와 슬롯이 어긋나면 담지 않는다.
+       앵커는 슬롯마다 다른 자리(머리선/눈높이/쥐는 자리)에서 잡히므로, 슬롯을 잘못
+       두고 넣으면 그림은 멀쩡해 보여도 저장되는 앵커가 딴 자리다 — 나중에 게임에서
+       엉뚱한 데 붙는다. 실제로 얼굴·오른손을 슬롯 「머리」로 담아 둔 적이 있다. */
+    const slotNow = document.getElementById("impSlot").value;
+    const m = code.match(/_(head|face|right|left|fx)_/) || code.match(/_(head|face|right|left|fx)$/);
+    if (m && m[1] !== slotNow) {
+      return flash(`코드는 ${IMP_SLOT_KO[m[1]]}인데 슬롯이 ${IMP_SLOT_KO[slotNow]}다 — ` +
+        `슬롯을 ${IMP_SLOT_KO[m[1]]}로 바꾸고 다시 넣어라 (앵커가 달라진다)`, true);
+    }
     const item = {
       code, ko: document.getElementById("impKo").value.trim() || code,
       slot: document.getElementById("impSlot").value,

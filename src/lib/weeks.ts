@@ -157,6 +157,18 @@ export function kstToday(): Date {
   return new Date(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate());
 }
 
+/** 대체 일정이 실제로 잡힌 날짜 — makeup_schedules는 "원래 수업일"에 달려
+ * 있고 목적지는 요일("수")로만 들어있어서, 그 주 안에서 요일을 날짜로 편다.
+ * 예: 원래 8/7(금) 수업을 "수"로 옮겼으면 같은 주 수요일인 8/5.
+ * 요일을 못 읽으면 null. */
+export function makeupDateISO(sessionDateISO: string, makeupDay: string): string | null {
+  const idx = DAY_ORDER.indexOf(makeupDay as (typeof DAY_ORDER)[number]);
+  if (idx < 0) return null;
+  const d = mondayOf(parseISODate(sessionDateISO));
+  d.setDate(d.getDate() + idx);
+  return toISODate(d);
+}
+
 /** timestamptz(예: "2026-08-01T06:12:33+00:00")를 KST 벽시계 "HH:MM"으로.
  * 서버 타임존이 뭐든 UTC+9로 옮긴 뒤 UTC 게터로 읽는다(nowKST와 같은 요령). */
 export function kstTimeHHMM(timestamptz: string): string {

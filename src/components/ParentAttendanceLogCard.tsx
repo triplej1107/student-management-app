@@ -48,9 +48,9 @@ export function ParentAttendanceLogCard({ entries }: { entries: AttendanceLogEnt
               >
                 <div className="text-[13px] font-semibold text-ink-secondary">
                   {formatDate(e.dateISO)} {e.recordedAt}
-                  {e.makeupDay && e.makeupTime && (
+                  {e.makeupDateISO && e.makeupTime && (
                     <span className="ml-1.5 text-[11px] font-normal text-ink-muted">
-                      대체 {e.makeupDay} {e.makeupTime}
+                      → {formatDate(e.makeupDateISO)} {e.makeupTime}
                     </span>
                   )}
                 </div>

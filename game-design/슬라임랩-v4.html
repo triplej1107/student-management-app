@@ -2640,34 +2640,6 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
   return { parts: [{ px, colors, soft, w: cv.width, h: cv.height }] };
 }
 
-/* 기울이기 — **세 번의 밀기로 만드는 회전**.
-   처음엔 행마다 옆으로 한 번만 밀었는데(전단), 그건 회전이 아니라 평행사변형이라
-   몸통만 눕고 연필 촉·꽁무니의 잘린 면은 수평 그대로 남아 부자연스러웠다.
-   가로밀기 → 세로밀기 → 가로밀기 를 겹치면 회전이 된다. 각 단계가 줄·칸 단위의
-   정수 이동이라 **칸이 겹치지도 비지도 않는다** — 픽셀 손실 없이 끝을 포함해 다 돈다.
-   셀이 촘촘할수록(레전더리 셀 1.5) 같은 각도에서 계단이 절반으로 작아진다. */
-function rotatePart(r, deg, slot) {
-  if (!deg || r.px.size === 0) return r;
-  const th = (slot === "left" ? -1 : 1) * deg * Math.PI / 180;
-  const a = -Math.tan(th / 2), b = Math.sin(th);
-  const ys = [...r.px.keys()].map((k) => +k.split(",")[1]);
-  const xs = [...r.px.keys()].map((k) => +k.split(",")[0]);
-  // 회전 중심 — 손 슬롯은 쥐는 자리, 나머지는 그림 한가운데
-  const cy = (slot === "right" || slot === "left")
-    ? Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * GRIP
-    : (Math.min(...ys) + Math.max(...ys)) / 2;
-  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-  let cur = [...r.px].map(([k, c]) => { const [x, y] = k.split(",").map(Number); return [x, y, c]; });
-  cur = cur.map(([x, y, c]) => [x + Math.round(a * (y - cy)), y, c]);
-  cur = cur.map(([x, y, c]) => [x, y + Math.round(b * (x - cx)), c]);
-  cur = cur.map(([x, y, c]) => [x + Math.round(a * (y - cy)), y, c]);
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const [x, y] of cur) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-  const px = new Map();
-  for (const [x, y, c] of cur) px.set((x - x0) + "," + (y - y0), c);
-  return { ...r, px, w: x1 - x0 + 1, h: y1 - y0 + 1, colors: new Set(px.values()) };
-}
-
 /* 앵커를 안 준 경우의 기본값 — 슬롯이 몸에 닿는 쪽을 잡는다 */
 let GRIP = 0.78;                              // 손 슬롯에서 쥐는 자리의 높이 비율
 function guessAnchor(r, slot) {
@@ -2710,7 +2682,7 @@ function guessAnchor(r, slot) {
 }
 
 /* 격자를 앵커에 맞춰 몸 좌표로 옮겨 그린다 */
-function impSvg(r, slot, anchor, a, shade, ghost) {
+function impSvg(r, slot, anchor, a, shade, ghost, deg) {
   const b = new IBuf();
   const at = { head: a.head, face: a.face, fx: a.foot,
                right: [a.hand[0], a.hand[1]], left: [-a.hand[0], a.hand[1]] }[slot];
@@ -2719,8 +2691,14 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
     b.px(at[0] + (x - anchor[0]) * ICELL, at[1] + (y - anchor[1]) * ICELL, hex);
   }
   if (shade) shadeItem(b);
-  // 아이템이 얼굴을 덮으면 자리가 맞는지 눈으로 못 본다 — 반투명으로 비춰 보게 한다
-  return ghost ? `<g opacity="0.5">${b.svg()}</g>` : b.svg();
+  /* 기울기는 **픽셀을 고치지 않고 얹을 때 준다.**
+     칸을 밀어서 돌리면(전단·3단 회전) 각도가 커질수록 칸이 어긋나 지저분해진다.
+     그림은 그대로 두고 놓을 때 돌리면 칸이 통째로 돌아가 계단이 안 생긴다 —
+     실제 게임에서 무기를 든 스프라이트를 돌리는 방식이 이거다.
+     그래서 기울기는 그림의 성질이 아니라 **매니페스트에 적는 배치값**이다. */
+  let out = b.svg();
+  if (deg) out = `<g transform="rotate(${deg}, ${at[0]}, ${at[1]})">${out}</g>`;
+  return ghost ? `<g opacity="0.5">${out}</g>` : out;
 }
 
 (function () {
@@ -2748,6 +2726,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
     document.getElementById("impGripv").textContent = document.getElementById("impGrip").value;
     const lean = +document.getElementById("impLean").value || 0;
     document.getElementById("impLeanv").textContent = lean;
+    const leanOf = (sl) => (sl === "left" ? -lean : lean);   // 바깥 방향은 좌우가 반대
     const nudge = [+document.getElementById("impDX").value, +document.getElementById("impDY").value];
     document.getElementById("impDXv").textContent = nudge[0];
     document.getElementById("impDYv").textContent = nudge[1];
@@ -2807,8 +2786,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
         // 단계 배정 — 자동이면 덩어리 셋은 큰 것부터 각성·틴·베이비, 아니면 크기로 고른다
         const auto = stage === "auto";
         const trio = auto && res.parts.length === 3 ? ["awake", "teen", "baby"] : null;
-        res.parts.forEach((r0, pi) => {
-          const r = rotatePart(r0, lean, slot);    // 기울기는 검사 전에 먹인다 — 크기가 달라진다
+        res.parts.forEach((r, pi) => {
           const st = r.stage || (trio ? trio[pi] : auto ? pickStage(r, slot) : stage);
           showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed, st, auto);
         });
@@ -2843,7 +2821,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;flex:1 1 0;min-width:0;max-width:190px;` +
             `order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
-          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), 190)) +
+          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), 190)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[stage]}</figcaption>`;
           row.appendChild(fig);
           return;
@@ -2855,7 +2833,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;opacity:${on ? 1 : .45}`;
           fig.style.cssText += ";flex:1 1 0;min-width:0;max-width:200px";
-          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost), on ? 200 : 120)) +
+          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), on ? 200 : 120)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:${on ? "#c05a2e" : "#6b655c"}">` +
             `${IMP_KO[st]}${on ? " ← 이 장" : ""}</figcaption>`;
           row.appendChild(fig);
@@ -2939,6 +2917,8 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
       slot: document.getElementById("impSlot").value,
       tier: document.getElementById("impTier").value,
     };
+    const rot = +document.getElementById("impLean").value || 0;
+    if (rot) item.rot = rot;                                     // 얹을 때 돌리는 각도(도)
     for (const st of ["baby", "teen", "awake"]) {                // 규격서 §4 와 같은 순서
       const hit = done.find((d) => d.stage === st);
       if (!hit) continue;

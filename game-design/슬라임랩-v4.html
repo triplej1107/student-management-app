@@ -456,8 +456,8 @@
   <section class="card">
     <h2>아이템 반입 <em>— 밖에서 그려온 PNG 를 떨구면 규격을 검사하고 세 단계에 얹어 본다.
       규격서는 <b style="color:#f0a33c">아이템-반입-규격.md</b></em></h2>
-    <div class="sheet" id="impWear" style="margin-bottom:12px;display:none;padding:8px 6px;
-         position:sticky;top:52px;z-index:5;box-shadow:0 6px 16px rgba(0,0,0,.35)"></div>
+    <!-- 화면에 붙여(sticky) 뒀더니 아래 조절 칸의 클릭을 가로막았다. 그냥 맨 위에 둔다. -->
+    <div class="sheet" id="impWear" style="margin-bottom:12px;display:none;padding:8px 6px"></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       <input type="file" id="impFile" accept="image/png" multiple
              style="font-family:inherit;font-size:12px;color:#9a9488">
@@ -509,6 +509,12 @@
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
         본색만 줬으면 음영 자동으로 입히기</label>
+      <label style="font-size:12px;color:#9a9488;cursor:pointer">
+        <input type="checkbox" id="impFlipY" style="accent-color:#f0a33c;vertical-align:-2px">
+        위아래 뒤집기</label>
+      <label style="font-size:12px;color:#9a9488;cursor:pointer">
+        <input type="checkbox" id="impFlipX" style="accent-color:#f0a33c;vertical-align:-2px">
+        좌우 뒤집기 <span style="color:#7d776b">— 그려 온 방향이 반대일 때</span></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impOne" style="accent-color:#f0a33c;vertical-align:-2px">
         쪼개지 말 것 <span style="color:#7d776b">— 홍조처럼 떨어진 두 조각이 한 아이템일 때</span></label>
@@ -2642,6 +2648,19 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
   return { parts: [{ px, colors, soft, w: cv.width, h: cv.height }] };
 }
 
+/* 뒤집기 — 그려 온 방향이 반대일 때. 시키는 대로 안 그려 오는 걸 계속 다시 시키느니
+   여기서 뒤집는 게 빠르다 (연필 촉이 아래로 온 건이 반복됐다). 칸을 그대로 옮겨
+   담는 것이라 손실이 없다. 앵커는 뒤집힌 그림에서 다시 잡힌다. */
+function flipPart(r, fx, fy) {
+  if (!fx && !fy) return r;
+  const px = new Map();
+  for (const [k, c] of r.px) {
+    const [x, y] = k.split(",").map(Number);
+    px.set((fx ? r.w - 1 - x : x) + "," + (fy ? r.h - 1 - y : y), c);
+  }
+  return { ...r, px };
+}
+
 /* 앵커를 안 준 경우의 기본값 — 슬롯이 몸에 닿는 쪽을 잡는다 */
 let GRIP = 0.78;                              // 손 슬롯에서 쥐는 자리의 높이 비율
 function guessAnchor(r, slot) {
@@ -2724,6 +2743,8 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     const stage = document.getElementById("impStage").value;
     const shade = document.getElementById("impShade").checked;
     const ghost = document.getElementById("impGhost").checked;
+    const flipX = document.getElementById("impFlipX").checked;
+    const flipY = document.getElementById("impFlipY").checked;
     GRIP = (+document.getElementById("impGrip").value || 0) / 100;
     document.getElementById("impGripv").textContent = document.getElementById("impGrip").value;
     const lean = +document.getElementById("impLean").value || 0;
@@ -2788,7 +2809,8 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
         // 단계 배정 — 자동이면 덩어리 셋은 큰 것부터 각성·틴·베이비, 아니면 크기로 고른다
         const auto = stage === "auto";
         const trio = auto && res.parts.length === 3 ? ["awake", "teen", "baby"] : null;
-        res.parts.forEach((r, pi) => {
+        res.parts.forEach((r0, pi) => {
+          const r = flipPart(r0, flipX, flipY);
           const st = r.stage || (trio ? trio[pi] : auto ? pickStage(r, slot) : stage);
           showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed, st, auto);
         });
@@ -2855,6 +2877,8 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
   document.getElementById("impShade").addEventListener("change", run);
   document.getElementById("impGhost").addEventListener("change", run);
   document.getElementById("impOne").addEventListener("change", run);
+  document.getElementById("impFlipX").addEventListener("change", run);
+  document.getElementById("impFlipY").addEventListener("change", run);
   document.getElementById("impGrip").addEventListener("input", run);
   document.getElementById("impLean").addEventListener("input", run);
   ["impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"]

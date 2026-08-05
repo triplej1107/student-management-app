@@ -36,6 +36,7 @@ export function AttendanceRow({
   parentTexted,
   autoMarked,
   clinicHrefBase,
+  backlogWeeks,
 }: {
   student: Student;
   effTime: string;
@@ -48,6 +49,10 @@ export function AttendanceRow({
    * 종주T는 /admin/students/approvals. 종주T에게 조교 전용 주소를 주면
    * 권한 검사에 걸려 홈으로 튕긴다. */
   clinicHrefBase: string;
+  /** 클리닉이 몇 주 밀렸는지 (밀림 관리 탭과 같은 판정). 밀림이 없으면 undefined.
+   * 1주면 카드 전체가 노란색, 2주 이상이면 빨간색으로 떠서 출결 체크하다가
+   * 바로 눈에 걸린다. */
+  backlogWeeks?: number;
   /** 이 status가 사람이 아니라 시스템이 자동으로 기록한 것 — 클리닉 시각이
    * 지나도록 미출석이면 자동 "지각"으로, 그 지각이 밤까지 안 고쳐지면
    * 자동 "결석"으로 표시된다. 출석/지각/결석 버튼을 실제로 누르면 바로 꺼진다. */
@@ -63,6 +68,12 @@ export function AttendanceRow({
   const [noteDraft, setNoteDraft] = useState(makeup?.note ?? "");
   const classTag = classDayTimeTag(student.class_day, student.class_time);
   const [texted, setTexted] = useState(parentTexted ?? false);
+  const backlogTone =
+    !backlogWeeks
+      ? "border-line-soft bg-white"
+      : backlogWeeks >= 2
+        ? "border-danger/50 bg-danger-soft"
+        : "border-warn/50 bg-warn-soft";
 
   function toggleTexted() {
     const next = !texted;
@@ -122,7 +133,9 @@ export function AttendanceRow({
   }
 
   return (
-    <div className="rounded-2xl border border-line-soft bg-white p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]">
+    <div
+      className={`rounded-2xl border p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)] ${backlogTone}`}
+    >
       <div className="flex items-start justify-between">
         <Link href={`${clinicHrefBase}/${student.id}?from=attendance`} className="cursor-pointer">
           <div className="text-[15px] font-bold text-ink">
@@ -134,6 +147,16 @@ export function AttendanceRow({
             {(student.school || student.grade) &&
               ` · ${[student.school, student.grade ? `${student.grade}학년` : null].filter(Boolean).join(" ")}`}
           </div>
+          {!!backlogWeeks && (
+            <div
+              className={
+                "mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold text-white " +
+                (backlogWeeks >= 2 ? "bg-danger" : "bg-warn")
+              }
+            >
+              클리닉 {backlogWeeks}주 밀림
+            </div>
+          )}
           {hasMakeup && (
             <div className="mt-0.5 text-[11px] font-bold text-accent">
               대체: {makeup?.makeup_day} {makeup?.makeup_time}

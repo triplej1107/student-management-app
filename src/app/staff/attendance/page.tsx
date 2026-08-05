@@ -9,6 +9,7 @@ import {
   getUnresolvedAutoAbsences,
 } from "@/lib/data";
 import { autoMarkLateStudents } from "@/lib/attendanceAuto";
+import { getBacklogWeeksByStudent } from "@/lib/clinicBacklog";
 import { DAY_ORDER } from "@/lib/types";
 import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
 import { AttendanceRow } from "@/components/staff/AttendanceRow";
@@ -57,6 +58,14 @@ export default async function StaffAttendancePage({
   );
   const autoAbsenceTotal = autoAbsenceGroups.reduce((sum, g) => sum + g.entries.length, 0);
 
+  // 화면에 뜨는 학생만 밀림 계산 — 1주 밀림이면 노란 카드, 2주 이상이면 빨간 카드.
+  const backlogMap = await getBacklogWeeksByStudent([
+    ...new Set([
+      ...roster.map((r) => r.student.id),
+      ...autoAbsenceGroups.flatMap((g) => g.entries.map((e) => e.student.id)),
+    ]),
+  ]);
+
   return (
     <div className="box-border px-5 pt-2 pb-6">
       <ScreenTitle>출결 관리</ScreenTitle>
@@ -99,6 +108,7 @@ export default async function StaffAttendancePage({
                       parentTexted={autoAbsenceTextedMaps[gi]?.get(entry.student.id)}
                       autoMarked
                       clinicHrefBase="/staff/clinic"
+                      backlogWeeks={backlogMap.get(entry.student.id)}
                     />
                   ))}
                 </div>
@@ -126,6 +136,7 @@ export default async function StaffAttendancePage({
               parentTexted={parentTextedMap.get(entry.student.id)}
               autoMarked={autoMarkedIds.has(entry.student.id)}
               clinicHrefBase="/staff/clinic"
+              backlogWeeks={backlogMap.get(entry.student.id)}
             />
           ),
         }))}

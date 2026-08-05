@@ -46,3 +46,6 @@ next-env.d.ts
 
 # 로컬에서 뽑아본 명단/보고서 엑셀 — 실제 학생 정보가 들어가므로 저장소에 두지 않는다
 *.xlsx
+
+# 생성물 — game-design/items/도감-만들기.mjs 가 만든다
+game-design/items/도감.html

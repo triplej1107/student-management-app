@@ -564,9 +564,20 @@
       <span id="impSaveMsg" style="font-size:12px;color:#9BD468"></span>
     </div>
     <div id="impBox" style="font-size:12px;color:#9a9488;margin-bottom:10px;display:none">
-      <b style="color:#f0a33c">담아 둔 아이템</b> <span style="color:#7d776b">— 랩을 닫아도 남는다.
-      다 담으면 「items.json 받기」 한 번이면 된다</span>
-      <div id="impList" style="margin-top:5px"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button id="impBoxToggle" class="imp" style="padding:2px 9px">▾</button>
+        <b style="color:#f0a33c">담아 둔 아이템</b> <b id="impCount" style="color:#e8e4dc"></b>
+        <label>부위 <select id="impFSlot" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px">
+          <option value="">전체</option><option value="head">머리</option><option value="face">얼굴</option>
+          <option value="right">오른손</option><option value="left">왼손</option><option value="fx">이펙트</option>
+        </select></label>
+        <label>등급 <select id="impFTier" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:3px">
+          <option value="">전체</option><option value="normal">노말</option><option value="magic">매직</option>
+          <option value="rare">레어</option><option value="epic">에픽</option><option value="legendary">레전더리</option>
+        </select></label>
+        <span style="color:#7d776b">이름을 누르면 그때 만든 걸 다시 본다</span>
+      </div>
+      <div id="impList" style="margin-top:6px"></div>
     </div>
     <div id="impReport" style="font-size:12px;line-height:1.9;color:#9a9488">
       PNG 를 고르면 검사 결과가 여기 뜬다.
@@ -2252,6 +2263,7 @@ const IMP_REC = {
 };
 const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
 const IMP_SLOT_KO = { head: "머리", face: "얼굴", right: "오른손", left: "왼손", fx: "이펙트" };
+const IMP_TIER_KO = { normal: "노말", magic: "매직", rare: "레어", epic: "에픽", legendary: "레전더리" };
 /* 위 표는 **셀 3 기준 칸 수**다. 에픽·레전더리는 셀 1.5 로 두 배 촘촘하니 같은 물건이
    칸 수로는 두 배가 된다 — 그대로 재면 전부 상한에 걸린다. 셀 크기로 환산해서 쓴다. */
 const impScale = () => 3 / (ICELL || 3);
@@ -2925,25 +2937,113 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     `_${document.getElementById("impSlot").value}_item`);
   const flash = (t, bad) => { msg.style.color = bad ? "#f5785c" : "#9BD468"; msg.textContent = t; };
 
+  let boxOpen = true;
   function drawList() {
     const box = document.getElementById("impBox"), list = document.getElementById("impList");
     const items = loadItems();
     box.style.display = items.length ? "" : "none";
+    document.getElementById("impCount").textContent = `${items.length}종`;
+    document.getElementById("impBoxToggle").textContent = boxOpen ? "▾" : "▸";
+    list.style.display = boxOpen ? "" : "none";
+    if (!boxOpen) return;
+
+    const fs = document.getElementById("impFSlot").value, ft = document.getElementById("impFTier").value;
+    const shown = items.filter((it) => (!fs || it.slot === fs) && (!ft || it.tier === ft));
     list.innerHTML = "";
-    items.forEach((it, i) => {
-      const stages = ["baby", "teen", "awake"].filter((s) => it[s]).map((s) => IMP_KO[s]).join("·");
-      const row = document.createElement("div");
-      row.innerHTML = `<b style="color:#e8e4dc">${it.code}</b> <span style="color:#7d776b">${it.ko} · ` +
-        `<b style="color:#f0a33c">${IMP_SLOT_KO[it.slot] || it.slot}</b> · ${it.tier} · ${stages}</span> `;
-      const del = document.createElement("button");
-      del.className = "imp"; del.textContent = "빼기";
-      del.style.cssText = "padding:1px 7px;font-size:11px;margin-left:4px";
-      del.onclick = () => { const v = loadItems(); v.splice(i, 1); saveItems(v); drawList(); };
-      row.appendChild(del);
-      list.appendChild(row);
-    });
+    if (!shown.length) { list.innerHTML = `<span style="color:#7d776b">거른 조건에 맞는 게 없다</span>`; return; }
+
+    // 부위별로 묶어서 보여 준다 — 103종이 되면 줄줄이 늘어놔선 못 찾는다
+    for (const sl of ["head", "face", "right", "left", "fx"]) {
+      const group = shown.filter((it) => it.slot === sl);
+      if (!group.length) continue;
+      const h = document.createElement("div");
+      h.style.cssText = "margin-top:6px;color:#f0a33c;font-weight:700";
+      h.textContent = `${IMP_SLOT_KO[sl]} ${group.length}종`;
+      list.appendChild(h);
+      for (const it of group) {
+        const i = items.indexOf(it);
+        const stages = ["baby", "teen", "awake"].filter((x) => it[x]).map((x) => IMP_KO[x]).join("·");
+        const row = document.createElement("div");
+        row.style.cssText = "padding-left:10px";
+        const name = document.createElement("button");
+        name.className = "imp";
+        name.style.cssText = "padding:1px 8px;font-size:11.5px;background:#232833;border-color:#333944;color:#e8e4dc";
+        name.textContent = `${it.code} ${it.ko}`;
+        name.onclick = () => showSaved(it);
+        row.appendChild(name);
+        row.insertAdjacentHTML("beforeend",
+          ` <span style="color:#7d776b">${IMP_TIER_KO[it.tier] || it.tier} · ${stages}` +
+          (it.rot ? ` · ${it.rot}°` : "") + `</span> `);
+        const del = document.createElement("button");
+        del.className = "imp"; del.textContent = "빼기";
+        del.style.cssText = "padding:1px 7px;font-size:11px";
+        del.onclick = () => { const v = loadItems(); v.splice(i, 1); saveItems(v); drawList(); };
+        row.appendChild(del);
+        list.appendChild(row);
+      }
+    }
   }
+
+  /* 담아 둔 것을 다시 보여 준다 — 그림을 같이 저장해 두었으므로 파일 없이 뜬다 */
+  function showSaved(it) {
+    const wear = document.getElementById("impWear"), report = document.getElementById("impReport");
+    const has = ["baby", "teen", "awake"].filter((st) => it[st] && it[st].art);
+    if (!has.length) {
+      report.innerHTML = `<b style="color:#f0a33c">${it.code}</b> — 그림이 안 들어 있다(고치기 전에 담은 것). ` +
+        `다시 담으면 눌러서 볼 수 있다.`;
+      return;
+    }
+    const G = { baby: babyParts(SKINS[sel]), teen: slimeParts(SKINS[sel]),
+                awake: slimeParts(SKINS[sel], { awake: true }) };
+    const ghost = document.getElementById("impGhost").checked;
+    const rot = it.rot || 0;
+    wear.style.display = "";
+    wear.innerHTML = "";
+    const row = document.createElement("div");
+    row.className = "row";
+    for (const st of has) {
+      const g = G[st], r = unpackArt(it[st].art);
+      const deg = it.slot === "left" ? -rot : rot;
+      const fig = document.createElement("figure");
+      fig.style.cssText = "text-align:center;flex:1 1 0;min-width:0;max-width:190px";
+      fig.innerHTML = fit(wrap(g.inner + impSvg(r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), 190)) +
+        `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[st]}</figcaption>`;
+      row.appendChild(fig);
+    }
+    wear.appendChild(row);
+    report.innerHTML = `<b style="color:#9CC4EC">👁 ${it.code}</b> ${it.ko} — 담아 둔 것을 보는 중 · ` +
+      has.map((st) => `${IMP_KO[st]} ${it[st].art.w}×${it[st].art.h}칸 앵커 [${it[st].anchor.join(", ")}]`).join(" · ") +
+      (rot ? ` · 기울기 ${rot}°` : "") +
+      `<br><span style="color:#7d776b">　새 파일을 넣으면 이 화면은 사라진다.</span>`;
+  }
+
+  document.getElementById("impBoxToggle").addEventListener("click", () => { boxOpen = !boxOpen; drawList(); });
+  document.getElementById("impFSlot").addEventListener("change", drawList);
+  document.getElementById("impFTier").addEventListener("change", drawList);
   drawList();
+
+  /* 담아 둔 걸 나중에 다시 보려면 그림도 같이 남겨야 한다. 칸마다 색을 그대로
+     적으면 무거우니 **팔레트 + 한 칸 한 글자**로 눌러 담는다 (빈 칸은 점).
+     아이템 하나가 1KB 남짓이라 103종을 담아도 문제없다. */
+  const C36 = "0123456789abcdefghijklmnopqrstuvwxyz";
+  function packArt(r) {
+    const pal = [...new Set(r.px.values())].slice(0, 36);
+    const at = new Map(pal.map((c, i) => [c, C36[i]]));
+    const rows = [];
+    for (let y = 0; y < r.h; y++) {
+      let line = "";
+      for (let x = 0; x < r.w; x++) line += at.get(r.px.get(x + "," + y)) || ".";
+      rows.push(line);
+    }
+    return { w: r.w, h: r.h, pal, rows: rows.join("|") };
+  }
+  function unpackArt(a) {
+    const px = new Map();
+    a.rows.split("|").forEach((line, y) => [...line].forEach((ch, x) => {
+      if (ch !== ".") px.set(x + "," + y, a.pal[C36.indexOf(ch)]);
+    }));
+    return { px, w: a.w, h: a.h, colors: new Set(px.values()), soft: 0 };
+  }
 
   function partPng(r) {                        // 한 칸 = 1픽셀. 확대 없이 그대로 뜬다
     const cv = document.createElement("canvas");
@@ -2986,7 +3086,7 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     for (const st of ["baby", "teen", "awake"]) {                // 규격서 §4 와 같은 순서
       const hit = done.find((d) => d.stage === st);
       if (!hit) continue;
-      item[st] = { png: `${code}_${st}.png`, anchor: hit.anchor };
+      item[st] = { png: `${code}_${st}.png`, anchor: hit.anchor, art: packArt(hit.r) };
       partPng(hit.r).toBlob((b) => grab(b, `${code}_${st}.png`));
     }
     const items = loadItems();
@@ -3031,7 +3131,13 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
   document.getElementById("impSaveJson").addEventListener("click", () => {
     const items = loadItems();
     if (!items.length) return flash("담아 둔 게 없다", true);
-    const txt = JSON.stringify({ cell: 3, authoredFor: "teen", items }, null, 2)
+    // art 는 랩이 다시 보려고 들고 있는 것 — 매니페스트에는 넣지 않는다
+    const clean = items.map((it) => {
+      const o = { ...it };
+      for (const st of ["baby", "teen", "awake"]) if (o[st]) o[st] = { png: o[st].png, anchor: o[st].anchor };
+      return o;
+    });
+    const txt = JSON.stringify({ cell: 3, authoredFor: "teen", items: clean }, null, 2)
       .replace(/\[\s+(-?\d+),\s+(-?\d+)\s+\]/g, "[$1, $2]");     // 앵커는 한 줄로
     grab(new Blob([txt], { type: "application/json" }), "items.json");
     flash(`items.json 받는 중 — ${items.length}개`);

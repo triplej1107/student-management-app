@@ -390,21 +390,21 @@
         "png": "nm_right_cutter_baby.png",
         "anchor": [
           4,
-          13
+          15
         ]
       },
       "teen": {
         "png": "nm_right_cutter_teen.png",
         "anchor": [
           4,
-          15
+          17
         ]
       },
       "awake": {
         "png": "nm_right_cutter_awake.png",
         "anchor": [
           5,
-          19
+          21
         ]
       },
       "rot": 9
@@ -418,21 +418,21 @@
         "png": "nm_right_fountain_baby.png",
         "anchor": [
           4,
-          13
+          15
         ]
       },
       "teen": {
         "png": "nm_right_fountain_teen.png",
         "anchor": [
           4,
-          15
+          17
         ]
       },
       "awake": {
         "png": "nm_right_fountain_awake.png",
         "anchor": [
           5,
-          19
+          21
         ]
       },
       "rot": 10
@@ -474,21 +474,21 @@
         "png": "nm_right_phone_baby.png",
         "anchor": [
           4,
-          13
+          15
         ]
       },
       "teen": {
         "png": "nm_right_phone_teen.png",
         "anchor": [
           4,
-          15
+          17
         ]
       },
       "awake": {
         "png": "nm_right_phone_awake.png",
         "anchor": [
           5,
-          19
+          21
         ]
       },
       "rot": 5
@@ -502,21 +502,21 @@
         "png": "nm_right_sharp_baby.png",
         "anchor": [
           4,
-          13
+          15
         ]
       },
       "teen": {
         "png": "nm_right_sharp_teen.png",
         "anchor": [
           5,
-          15
+          17
         ]
       },
       "awake": {
         "png": "nm_right_sharp_awake.png",
         "anchor": [
           6,
-          19
+          21
         ]
       },
       "rot": 13
@@ -531,21 +531,21 @@
         "png": "nm_right_staff_baby.png",
         "anchor": [
           6,
-          13
+          15
         ]
       },
       "teen": {
         "png": "nm_right_staff_teen.png",
         "anchor": [
           6,
-          15
+          17
         ]
       },
       "awake": {
         "png": "nm_right_staff_awake.png",
         "anchor": [
           8,
-          19
+          21
         ]
       }
     },
@@ -559,21 +559,21 @@
         "png": "nm_right_sword_baby.png",
         "anchor": [
           4,
-          13
+          15
         ]
       },
       "teen": {
         "png": "nm_right_sword_teen.png",
         "anchor": [
           5,
-          15
+          17
         ]
       },
       "awake": {
         "png": "nm_right_sword_awake.png",
         "anchor": [
           6,
-          19
+          21
         ]
       }
     },
@@ -587,21 +587,21 @@
         "png": "nm_right_twig_baby.png",
         "anchor": [
           4,
-          13
+          15
         ]
       },
       "teen": {
         "png": "nm_right_twig_teen.png",
         "anchor": [
-          5,
-          15
+          4,
+          17
         ]
       },
       "awake": {
         "png": "nm_right_twig_awake.png",
         "anchor": [
-          6,
-          19
+          5,
+          21
         ]
       }
     },
@@ -614,21 +614,21 @@
         "png": "nm_left_bag_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_bag_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_bag_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -641,21 +641,21 @@
         "png": "nm_left_book_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_book_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_book_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -668,21 +668,21 @@
         "png": "nm_left_ecobag_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_ecobag_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_ecobag_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -695,21 +695,21 @@
         "png": "nm_left_handbag_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_handbag_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_handbag_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -722,21 +722,21 @@
         "png": "nm_left_laptop_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_laptop_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_laptop_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -749,21 +749,21 @@
         "png": "nm_left_note_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_note_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_note_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -776,21 +776,21 @@
         "png": "nm_left_novel_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_novel_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_novel_awake.png",
         "anchor": [
           8,
-          15
+          17
         ]
       }
     },
@@ -803,21 +803,21 @@
         "png": "nm_left_phone_baby.png",
         "anchor": [
           6,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_phone_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_phone_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -830,21 +830,21 @@
         "png": "nm_left_shield_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_shield_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_shield_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     },
@@ -857,21 +857,21 @@
         "png": "nm_left_tablet_baby.png",
         "anchor": [
           5,
-          11
+          13
         ]
       },
       "teen": {
         "png": "nm_left_tablet_teen.png",
         "anchor": [
           6,
-          12
+          14
         ]
       },
       "awake": {
         "png": "nm_left_tablet_awake.png",
         "anchor": [
           7,
-          15
+          17
         ]
       }
     }

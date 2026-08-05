@@ -17,16 +17,16 @@ import { ITEMS, SZ } from './노말-도트.mjs';
 const DIR = dirname(fileURLToPath(import.meta.url));
 const STAGES = ['baby', 'teen', 'awake'];
 
-/* 오른손은 연필·검처럼 아래에서 1/4 을 쥔다 (랩 기본값 78%). */
+/* 양손 공통 — 아이템 **아랫변이 손에서 몇 칸 아래**에 오는가. 이 한 줄이 두 손 스무 종의
+   높이를 전부 정한다.
+   기준은 오른손 기본 쥐기(아래에서 1/4 = 랩 기본값 78%)에서 RAISE 만큼 올린 값이다.
+   더 올리려면 RAISE 만 키우면 되고, 왼손도 같이 따라 올라간다. */
 export const GRIP_RIGHT = 0.78;
+export const RAISE = 2;                                     // 원장 지시로 두 칸 올림 (2026-08-05)
 
-/* 왼손은 「바닥을 오른손과 같은 선에 맞춘다」.
-   가방을 손잡이에 매달면 발밑까지 늘어져 든 것처럼 안 보인다 — 그래서 쥐는 자리를
-   비율로 주지 않고, **아이템 아랫변이 오른손 물건 아랫변과 같은 높이에 오도록** 앵커를
-   거꾸로 계산한다. 오른손 값이 바뀌면 왼손도 따라 움직인다. */
 const bottomBelowHand = (si) => {
   const h = SZ.right[si][1];
-  return (h - 1) - Math.round((h - 1) * GRIP_RIGHT);       // 손에서 아랫변까지 몇 칸
+  return Math.max(0, (h - 1) - Math.round((h - 1) * GRIP_RIGHT) - RAISE);
 };
 
 /* 기울기는 그림이 아니라 배치값이다 (슬라임랩-v4.html:2732 참고).
@@ -53,12 +53,9 @@ export function build(code, slot, fn, si) {
   const px = fn(w, h);
   if (slot === 'face')
     return { w, h, px, anchor: [Math.round((w - 1) / 2), Math.round(h * (FACE_Y[code] ?? 0.5))] };
-  const ys = [...px.keys()].map((k) => +k.split(',')[1]);
-  const y0 = Math.min(...ys), y1 = Math.max(...ys);
-  // 오른손: 아래에서 1/4 지점을 쥔다. 왼손: 아랫변이 오른손과 같은 선에 오게 거꾸로 잡는다.
-  const gy = slot === 'right' ? Math.round(y0 + (y1 - y0) * GRIP_RIGHT)
-                              : y1 - bottomBelowHand(si);
-  return { w, h, px, anchor: handAnchor(px, gy) };
+  // 두 손 모두 같은 규칙 — 실제로 그려진 아랫변을 기준선에 올린다.
+  const y1 = Math.max(...[...px.keys()].map((k) => +k.split(',')[1]));
+  return { w, h, px, anchor: handAnchor(px, y1 - bottomBelowHand(si)) };
 }
 
 /* 최소 PNG 라이터 — 한 칸 = 1픽셀, 배경 투명 (랩의 partPng 과 같은 규격) */

@@ -1,0 +1,134 @@
+{
+  "cell": 3,
+  "authoredFor": "teen",
+  "items": [
+    {
+      "code": "nm_head_cap",
+      "ko": "야구모자",
+      "slot": "head",
+      "tier": "normal",
+      "baby":  { "png": "nm_head_cap_baby.png", "anchor": [14, 8] },
+      "teen":  { "png": "nm_head_cap_teen.png", "anchor": [19, 13] },
+      "awake": { "png": "nm_head_cap_awake.png", "anchor": [23, 16] }
+    },
+    {
+      "code": "nm_head_mesh",
+      "ko": "메쉬캡",
+      "slot": "head",
+      "tier": "normal",
+      "baby":  { "png": "nm_head_mesh_baby.png", "anchor": [14, 10] },
+      "teen":  { "png": "nm_head_mesh_teen.png", "anchor": [18, 13] },
+      "awake": { "png": "nm_head_mesh_awake.png", "anchor": [24, 16] }
+    },
+    {
+      "code": "nm_head_straw",
+      "ko": "밀짚모자",
+      "slot": "head",
+      "tier": "normal",
+      "baby":  { "png": "nm_head_straw_baby.png", "anchor": [14, 11] },
+      "teen":  { "png": "nm_head_straw_teen.png", "anchor": [18, 13] },
+      "awake": { "png": "nm_head_straw_awake.png", "anchor": [22, 16] }
+    },
+    {
+      "code": "nm_head_widebrim",
+      "ko": "챙모자",
+      "slot": "head",
+      "tier": "normal",
+      "baby":  { "png": "nm_head_widebrim_baby.png", "anchor": [14, 7] },
+      "teen":  { "png": "nm_head_widebrim_teen.png", "anchor": [19, 11] },
+      "awake": { "png": "nm_head_widebrim_awake.png", "anchor": [23, 12] }
+    },
+    {
+      "code": "nm_head_beanie",
+      "ko": "비니",
+      "slot": "head",
+      "tier": "normal",
+      "baby":  { "png": "nm_head_beanie_baby.png", "anchor": [10, 6] },
+      "teen":  { "png": "nm_head_beanie_teen.png", "anchor": [14, 10] },
+      "awake": { "png": "nm_head_beanie_awake.png", "anchor": [16, 12] }
+    },
+    {
+      "code": "nm_head_twotone",
+      "ko": "투톤캡",
+      "slot": "head",
+      "tier": "normal",
+      "baby":  { "png": "nm_head_twotone_baby.png", "anchor": [14, 7] },
+      "teen":  { "png": "nm_head_twotone_teen.png", "anchor": [18, 10] },
+      "awake": { "png": "nm_head_twotone_awake.png", "anchor": [22, 13] }
+    },
+    {
+      "code": "nm_face_horn",
+      "ko": "뿔테안경",
+      "slot": "face",
+      "tier": "normal",
+      "baby":  { "png": "nm_face_horn_baby.png", "anchor": [12, 3] },
+      "teen":  { "png": "nm_face_horn_teen.png", "anchor": [15, 4] },
+      "awake": { "png": "nm_face_horn_awake.png", "anchor": [18, 5] }
+    },
+    {
+      "code": "nm_face_rimless",
+      "ko": "무테안경",
+      "slot": "face",
+      "tier": "normal",
+      "baby":  { "png": "nm_face_rimless_baby.png", "anchor": [12, 2] },
+      "teen":  { "png": "nm_face_rimless_teen.png", "anchor": [15, 3] },
+      "awake": { "png": "nm_face_rimless_awake.png", "anchor": [18, 3] }
+    },
+    {
+      "code": "nm_face_sunglasses",
+      "ko": "선글라스",
+      "slot": "face",
+      "tier": "normal",
+      "baby":  { "png": "nm_face_sunglasses_baby.png", "anchor": [12, 3] },
+      "teen":  { "png": "nm_face_sunglasses_teen.png", "anchor": [15, 5] },
+      "awake": { "png": "nm_face_sunglasses_awake.png", "anchor": [18, 5] }
+    },
+    {
+      "code": "nm_face_patch",
+      "ko": "안대",
+      "slot": "face",
+      "tier": "normal",
+      "baby":  { "png": "nm_face_patch_baby.png", "anchor": [12, 5] },
+      "teen":  { "png": "nm_face_patch_teen.png", "anchor": [15, 6] },
+      "awake": { "png": "nm_face_patch_awake.png", "anchor": [18, 6] }
+    },
+    {
+      "code": "nm_face_bandaid",
+      "ko": "밴드에이드",
+      "slot": "face",
+      "tier": "normal",
+      "baby":  { "png": "nm_face_bandaid_baby.png", "anchor": [8, -2] },
+      "teen":  { "png": "nm_face_bandaid_teen.png", "anchor": [10, -3] },
+      "awake": { "png": "nm_face_bandaid_awake.png", "anchor": [11, -4] }
+    },
+    {
+      "code": "nm_face_blush",
+      "ko": "홍조 스티커",
+      "slot": "face",
+      "tier": "normal",
+      "baby":  { "png": "nm_face_blush_baby.png", "anchor": [8, -1] },
+      "teen":  { "png": "nm_face_blush_teen.png", "anchor": [11, -2] },
+      "awake": { "png": "nm_face_blush_awake.png", "anchor": [13, -3] }
+    },
+    {
+      "code": "nm_right_pencil",
+      "ko": "연필",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 14,
+      "baby":  { "png": "nm_right_pencil_baby.png", "anchor": [3, 11] },
+      "teen":  { "png": "nm_right_pencil_teen.png", "anchor": [1, 17] },
+      "awake": { "png": "nm_right_pencil_awake.png", "anchor": [0, 22] }
+    },
+    {
+      "code": "nm_right_ballpen",
+      "ko": "볼펜",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 9,
+      "baby":  { "png": "nm_right_ballpen_baby.png", "anchor": [4, 11] },
+      "teen":  { "png": "nm_right_ballpen_teen.png", "anchor": [2, 18] },
+      "awake": { "png": "nm_right_ballpen_awake.png", "anchor": [2, 21] }
+    }
+  ]
+}

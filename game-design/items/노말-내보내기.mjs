@@ -17,27 +17,35 @@ import { ITEMS, SZ } from './노말-도트.mjs';
 const DIR = dirname(fileURLToPath(import.meta.url));
 const STAGES = ['baby', 'teen', 'awake'];
 
-/* 왼손은 물건마다 쥐는 자리가 다르다 — 가방류는 맨 위(손잡이), 판·책은 가운데.
-   오른손은 연필·검처럼 아래에서 1/4 (랩 기본값 78%). */
-export const GRIP = {
-  nm_left_bag: 0.10, nm_left_handbag: 0.06, nm_left_ecobag: 0.08,
-  nm_left_shield: 0.45, nm_left_book: 0.45, nm_left_laptop: 0.45,
-  nm_left_tablet: 0.45, nm_left_phone: 0.45, nm_left_note: 0.45, nm_left_novel: 0.45,
+/* 오른손은 연필·검처럼 아래에서 1/4 을 쥔다 (랩 기본값 78%). */
+export const GRIP_RIGHT = 0.78;
+
+/* 왼손은 「바닥을 오른손과 같은 선에 맞춘다」.
+   가방을 손잡이에 매달면 발밑까지 늘어져 든 것처럼 안 보인다 — 그래서 쥐는 자리를
+   비율로 주지 않고, **아이템 아랫변이 오른손 물건 아랫변과 같은 높이에 오도록** 앵커를
+   거꾸로 계산한다. 오른손 값이 바뀌면 왼손도 따라 움직인다. */
+const bottomBelowHand = (si) => {
+  const h = SZ.right[si][1];
+  return (h - 1) - Math.round((h - 1) * GRIP_RIGHT);       // 손에서 아랫변까지 몇 칸
 };
-/* 기울기는 그림이 아니라 배치값이다 (슬라임랩-v4.html:2732 참고). 무기처럼 든 것만 준다. */
-export const ROT = { nm_right_sword: 12, nm_right_gun: 8, nm_right_staff: 6, nm_right_twig: 10 };
+
+/* 기울기는 그림이 아니라 배치값이다 (슬라임랩-v4.html:2732 참고).
+   원장이 맞춰 둔 연필 14° · 볼펜 9° 를 기준선으로, 길고 얇을수록 크게 준다. */
+export const ROT = {
+  nm_right_twig: 14, nm_right_sharp: 13, nm_right_sword: 12,
+  nm_right_fountain: 10, nm_right_cutter: 9, nm_right_staff: 7, nm_right_phone: 5,
+};
 /* 얼굴 앵커는 눈높이다. 마스크는 눈 아래에 걸려야 하므로 그림의 34% 지점을 눈에 맞춘다. */
 export const FACE_Y = { nm_face_mask: 0.34 };
 
-/* 슬라임랩 autoAnchor 손 슬롯 규칙 (슬라임랩-v4.html:2710) */
-export function handAnchor(px, grip) {
+/* 손 슬롯 앵커. 가로는 슬라임랩 autoAnchor 와 같은 규칙 —
+   **그 높이에 실제로 그려진 칸들의 가운데** (슬라임랩-v4.html:2710).
+   전체 가로 가운데를 쓰면 기울여 그린 물건에서 쥐는 자리가 옆으로 밀린다. */
+export function handAnchor(px, gy) {
   const pts = [...px.keys()].map((k) => k.split(',').map(Number));
-  const ys = pts.map((p) => p[1]), xs = pts.map((p) => p[0]);
-  const gy = Math.round(Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * grip);
   const row = pts.filter(([, y]) => Math.abs(y - gy) <= 1).map(([x]) => x);
-  const gx = row.length ? Math.round((Math.min(...row) + Math.max(...row)) / 2)
-                        : Math.round((Math.min(...xs) + Math.max(...xs)) / 2);
-  return [gx, gy];
+  const xs = row.length ? row : pts.map((p) => p[0]);
+  return [Math.round((Math.min(...xs) + Math.max(...xs)) / 2), gy];
 }
 
 export function build(code, slot, fn, si) {
@@ -45,7 +53,12 @@ export function build(code, slot, fn, si) {
   const px = fn(w, h);
   if (slot === 'face')
     return { w, h, px, anchor: [Math.round((w - 1) / 2), Math.round(h * (FACE_Y[code] ?? 0.5))] };
-  return { w, h, px, anchor: handAnchor(px, slot === 'right' ? 0.78 : (GRIP[code] ?? 0.45)) };
+  const ys = [...px.keys()].map((k) => +k.split(',')[1]);
+  const y0 = Math.min(...ys), y1 = Math.max(...ys);
+  // 오른손: 아래에서 1/4 지점을 쥔다. 왼손: 아랫변이 오른손과 같은 선에 오게 거꾸로 잡는다.
+  const gy = slot === 'right' ? Math.round(y0 + (y1 - y0) * GRIP_RIGHT)
+                              : y1 - bottomBelowHand(si);
+  return { w, h, px, anchor: handAnchor(px, gy) };
 }
 
 /* 최소 PNG 라이터 — 한 칸 = 1픽셀, 배경 투명 (랩의 partPng 과 같은 규격) */

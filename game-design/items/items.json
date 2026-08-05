@@ -406,7 +406,8 @@
           5,
           19
         ]
-      }
+      },
+      "rot": 9
     },
     {
       "code": "nm_right_fountain",
@@ -433,35 +434,8 @@
           5,
           19
         ]
-      }
-    },
-    {
-      "code": "nm_right_gun",
-      "ko": "총",
-      "slot": "right",
-      "tier": "normal",
-      "rot": 8,
-      "baby": {
-        "png": "nm_right_gun_baby.png",
-        "anchor": [
-          3,
-          13
-        ]
       },
-      "teen": {
-        "png": "nm_right_gun_teen.png",
-        "anchor": [
-          4,
-          15
-        ]
-      },
-      "awake": {
-        "png": "nm_right_gun_awake.png",
-        "anchor": [
-          5,
-          19
-        ]
-      }
+      "rot": 10
     },
     {
       "code": "nm_right_pencil",
@@ -516,7 +490,8 @@
           5,
           19
         ]
-      }
+      },
+      "rot": 5
     },
     {
       "code": "nm_right_sharp",
@@ -543,14 +518,15 @@
           6,
           19
         ]
-      }
+      },
+      "rot": 13
     },
     {
       "code": "nm_right_staff",
       "ko": "지팡이",
       "slot": "right",
       "tier": "normal",
-      "rot": 6,
+      "rot": 7,
       "baby": {
         "png": "nm_right_staff_baby.png",
         "anchor": [
@@ -606,7 +582,7 @@
       "ko": "작은 나뭇가지",
       "slot": "right",
       "tier": "normal",
-      "rot": 10,
+      "rot": 14,
       "baby": {
         "png": "nm_right_twig_baby.png",
         "anchor": [
@@ -638,21 +614,21 @@
         "png": "nm_left_bag_baby.png",
         "anchor": [
           5,
-          2
+          11
         ]
       },
       "teen": {
         "png": "nm_left_bag_teen.png",
         "anchor": [
           6,
-          3
+          12
         ]
       },
       "awake": {
         "png": "nm_left_bag_awake.png",
         "anchor": [
           7,
-          4
+          15
         ]
       }
     },
@@ -665,21 +641,21 @@
         "png": "nm_left_book_baby.png",
         "anchor": [
           5,
-          7
+          11
         ]
       },
       "teen": {
         "png": "nm_left_book_teen.png",
         "anchor": [
           6,
-          7
+          12
         ]
       },
       "awake": {
         "png": "nm_left_book_awake.png",
         "anchor": [
           7,
-          9
+          15
         ]
       }
     },
@@ -692,21 +668,21 @@
         "png": "nm_left_ecobag_baby.png",
         "anchor": [
           5,
-          2
+          11
         ]
       },
       "teen": {
         "png": "nm_left_ecobag_teen.png",
         "anchor": [
           6,
-          2
+          12
         ]
       },
       "awake": {
         "png": "nm_left_ecobag_awake.png",
         "anchor": [
           7,
-          3
+          15
         ]
       }
     },
@@ -719,21 +695,21 @@
         "png": "nm_left_handbag_baby.png",
         "anchor": [
           5,
-          2
+          11
         ]
       },
       "teen": {
         "png": "nm_left_handbag_teen.png",
         "anchor": [
           6,
-          2
+          12
         ]
       },
       "awake": {
         "png": "nm_left_handbag_awake.png",
         "anchor": [
           7,
-          2
+          15
         ]
       }
     },
@@ -746,21 +722,21 @@
         "png": "nm_left_laptop_baby.png",
         "anchor": [
           5,
-          7
+          11
         ]
       },
       "teen": {
         "png": "nm_left_laptop_teen.png",
         "anchor": [
           6,
-          7
+          12
         ]
       },
       "awake": {
         "png": "nm_left_laptop_awake.png",
         "anchor": [
           7,
-          9
+          15
         ]
       }
     },
@@ -773,21 +749,21 @@
         "png": "nm_left_note_baby.png",
         "anchor": [
           5,
-          7
+          11
         ]
       },
       "teen": {
         "png": "nm_left_note_teen.png",
         "anchor": [
           6,
-          8
+          12
         ]
       },
       "awake": {
         "png": "nm_left_note_awake.png",
         "anchor": [
           7,
-          10
+          15
         ]
       }
     },
@@ -800,21 +776,21 @@
         "png": "nm_left_novel_baby.png",
         "anchor": [
           5,
-          7
+          11
         ]
       },
       "teen": {
         "png": "nm_left_novel_teen.png",
         "anchor": [
           6,
-          7
+          12
         ]
       },
       "awake": {
         "png": "nm_left_novel_awake.png",
         "anchor": [
           8,
-          9
+          15
         ]
       }
     },
@@ -827,21 +803,21 @@
         "png": "nm_left_phone_baby.png",
         "anchor": [
           6,
-          7
+          11
         ]
       },
       "teen": {
         "png": "nm_left_phone_teen.png",
         "anchor": [
           6,
-          7
+          12
         ]
       },
       "awake": {
         "png": "nm_left_phone_awake.png",
         "anchor": [
           7,
-          9
+          15
         ]
       }
     },
@@ -854,21 +830,21 @@
         "png": "nm_left_shield_baby.png",
         "anchor": [
           5,
-          7
+          11
         ]
       },
       "teen": {
         "png": "nm_left_shield_teen.png",
         "anchor": [
           6,
-          7
+          12
         ]
       },
       "awake": {
         "png": "nm_left_shield_awake.png",
         "anchor": [
           7,
-          9
+          15
         ]
       }
     },
@@ -881,21 +857,21 @@
         "png": "nm_left_tablet_baby.png",
         "anchor": [
           5,
-          7
+          11
         ]
       },
       "teen": {
         "png": "nm_left_tablet_teen.png",
         "anchor": [
           6,
-          7
+          12
         ]
       },
       "awake": {
         "png": "nm_left_tablet_awake.png",
         "anchor": [
           7,
-          9
+          15
         ]
       }
     }

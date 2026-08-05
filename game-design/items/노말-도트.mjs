@@ -349,7 +349,8 @@ export const ITEMS = [
   ['nm_right_phone', '스마트폰', 'right', phoneR],
   ['nm_right_fountain', '만년필', 'right', fountain],
   ['nm_right_staff', '지팡이', 'right', staff],
-  ['nm_right_gun', '총', 'right', gun],
+  // nm_right_gun 총 — 스크립트 그림이 어색해서 뺐다. 원장이 따로 넣는다 (2026-08-05).
+  // 그리려면 gun() 은 아래에 그대로 있으니 이 줄만 되살리면 된다.
   ['nm_right_sword', '칼', 'right', sword],
   ['nm_left_shield', '방패', 'left', shield],
   ['nm_left_book', '책', 'left', book],

@@ -2836,8 +2836,10 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
         const rc = recOf(stage, slot);
         const mine = r.h / r.w, want = rc[1] / rc[0];
         const thin = mine / want, warn = [];
-        if (thin >= 1.5) warn.push(`규격보다 <b>${thin.toFixed(1)}배 홀쭉하다</b> (권장 ${rc[0]}×${rc[1]}칸) — 굵게 다시 그려야 산다`);
-        else if (thin <= 0.67) warn.push(`규격보다 <b>${(1 / thin).toFixed(1)}배 넓적하다</b> (권장 ${rc[0]}×${rc[1]}칸)`);
+        // 권장값은 "이 상자 안에" 라는 뜻이지 비율을 맞추라는 게 아니다.
+        // 연필처럼 1:3 은 정상이므로, 정말 형태가 죽는 선(2.6배)에서만 경고한다.
+        if (thin >= 2.6) warn.push(`규격보다 <b>${thin.toFixed(1)}배 홀쭉하다</b> — 굵게(또는 짧게) 다시 그려야 산다`);
+        else if (thin <= 0.38) warn.push(`규격보다 <b>${(1 / thin).toFixed(1)}배 넓적하다</b>`);
         if (r.w <= 3 || r.h <= 3) warn.push(`한쪽이 <b>${Math.min(r.w, r.h)}칸</b>까지 짜부라졌다`);
         const line = document.createElement("div");
         line.style.paddingLeft = fixed ? "14px" : "0";

@@ -12,7 +12,7 @@ import zlib from 'node:zlib';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { ITEMS, SZ } from './노말-도트.mjs';
+import { ITEMS, SZ, MASK_TOP } from './노말-도트.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const STAGES = ['baby', 'teen', 'awake'];
@@ -35,8 +35,9 @@ export const ROT = {
   nm_right_twig: 14, nm_right_sharp: 13, nm_right_sword: 12,
   nm_right_fountain: 10, nm_right_cutter: 9, nm_right_staff: 7, nm_right_phone: 5,
 };
-/* 얼굴 앵커는 눈높이다. 마스크는 눈 아래에 걸려야 하므로 그림의 34% 지점을 눈에 맞춘다. */
-export const FACE_Y = { nm_face_mask: 0.34 };
+/* 얼굴 앵커는 눈높이다. 마스크는 눈 아래에 걸려야 하므로 마스크 윗변 바로 아래를 눈에 맞춘다.
+   (h) => 그림 안에서 눈이 오는 줄. 기본은 그림 한가운데. */
+export const FACE_Y = { nm_face_mask: (h) => MASK_TOP(h) + 1 };
 
 /* 손 슬롯 앵커. 가로는 슬라임랩 autoAnchor 와 같은 규칙 —
    **그 높이에 실제로 그려진 칸들의 가운데** (슬라임랩-v4.html:2710).
@@ -52,7 +53,7 @@ export function build(code, slot, fn, si) {
   const [w, h] = SZ[slot][si];
   const px = fn(w, h);
   if (slot === 'face')
-    return { w, h, px, anchor: [Math.round((w - 1) / 2), Math.round(h * (FACE_Y[code] ?? 0.5))] };
+    return { w, h, px, anchor: [Math.round((w - 1) / 2), (FACE_Y[code] ?? ((v) => Math.round(v / 2)))(h)] };
   // 두 손 모두 같은 규칙 — 실제로 그려진 아랫변을 기준선에 올린다.
   const y1 = Math.max(...[...px.keys()].map((k) => +k.split(',')[1]));
   return { w, h, px, anchor: handAnchor(px, y1 - bottomBelowHand(si)) };

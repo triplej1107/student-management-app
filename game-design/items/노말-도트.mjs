@@ -7,7 +7,8 @@
 export const SZ = {
   right: [[8, 18], [9, 20], [11, 25]],
   left: [[11, 16], [12, 17], [15, 21]],
-  face: [[15, 7], [22, 11], [24, 12]],
+  // 얼굴은 슬라임 눈높이 몸통 폭에 맞춘다 (슬라임랩 anchors.faceHw ×2 / 셀 3)
+  face: [[26, 8], [30, 12], [36, 14]],
 };
 
 const P = {
@@ -144,15 +145,19 @@ function fountain(W, H) {
   return g.m;
 }
 
-// 지팡이 — 갈고리 손잡이 + 곧은 대 + 고무 끝
+/* 지팡이 — 손잡이는 **속이 뚫린 갈고리**여야 지팡이로 읽힌다.
+   바깥 호와 안쪽 호를 한 칸 띄워 그리면 가운데가 비어 고리가 된다.
+   겹쳐 채우면 뭉툭한 덩어리가 되어 망치처럼 보인다. */
 function staff(W, H) {
-  const g = pad(W, H), sw = M(2, R(W * 0.28)), x0 = W - sw - 1;
-  const rx = (x0 - 1) / 2, hookH = M(3, R(H * 0.18));
-  const hcx = x0 - rx;                                          // 호의 오른쪽 끝이 대 위에 닿는다
-  for (let d = 0; d < sw; d++) {                                // 두께만큼 겹쳐 그려 끊김 방지
-    g.arc(hcx, hookH, rx - d * 0.5, hookH - d * 0.5, 0, Math.PI, d === sw - 1 ? P.wdd : P.wdl);
-  }
-  for (let y = hookH; y < H; y++)                               // 대
+  const g = pad(W, H);
+  const sw = M(2, R(W * 0.24)), x0 = W - 1 - sw;                 // 대는 오른쪽에 붙인다
+  const hookH = M(4, R(H * 0.22));
+  const ro = (W - 2) / 2, cx = ro;                              // 바깥 호 오른끝이 대 위에 닿는다
+  const ri = ro - (sw - 1) - 1;
+  g.arc(cx, hookH, ro, hookH, 0, Math.PI, P.wdd);               // 바깥
+  g.arc(cx, hookH, ri, hookH - 1, 0, Math.PI, P.wdl);           // 안쪽
+  for (let i = 0; i < sw; i++) g.set(x0 + i, hookH, i === 0 ? P.wdl : P.wdd);   // 이음매
+  for (let y = hookH + 1; y < H; y++)                           // 대
     for (let i = 0; i < sw; i++) g.set(x0 + i, y, i === 0 ? P.wdl : i === sw - 1 ? P.wdd : P.wd);
   for (let y = H - M(1, R(H * 0.07)); y < H; y++)               // 고무 끝
     for (let i = 0; i < sw; i++) g.set(x0 + i, y, P.dk);
@@ -328,17 +333,36 @@ function ecobag(W, H) {
 
 /* ── 얼굴 1종 (카탈로그 「한 종 미정」 자리 제안) ──────── */
 
-// 마스크 — 눈 아래에 걸린다. 앵커를 그림 위쪽에 두어 눈높이보다 내려 앉힌다.
+/* 마스크 — 눈 아래에 걸린다. 앵커를 그림 위쪽(마스크 윗변 바로 아래)에 두어
+   눈높이보다 내려 앉힌다.
+   그림 전체 폭 = 그 단계 슬라임의 눈높이 몸통 폭(베이비 26 · 틴 30 · 각성 36칸)이라
+   **귀끈 끝이 몸통 끝에 정확히 닿는다.** 마스크 본체는 그 60%. */
+export const MASK_TOP = (H) => M(2, R(H * 0.30));
+
 function mask(W, H) {
   const g = pad(W, H);
-  const bx = M(4, R(W * 0.16)), bw = W - bx * 2, by = M(2, R(H * 0.30)), bh = H - by;
-  g.box(bx, by, bw, bh, P.wht, P.mtd);
-  for (let y = by + 2; y < H - 1; y += 2) g.hline(bx + 1, y, bw - 2, P.mtd);   // 주름
-  g.rect(bx + 1, by + 1, bw - 2, 1, P.mtl2);
-  for (let i = 0; i < bx; i++) {                                              // 귀끈
-    g.set(bx - 1 - i, by - 1 - R(i * (by - 1) / M(1, bx)), P.mtd);
-    g.set(bx + bw + i, by - 1 - R(i * (by - 1) / M(1, bx)), P.mtd);
-  }
+  const C = { line: '#8894a3', face: '#f4f6f9', shade: '#dde6ef', fold: '#b9c4d0' };
+  const bw = M(6, R(W * 0.58)), bx = R((W - bw) / 2), by = MASK_TOP(H), bh = H - by;
+  g.box(bx, by, bw, bh, C.face, C.line);
+  for (const [dx, dy] of [[0, 0], [bw - 1, 0], [0, bh - 1], [bw - 1, bh - 1]])
+    g.m.delete((bx + dx) + ',' + (by + dy));                    // 네 모서리 깎기
+  g.rect(bx + 1, H - M(2, R(bh * 0.34)), bw - 2, M(1, R(bh * 0.34)) - 1, C.shade);
+  const f1 = by + R(bh * 0.38), f2 = by + R(bh * 0.66);        // 주름 두 줄만
+  g.hline(bx + 1, f1, bw - 2, C.fold);
+  if (f2 > f1 + 1 && f2 < H - 2) g.hline(bx + 1, f2, bw - 2, C.fold);
+  /* 귀끈 — 몸통 끝까지. 대각선으로만 찍으면 칸이 끊겨 점선처럼 보이므로
+     한 칸 올라갈 때마다 세로 칸을 하나 채워 이어 붙인다. */
+  const strap = (n, dir) => {
+    let py = by;
+    for (let i = 0; i < n; i++) {
+      const x = dir < 0 ? bx - 1 - i : bx + bw + i;
+      const ny = by - 1 - R((by - 1) * (i / M(1, n - 1)));
+      for (let y = Math.min(py, ny); y <= Math.max(py, ny); y++) g.set(x, y, C.line);
+      py = ny;
+    }
+  };
+  strap(bx, -1);
+  strap(W - bx - bw, 1);
   return g.m;
 }
 

@@ -253,22 +253,22 @@
       "baby": {
         "png": "nm_face_mask_baby.png",
         "anchor": [
-          7,
-          2
+          13,
+          3
         ]
       },
       "teen": {
         "png": "nm_face_mask_teen.png",
         "anchor": [
-          11,
-          4
+          15,
+          5
         ]
       },
       "awake": {
         "png": "nm_face_mask_awake.png",
         "anchor": [
-          12,
-          4
+          18,
+          5
         ]
       }
     },
@@ -537,7 +537,7 @@
       "teen": {
         "png": "nm_right_staff_teen.png",
         "anchor": [
-          6,
+          7,
           17
         ]
       },

@@ -1,5 +1,6 @@
 import "server-only";
 import { supabase } from "./supabase";
+import { nextDayISO } from "./weeks";
 import type { Reminder, ReminderWithStudent } from "./types";
 
 /** supabase 조인 결과({ students: { name } })를 평평한 studentName으로 편다. */
@@ -77,8 +78,9 @@ export async function getTodayActiveReminders(todayISO: string): Promise<Reminde
   return ((data as JoinedRow[]) ?? []).map(withStudentName);
 }
 
-/** 그 학생 본인에게 걸린, 오늘 이후의 아직 안 끝난 일정 — 학생 홈 화면용.
- * 지난 건은 굳이 계속 보여줄 필요가 없어 오늘부터만 본다. */
+/** 그 학생 본인에게 걸린, 아직 안 끝난 일정 — 학생·학부모 홈 화면용.
+ * 일정 전날과 당일 이틀만 보여준다. 몇 주 뒤 일정까지 계속 떠 있으면
+ * 정작 코앞의 일정이 묻히고, 지난 건은 어차피 볼 필요가 없다. */
 export async function getRemindersForStudent(
   studentId: number,
   todayISO: string
@@ -89,6 +91,7 @@ export async function getRemindersForStudent(
     .eq("student_id", studentId)
     .eq("resolved", false)
     .gte("event_date", todayISO)
+    .lte("event_date", nextDayISO(todayISO)) // 오늘(당일) + 내일(전날)만
     .order("event_date")
     .order("event_time");
   return (data as Reminder[]) ?? [];

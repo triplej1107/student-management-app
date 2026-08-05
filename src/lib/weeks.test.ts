@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { toISODate, dayLabelOf, kstToday, isPastClinicTime } from "./weeks";
+import { toISODate, dayLabelOf, kstToday, isPastClinicTime, nextDayISO } from "./weeks";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -8,6 +8,20 @@ afterEach(() => {
 describe("toISODate", () => {
   it("pads month/day and uses local time", () => {
     expect(toISODate(new Date(2026, 0, 5))).toBe("2026-01-05");
+  });
+});
+
+describe("nextDayISO", () => {
+  it("returns the next day", () => {
+    expect(nextDayISO("2026-08-05")).toBe("2026-08-06");
+  });
+
+  it("rolls over month end", () => {
+    expect(nextDayISO("2026-08-31")).toBe("2026-09-01");
+  });
+
+  it("rolls over year end", () => {
+    expect(nextDayISO("2026-12-31")).toBe("2027-01-01");
   });
 });
 

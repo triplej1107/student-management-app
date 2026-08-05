@@ -503,8 +503,8 @@
                style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impGripv" style="color:#e8e4dc">78</b>%
         <span style="color:#7d776b">손 슬롯만 — 가방은 낮게</span></label>
       <label style="font-size:12px;color:#9a9488">기울기
-        <input type="range" id="impLean" min="-10" max="10" step="1" value="0"
-               style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impLeanv" style="color:#e8e4dc">0</b>칸
+        <input type="range" id="impLean" min="-30" max="30" step="1" value="0"
+               style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impLeanv" style="color:#e8e4dc">0</b>°
         <span style="color:#7d776b">+면 위끝이 바깥으로</span></label>
       <label style="font-size:12px;color:#9a9488;cursor:pointer">
         <input type="checkbox" id="impShade" style="accent-color:#f0a33c;vertical-align:-2px">
@@ -2240,6 +2240,11 @@ const IMP_REC = {
   awake: { head: [36, 17], face: [24, 12], right: [11, 25], left: [15, 21], fx: [56, 19] },
 };
 const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
+/* 위 표는 **셀 3 기준 칸 수**다. 에픽·레전더리는 셀 1.5 로 두 배 촘촘하니 같은 물건이
+   칸 수로는 두 배가 된다 — 그대로 재면 전부 상한에 걸린다. 셀 크기로 환산해서 쓴다. */
+const impScale = () => 3 / (ICELL || 3);
+const recOf = (st, slot) => IMP_REC[st][slot].map((v) => Math.round(v * impScale()));
+const limOf = (st, slot) => IMP_LIMIT[st][slot].map((v) => Math.round(v * impScale()));
 const IMP_COLORS = 12;
 
 /* 한 장에 세 벌을 나란히 그려 오는 게 규격이다(§5). 덩어리가 셋이면 큰 것부터
@@ -2247,7 +2252,7 @@ const IMP_COLORS = 12;
 function pickStage(r, slot) {
   let best = "teen", bd = Infinity;
   for (const st of ["baby", "teen", "awake"]) {
-    const rec = IMP_REC[st][slot];
+    const rec = recOf(st, slot);
     const dd = Math.abs(r.w - rec[0]) / rec[0] + Math.abs(r.h - rec[1]) / rec[1];
     if (dd < bd) { bd = dd; best = st; }
   }
@@ -2589,7 +2594,7 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
           : raw.map((b) => [b, want && want !== "auto" ? want : null]);
       const parts = jobs.map(([b, st0]) => {
         const st = st0 || "teen";
-        const rec = IMP_REC[st][slot || "head"];
+        const rec = recOf(st, slot || "head");
         /* 손으로 가로 칸 수를 준 게 있으면 그 폭에 맞추고, 없으면 **권장 상자 안에**
            비율 그대로 넣는다. 예전엔 폭만 맞추고 세로는 비율대로 늘려서, 연필처럼
            가늘고 긴 물건이 9×36칸이 되어 상한을 넘었다 (2026-08-05). */
@@ -2635,24 +2640,32 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
   return { parts: [{ px, colors, soft, w: cv.width, h: cv.height }] };
 }
 
-/* 기울이기 — 행마다 옆으로 밀어 세운 물건을 비스듬하게 만든다.
-   픽셀 그림은 돌리면 깨지므로 회전이 아니라 **전단**이다. 칸은 하나도 안 상한다.
-   무기를 든 자세는 아래끝이 몸 쪽, 위끝이 바깥쪽이다 — 그래서 바깥 방향은
-   오른손이면 +x, 왼손이면 -x 다. lean 은 아래끝 대비 위끝이 밀리는 칸 수. */
-function shearPart(r, lean, slot) {
-  if (!lean || r.h < 2) return r;
-  const sgn = slot === "left" ? -1 : 1;
+/* 기울이기 — **세 번의 밀기로 만드는 회전**.
+   처음엔 행마다 옆으로 한 번만 밀었는데(전단), 그건 회전이 아니라 평행사변형이라
+   몸통만 눕고 연필 촉·꽁무니의 잘린 면은 수평 그대로 남아 부자연스러웠다.
+   가로밀기 → 세로밀기 → 가로밀기 를 겹치면 회전이 된다. 각 단계가 줄·칸 단위의
+   정수 이동이라 **칸이 겹치지도 비지도 않는다** — 픽셀 손실 없이 끝을 포함해 다 돈다.
+   셀이 촘촘할수록(레전더리 셀 1.5) 같은 각도에서 계단이 절반으로 작아진다. */
+function rotatePart(r, deg, slot) {
+  if (!deg || r.px.size === 0) return r;
+  const th = (slot === "left" ? -1 : 1) * deg * Math.PI / 180;
+  const a = -Math.tan(th / 2), b = Math.sin(th);
+  const ys = [...r.px.keys()].map((k) => +k.split(",")[1]);
+  const xs = [...r.px.keys()].map((k) => +k.split(",")[0]);
+  // 회전 중심 — 손 슬롯은 쥐는 자리, 나머지는 그림 한가운데
+  const cy = (slot === "right" || slot === "left")
+    ? Math.min(...ys) + (Math.max(...ys) - Math.min(...ys)) * GRIP
+    : (Math.min(...ys) + Math.max(...ys)) / 2;
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  let cur = [...r.px].map(([k, c]) => { const [x, y] = k.split(",").map(Number); return [x, y, c]; });
+  cur = cur.map(([x, y, c]) => [x + Math.round(a * (y - cy)), y, c]);
+  cur = cur.map(([x, y, c]) => [x, y + Math.round(b * (x - cx)), c]);
+  cur = cur.map(([x, y, c]) => [x + Math.round(a * (y - cy)), y, c]);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of cur) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   const px = new Map();
-  let x0 = Infinity, x1 = -Infinity;
-  for (const [k, c] of r.px) {
-    const [x, y] = k.split(",").map(Number);
-    const nx = x + Math.round(sgn * lean * (r.h - 1 - y) / (r.h - 1));
-    if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
-    px.set(nx + "," + y, c);
-  }
-  const out = new Map();
-  for (const [k, c] of px) { const [x, y] = k.split(",").map(Number); out.set((x - x0) + "," + y, c); }
-  return { ...r, px: out, w: x1 - x0 + 1, colors: new Set(out.values()) };
+  for (const [x, y, c] of cur) px.set((x - x0) + "," + (y - y0), c);
+  return { ...r, px, w: x1 - x0 + 1, h: y1 - y0 + 1, colors: new Set(px.values()) };
 }
 
 /* 앵커를 안 준 경우의 기본값 — 슬롯이 몸에 닿는 쪽을 잡는다 */
@@ -2795,7 +2808,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
         const auto = stage === "auto";
         const trio = auto && res.parts.length === 3 ? ["awake", "teen", "baby"] : null;
         res.parts.forEach((r0, pi) => {
-          const r = shearPart(r0, lean, slot);     // 기울기는 검사 전에 먹인다 — 폭이 달라진다
+          const r = rotatePart(r0, lean, slot);    // 기울기는 검사 전에 먹인다 — 크기가 달라진다
           const st = r.stage || (trio ? trio[pi] : auto ? pickStage(r, slot) : stage);
           showOne(r, f.name + (res.parts.length > 1 ? ` [${pi + 1}]` : ""), res.fixed, st, auto);
         });
@@ -2804,7 +2817,7 @@ function impSvg(r, slot, anchor, a, shade, ghost) {
     });
     function anchorOf(r, st) { const g = guessAnchor(r, slot), n = nudgeOf(st); return [g[0] - n[0], g[1] - n[1]]; }
     function showOne(r, name, fixed, stage, auto) {
-        const lim = IMP_LIMIT[stage][slot];
+        const lim = limOf(stage, slot);
         const bad = [];
         if (r.soft) bad.push(`안티앨리어싱 <b style="color:#f5785c">${r.soft}픽셀</b> — 알파가 0·255 가 아니다`);
         if (r.colors.size > IMP_COLORS) bad.push(`색 <b style="color:#f5785c">${r.colors.size}</b>가지 — ${IMP_COLORS} 이하로`);

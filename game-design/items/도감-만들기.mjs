@@ -62,7 +62,7 @@ for (const it of drawable) {
       document.documentElement.style.background = 'transparent';
       document.body.style.cssText = 'margin:0;background:transparent';
       document.body.innerHTML = `<div id="one" style="width:200px">${
-        wrap(g.inner + impSvg({ px, w: im.width, h: im.height }, slot, anchor, g.anchors, false, false, deg), 200)}</div>`;
+        wrap(impLayer(g.inner, impSvg({ px, w: im.width, h: im.height }, slot, anchor, g.anchors, false, false, deg), slot), 200)}</div>`;
       document.querySelector('#one svg').style.cssText = 'width:200px;height:auto;display:block';
       return [im.width, im.height];
     }, { b64, slot: it.slot, anchor: it[st].anchor,

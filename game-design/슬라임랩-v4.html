@@ -2757,6 +2757,11 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
   return ghost ? `<g opacity="0.5">${out}</g>` : out;
 }
 
+/* 몸통과 아이템을 겹치는 순서.
+   **이펙트는 모든 것의 맨 뒤다** — 발밑에 깔리는 영역이라 몸통보다 먼저 그려야 한다.
+   나중에 그리면 몸을 덮어 버린다 (원장, 2026-08-05). 나머지 슬롯은 몸 위에 얹힌다. */
+function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inner + item; }
+
 (function () {
   const fileEl = document.getElementById("impFile");
   if (!fileEl) return;
@@ -2910,7 +2915,7 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;flex:1 1 0;min-width:0;max-width:190px;` +
             `order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
-          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), 190)) +
+          fig.innerHTML = fit(wrap(impLayer(g.inner, impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot), 190)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[stage]}</figcaption>`;
           row.appendChild(fig);
           return;
@@ -2922,7 +2927,7 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;opacity:${on ? 1 : .45}`;
           fig.style.cssText += ";flex:1 1 0;min-width:0;max-width:200px";
-          fig.innerHTML = fit(wrap(g.inner + impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), on ? 200 : 120)) +
+          fig.innerHTML = fit(wrap(impLayer(g.inner, impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot), on ? 200 : 120)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:${on ? "#c05a2e" : "#6b655c"}">` +
             `${IMP_KO[st]}${on ? " ← 이 장" : ""}</figcaption>`;
           row.appendChild(fig);
@@ -3098,7 +3103,7 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
       const deg = it.slot === "left" ? -rot : rot;
       const fig = document.createElement("figure");
       fig.style.cssText = "text-align:center;flex:1 1 0;min-width:0;max-width:190px";
-      fig.innerHTML = fit(wrap(g.inner + impSvg(r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), 190)) +
+      fig.innerHTML = fit(wrap(impLayer(g.inner, impSvg(r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot), 190)) +
         `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[st]}</figcaption>`;
       row.appendChild(fig);
     }

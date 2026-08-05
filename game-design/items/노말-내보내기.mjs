@@ -24,6 +24,10 @@ const STAGES = ['baby', 'teen', 'awake'];
 export const GRIP_RIGHT = 0.78;
 export const RAISE = 2;                                     // 원장 지시로 두 칸 올림 (2026-08-05)
 
+/* 왼손만 바깥(화면 왼쪽)으로 몇 칸 밀지. 앵커 x 를 키우면 그림이 왼쪽으로 간다
+   — 그리는 자리가 at + (x − anchor) × 셀 이라서 그렇다. */
+export const LEFT_NUDGE = 1;                                // 원장 지시 (2026-08-05)
+
 const bottomBelowHand = (si) => {
   const h = SZ.right[si][1];
   return Math.max(0, (h - 1) - Math.round((h - 1) * GRIP_RIGHT) - RAISE);
@@ -56,7 +60,9 @@ export function build(code, slot, fn, si) {
     return { w, h, px, anchor: [Math.round((w - 1) / 2), (FACE_Y[code] ?? ((v) => Math.round(v / 2)))(h)] };
   // 두 손 모두 같은 규칙 — 실제로 그려진 아랫변을 기준선에 올린다.
   const y1 = Math.max(...[...px.keys()].map((k) => +k.split(',')[1]));
-  return { w, h, px, anchor: handAnchor(px, y1 - bottomBelowHand(si)) };
+  const anchor = handAnchor(px, y1 - bottomBelowHand(si));
+  if (slot === 'left') anchor[0] += LEFT_NUDGE;
+  return { w, h, px, anchor };
 }
 
 /* 최소 PNG 라이터 — 한 칸 = 1픽셀, 배경 투명 (랩의 partPng 과 같은 규격) */

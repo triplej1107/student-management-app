@@ -613,21 +613,21 @@
       "baby": {
         "png": "nm_left_bag_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_bag_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_bag_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -640,21 +640,21 @@
       "baby": {
         "png": "nm_left_book_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_book_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_book_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -667,21 +667,21 @@
       "baby": {
         "png": "nm_left_ecobag_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_ecobag_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_ecobag_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -694,21 +694,21 @@
       "baby": {
         "png": "nm_left_handbag_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_handbag_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_handbag_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -721,21 +721,21 @@
       "baby": {
         "png": "nm_left_laptop_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_laptop_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_laptop_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -748,21 +748,21 @@
       "baby": {
         "png": "nm_left_note_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_note_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_note_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -775,21 +775,21 @@
       "baby": {
         "png": "nm_left_novel_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_novel_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_novel_awake.png",
         "anchor": [
-          8,
+          9,
           17
         ]
       }
@@ -802,21 +802,21 @@
       "baby": {
         "png": "nm_left_phone_baby.png",
         "anchor": [
-          6,
+          7,
           13
         ]
       },
       "teen": {
         "png": "nm_left_phone_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_phone_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -829,21 +829,21 @@
       "baby": {
         "png": "nm_left_shield_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_shield_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_shield_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }
@@ -856,21 +856,21 @@
       "baby": {
         "png": "nm_left_tablet_baby.png",
         "anchor": [
-          5,
+          6,
           13
         ]
       },
       "teen": {
         "png": "nm_left_tablet_teen.png",
         "anchor": [
-          6,
+          7,
           14
         ]
       },
       "awake": {
         "png": "nm_left_tablet_awake.png",
         "anchor": [
-          7,
+          8,
           17
         ]
       }

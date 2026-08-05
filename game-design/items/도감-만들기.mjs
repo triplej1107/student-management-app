@@ -42,7 +42,7 @@ for (const it of drawable) {
     const f = it[st] && join(DIR, it[st].png);
     if (!f || !existsSync(f)) continue;
     const b64 = 'data:image/png;base64,' + readFileSync(f).toString('base64');
-    const size = await p.evaluate(async ({ b64, slot, anchor, deg, st }) => {
+    const size = await p.evaluate(async ({ b64, slot, anchor, deg, st, cell }) => {
       const im = new Image();                            // PNG 한 픽셀 = 한 칸
       await new Promise((r) => { im.onload = r; im.src = b64; });
       const cv = document.createElement('canvas');
@@ -62,10 +62,10 @@ for (const it of drawable) {
       document.documentElement.style.background = 'transparent';
       document.body.style.cssText = 'margin:0;background:transparent';
       document.body.innerHTML = `<div id="one" style="width:200px">${
-        wrap(impLayer(g.inner, impSvg({ px, w: im.width, h: im.height }, slot, anchor, g.anchors, false, false, deg), slot), 200)}</div>`;
+        wrap(impLayer(g.inner, impSvgAt(cell, { px, w: im.width, h: im.height }, slot, anchor, g.anchors, false, false, deg), slot), 200)}</div>`;
       document.querySelector('#one svg').style.cssText = 'width:200px;height:auto;display:block';
       return [im.width, im.height];
-    }, { b64, slot: it.slot, anchor: it[st].anchor,
+    }, { b64, slot: it.slot, anchor: it[st].anchor, cell: (it.tier === 'epic' || it.tier === 'legendary') ? 1.5 : 3,
          deg: (it.slot === 'left' ? -1 : 1) * (it.rot || 0), st });
     const shot = await (await p.$('#one')).screenshot({ omitBackground: true });
     rec.stages.push({ st, ko: stKo, w: size[0], h: size[1], anchor: it[st].anchor,

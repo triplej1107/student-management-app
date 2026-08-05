@@ -2284,7 +2284,25 @@ const IMP_TIER_KO = { normal: "노말", magic: "매직", rare: "레어", epic: "
    아래 표는 **기본값일 뿐**이고 「등급 덩치」 슬라이더로 조정한다. */
 const IMP_TIER_K = { normal: 1, magic: 1.08, rare: 1.18, epic: 1.35, legendary: 1.6 };
 let IMP_K = 1;                           // 「등급 덩치」 슬라이더가 바꾼다
-const impScale = () => (3 / (ICELL || 3)) * IMP_K;
+
+/* 칸 크기는 **아이템마다** 다르다 — 노말~레어 3, 에픽·레전더리 1.5 (카탈로그).
+   전역 ICELL 에 써 버리면 레전더리를 고른 순간 담아 둔 다른 아이템이 전부 절반 칸으로
+   그려진다. 애써 맞춰 놓은 크기가 다 작아졌다 (원장, 2026-08-05). 그래서
+   **지금 반입 중인 아이템의 칸**만 따로 들고, 담긴 것은 저장된 제 칸으로 그린다. */
+const impCellOf = (tier) => (tier === "epic" || tier === "legendary") ? 1.5 : 3;
+/* 담긴 것의 칸은 **등급에서 다시 뽑는다.** 저장된 cell 을 믿지 않는 이유는, 칸 크기를
+   전역으로 만지던 시절에 잘못 박힌 값이 남아 있을 수 있어서다. 카탈로그 규칙이 절대
+   기준이므로 등급만 맞으면 언제나 옳다 — 잘못 담긴 것도 저절로 낫는다. */
+const cellOfItem = (it) => impCellOf(it && it.tier);
+let IMP_CELL = 3;
+/* 아이템 하나를 그 아이템의 칸 크기로 그린다. IBuf·toRects 가 전역 ICELL 을 보므로
+   잠깐 바꿔 끼웠다가 되돌린다 — 몸통은 CELL 을 쓰니 영향이 없다. */
+function impSvgAt(cell, r, slot, anchor, a, shade, ghost, deg) {
+  const prev = ICELL;
+  ICELL = cell || 3;
+  try { return impSvg(r, slot, anchor, a, shade, ghost, deg); } finally { ICELL = prev; }
+}
+const impScale = () => (3 / (IMP_CELL || 3)) * IMP_K;
 const recOf = (st, slot) => IMP_REC[st][slot].map((v) => Math.round(v * impScale()));
 const limOf = (st, slot) => IMP_REC[st][slot].map((v) => Math.round(v * impScale() * IMP_HEADROOM));
 let IMP_COLORS = 12;                     // 「색 수」 슬라이더가 바꾼다
@@ -2919,7 +2937,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;flex:1 1 0;min-width:0;max-width:190px;` +
             `order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
-          fig.innerHTML = fit(wrap(impLayer(g.inner, impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot), 190)) +
+          fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(IMP_CELL, r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot), 190)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[stage]}</figcaption>`;
           row.appendChild(fig);
           return;
@@ -2931,7 +2949,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;opacity:${on ? 1 : .45}`;
           fig.style.cssText += ";flex:1 1 0;min-width:0;max-width:200px";
-          fig.innerHTML = fit(wrap(impLayer(g.inner, impSvg(r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot), on ? 200 : 120)) +
+          fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(IMP_CELL, r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot), on ? 200 : 120)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:${on ? "#c05a2e" : "#6b655c"}">` +
             `${IMP_KO[st]}${on ? " ← 이 장" : ""}</figcaption>`;
           row.appendChild(fig);
@@ -2952,13 +2970,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
     const k = IMP_TIER_K[tier] || 1;
     document.getElementById("impBig").value = k;
     document.getElementById("impBigv").textContent = k.toFixed(2);
-    const cell = (tier === "epic" || tier === "legendary") ? 1.5 : 3;
-    if (P.itemCell !== cell) {
-      P.itemCell = cell;
-      const sl = document.getElementById("s_itemCell");
-      if (sl) { sl.value = cell; const o = document.getElementById("v_itemCell"); if (o) o.textContent = cell; }
-      save(); render();                    // ICELL 은 render() 가 P 에서 다시 읽는다
-    }
+    IMP_CELL = impCellOf(tier);
     run();
   });
   document.getElementById("impSlot").addEventListener("change", run);
@@ -3011,6 +3023,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       if (el && o) o.textContent = fix ? (+el.value).toFixed(fix) : el.value;
     }
   })();
+  IMP_CELL = impCellOf(document.getElementById("impTier").value);   // 되살린 등급에 칸을 맞춘다
   IMP_KEEP.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener(el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input", impRemember);
@@ -3076,6 +3089,42 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
         row.insertAdjacentHTML("beforeend",
           ` <span style="color:#7d776b">${IMP_TIER_KO[it.tier] || it.tier} · ${stages}` +
           (it.rot ? ` · ${it.rot}°` : "") + `</span> `);
+        /* 코드를 잘못 적어 담은 경우 — 「슬롯 고치기」는 코드에서 슬롯을 읽으므로
+           코드 자체가 틀리면 손을 못 댄다. 여기서 코드를 고치면 슬롯도 따라가고
+           앵커도 새 슬롯 기준으로 옮겨진다 (다시 반입할 필요 없다). */
+        const ren = document.createElement("button");
+        ren.className = "imp"; ren.textContent = "코드";
+        ren.style.cssText = "padding:1px 7px;font-size:11px;background:#2a2f3a;border-color:#3a4150;color:#9CC4EC";
+        ren.onclick = () => {
+          const now = prompt(`${it.code} 의 새 코드`, it.code);
+          if (!now || now.trim() === it.code) return;
+          const code = now.trim();
+          if (!/^[a-z0-9_]+$/.test(code)) return flash("영소문자·숫자·밑줄만 쓴다", true);
+          const v = loadItems();
+          if (v.some((x, j) => x.code === code && j !== i)) return flash(`${code} 는 이미 있다`, true);
+          const m2 = code.match(/_(head|face|right|left|fx)_/) || code.match(/_(head|face|right|left|fx)$/);
+          const to = m2 && m2[1];
+          const tgt = v[i];
+          if (to && to !== tgt.slot) {              // 슬롯이 바뀌면 앵커도 그 자리로 옮긴다
+            const A2 = { baby: babyParts(SKINS[sel]).anchors, teen: slimeParts(SKINS[sel]).anchors,
+                         awake: slimeParts(SKINS[sel], { awake: true }).anchors };
+            const C = cellOfItem(tgt);
+            for (const st of ["baby", "teen", "awake"]) {
+              if (!tgt[st]) continue;
+              const A = slotAt(A2[st], tgt.slot), B = slotAt(A2[st], to);
+              tgt[st].anchor = [Math.round(tgt[st].anchor[0] + (B[0] - A[0]) / C),
+                                Math.round(tgt[st].anchor[1] + (B[1] - A[1]) / C)];
+            }
+            tgt.slot = to;
+          }
+          const was = tgt.code;
+          tgt.code = code;
+          for (const st of ["baby", "teen", "awake"]) if (tgt[st]) tgt[st].png = `${code}_${st}.png`;
+          saveItems(v); drawList();
+          flash(`${was} → ${code}` + (to && to !== it.slot ? ` · 슬롯 ${IMP_SLOT_KO[to]} 로 옮기고 앵커도 맞췄다` : ""));
+        };
+        row.appendChild(ren);
+        row.insertAdjacentHTML("beforeend", " ");
         const del = document.createElement("button");
         del.className = "imp"; del.textContent = "빼기";
         del.style.cssText = "padding:1px 7px;font-size:11px";
@@ -3132,8 +3181,8 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
         const it = parts.find((v) => v.slot === slot);
         if (!it || !it[st] || !it[st].art) continue;
         const rot = it.rot || 0;
-        const svg = impSvg(unpackArt(it[st].art), slot, it[st].anchor, g.anchors,
-                           false, ghost, slot === "left" ? -rot : rot);
+        const svg = impSvgAt(cellOfItem(it), unpackArt(it[st].art), slot, it[st].anchor, g.anchors,
+                             false, ghost, slot === "left" ? -rot : rot);
         if (slot === "fx") back += svg; else front += svg;    // 이펙트만 몸통 뒤
       }
       const fig = document.createElement("figure");
@@ -3172,7 +3221,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       const deg = it.slot === "left" ? -rot : rot;
       const fig = document.createElement("figure");
       fig.style.cssText = "text-align:center;flex:1 1 0;min-width:0;max-width:190px";
-      fig.innerHTML = fit(wrap(impLayer(g.inner, impSvg(r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot), 190)) +
+      fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(cellOfItem(it), r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot), 190)) +
         `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[st]}</figcaption>`;
       row.appendChild(fig);
     }
@@ -3254,7 +3303,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
     if (rot) item.rot = rot;                                     // 얹을 때 돌리는 각도(도)
     /* 칸 크기는 아이템마다 다르다 — 레전더리는 1.5 로 촘촘하게 그린다. 매니페스트
        머리의 cell 하나만 믿으면 레전더리가 게임에서 절반 크기로 붙는다. 종마다 적어 둔다. */
-    item.cell = ICELL;
+    item.cell = IMP_CELL;
     for (const st of ["baby", "teen", "awake"]) {                // 규격서 §4 와 같은 순서
       const hit = done.find((d) => d.stage === st);
       if (!hit) continue;
@@ -3289,8 +3338,9 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       for (const st of ["baby", "teen", "awake"]) {
         if (!it[st]) continue;
         const A = slotAt(G[st], from), B = slotAt(G[st], to);
-        it[st].anchor = [Math.round(it[st].anchor[0] + (B[0] - A[0]) / ICELL),
-                         Math.round(it[st].anchor[1] + (B[1] - A[1]) / ICELL)];
+        const C = cellOfItem(it);                   // 아이템마다 칸이 다르다 (등급에서 뽑는다)
+        it[st].anchor = [Math.round(it[st].anchor[0] + (B[0] - A[0]) / C),
+                         Math.round(it[st].anchor[1] + (B[1] - A[1]) / C)];
       }
       it.slot = to;
       fixed.push(`${it.code} ${IMP_SLOT_KO[from]}→${IMP_SLOT_KO[to]}`);

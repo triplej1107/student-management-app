@@ -466,7 +466,7 @@
           <option value="auto">자동 (한 장에 3단계)</option>
           <option value="teen">틴</option><option value="baby">베이비</option><option value="awake">각성</option>
         </select></label>
-      <label style="font-size:12px;color:#9a9488">슬롯
+      <label style="font-size:12px;color:#9a9488" title="코드를 적으면 코드가 시키는 대로 따라간다">슬롯
         <select id="impSlot" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
           <option value="head">머리</option><option value="face">얼굴</option>
           <option value="right">오른손</option><option value="left">왼손</option>
@@ -536,7 +536,7 @@
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;
                 padding-top:9px;border-top:1px solid #2a2f3a">
-      <label style="font-size:12px;color:#9a9488">코드
+      <label style="font-size:12px;color:#9a9488">코드 <span style="color:#7d776b">(슬롯이 따라온다)</span>
         <input type="text" id="impCode" placeholder="nm_head_cap" spellcheck="false"
                style="width:150px;font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px"></label>
       <label style="font-size:12px;color:#9a9488">이름
@@ -2859,6 +2859,15 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
   document.getElementById("impLean").addEventListener("input", run);
   ["impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"]
     .forEach((id) => document.getElementById(id).addEventListener("input", run));
+  /* 코드에 이미 슬롯이 들어 있다(nm_face_horn · archangel_head). 사람이 또 고를 이유가
+     없다 — 코드를 적으면 슬롯이 따라가고 그 자리 앵커로 다시 잡는다.
+     슬롯을 잘못 둔 채 담아 하루치를 날릴 뻔한 뒤에 넣었다. */
+  document.getElementById("impCode").addEventListener("input", () => {
+    const code = document.getElementById("impCode").value.trim();
+    const m = code.match(/_(head|face|right|left|fx)_/) || code.match(/_(head|face|right|left|fx)$/);
+    const el = document.getElementById("impSlot");
+    if (m && m[1] !== el.value) { el.value = m[1]; run(); }
+  });
 
   /* ---------- 저장 ----------
      반입기는 검사만 하고 끝나서 맞춘 값이 어디에도 안 남았다. 손으로 배열에 붙이는

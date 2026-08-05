@@ -558,6 +558,10 @@
           <option value="rare">레어</option><option value="epic">에픽</option>
           <option value="legendary">레전더리</option>
         </select></label>
+      <label style="font-size:12px;color:#9a9488" title="등급이 높을수록 화면에서 크게. 등급을 고르면 기본값이 들어오고 여기서 더 조정한다">
+        등급 덩치
+        <input type="range" id="impBig" min="0.8" max="2.6" step="0.05" value="1"
+               style="width:96px;accent-color:#f0a33c;vertical-align:-4px"><b id="impBigv" style="color:#e8e4dc">1.00</b>배</label>
       <button id="impSaveAll" class="imp">이 아이템 담기 (PNG + 앵커)</button>
       <button id="impSaveJson" class="imp">items.json 받기</button>
       <button id="impFixSlot" class="imp" style="background:#2a2f3a;border-color:#3a4150;color:#9CC4EC">슬롯 고치기</button>
@@ -2266,8 +2270,15 @@ const IMP_KO = { baby: "베이비", teen: "틴", awake: "각성" };
 const IMP_SLOT_KO = { head: "머리", face: "얼굴", right: "오른손", left: "왼손", fx: "이펙트" };
 const IMP_TIER_KO = { normal: "노말", magic: "매직", rare: "레어", epic: "에픽", legendary: "레전더리" };
 /* 위 표는 **셀 3 기준 칸 수**다. 에픽·레전더리는 셀 1.5 로 두 배 촘촘하니 같은 물건이
-   칸 수로는 두 배가 된다 — 그대로 재면 전부 상한에 걸린다. 셀 크기로 환산해서 쓴다. */
-const impScale = () => 3 / (ICELL || 3);
+   칸 수로는 두 배가 된다 — 그대로 재면 전부 상한에 걸린다. 셀 크기로 환산해서 쓴다.
+
+   셀을 촘촘히 하는 건 **세밀함**이지 **덩치**가 아니다. 칸이 절반이고 칸 수가 두 배면
+   화면에서 차지하는 크기는 노말과 똑같다 — 레전더리 무기를 넣었더니 작아 보인 이유가
+   이것이다(원장, 2026-08-05). 그래서 덩치를 따로 올리는 배율을 둔다.
+   아래 표는 **기본값일 뿐**이고 「등급 덩치」 슬라이더로 조정한다. */
+const IMP_TIER_K = { normal: 1, magic: 1.08, rare: 1.18, epic: 1.35, legendary: 1.6 };
+let IMP_K = 1;                           // 「등급 덩치」 슬라이더가 바꾼다
+const impScale = () => (3 / (ICELL || 3)) * IMP_K;
 const recOf = (st, slot) => IMP_REC[st][slot].map((v) => Math.round(v * impScale()));
 const limOf = (st, slot) => IMP_LIMIT[st][slot].map((v) => Math.round(v * impScale()));
 let IMP_COLORS = 12;                     // 「색 수」 슬라이더가 바꾼다
@@ -2762,6 +2773,8 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     const ghost = document.getElementById("impGhost").checked;
     IMP_COLORS = +document.getElementById("impColors").value || 12;
     document.getElementById("impColorsv").textContent = IMP_COLORS;
+    IMP_K = +document.getElementById("impBig").value || 1;        // 등급 덩치 — 권장·상한을 통째로 키운다
+    document.getElementById("impBigv").textContent = IMP_K.toFixed(2);
     const flipX = document.getElementById("impFlipX").checked;
     const flipY = document.getElementById("impFlipY").checked;
     GRIP = (+document.getElementById("impGrip").value || 0) / 100;
@@ -2901,6 +2914,15 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     }
   };
   fileEl.addEventListener("change", run);
+  document.getElementById("impBig").addEventListener("input", run);
+  /* 등급을 고르면 그 등급의 기본 덩치를 넣어 준다. 그 뒤 슬라이더로 더 만지면
+     만진 값이 이긴다 — 등급을 다시 고르기 전까지. */
+  document.getElementById("impTier").addEventListener("change", (e) => {
+    const k = IMP_TIER_K[e.target.value] || 1;
+    document.getElementById("impBig").value = k;
+    document.getElementById("impBigv").textContent = k.toFixed(2);
+    run();
+  });
   document.getElementById("impSlot").addEventListener("change", run);
   document.getElementById("impStage").addEventListener("change", run);
   document.getElementById("impFix").addEventListener("change", run);
@@ -3088,6 +3110,9 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     };
     const rot = +document.getElementById("impLean").value || 0;
     if (rot) item.rot = rot;                                     // 얹을 때 돌리는 각도(도)
+    /* 칸 크기는 아이템마다 다르다 — 레전더리는 1.5 로 촘촘하게 그린다. 매니페스트
+       머리의 cell 하나만 믿으면 레전더리가 게임에서 절반 크기로 붙는다. 종마다 적어 둔다. */
+    item.cell = ICELL;
     for (const st of ["baby", "teen", "awake"]) {                // 규격서 §4 와 같은 순서
       const hit = done.find((d) => d.stage === st);
       if (!hit) continue;

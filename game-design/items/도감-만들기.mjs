@@ -2,72 +2,90 @@
  *
  *   node game-design/items/도감-만들기.mjs
  *
- * 랩의 진짜 렌더러로 18종 × 3단계를 찍어 data URI 로 박아 넣으므로, 나온 HTML 한 장은
- * 아무것도 없이 혼자 열린다 (폰에서 보라고 아티팩트로 올리기 좋게).
- * 그림이 없는 14종(랩에서 반입한 GPT 그림)은 앵커만 표로 싣는다.
+ * **items.json 과 그 옆의 PNG 에서 읽는다.** 그림 코드(노말-도트.mjs)에서 읽지 않는다 —
+ * 그래야 랩에서 반입한 것(원장 그림)과 스크립트로 만든 것이 한 화면에 같이 나오고,
+ * 나중에 유실된 PNG 가 채워지면 손 안 대고 그대로 붙는다.
+ * PNG 가 있는 것은 입힌 그림을, 없는 것은 앵커만 표로 싣는다.
+ *
+ * 그림은 랩의 진짜 렌더러(slimeParts + impSvg)가 그리고 data URI 로 박으므로,
+ * 나온 HTML 한 장은 아무것도 없이 혼자 열린다 (폰에서 보라고 아티팩트로 올리기 좋게).
  *
  * 결과: game-design/items/도감.html — 생성물이라 저장소에 넣지 않는다(.gitignore).
  */
-
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
-import { writeFileSync, readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { ITEMS } from './노말-도트.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
-import { ITEMS } from './노말-도트.mjs';
-import { build, ROT } from './노말-내보내기.mjs';
-
-
 const LAB = join(DIR, '..', '슬라임랩-v4.html');
-const STAGES = [['baby', '베이비', 0], ['teen', '틴', 1], ['awake', '각성', 2]];
+const STAGES = [['baby', '베이비'], ['teen', '틴'], ['awake', '각성']];
+const SLOT_KO = { head: '머리', face: '얼굴', right: '오른손', left: '왼손', fx: '이펙트' };
+const BY_SCRIPT = new Set(ITEMS.map((i) => i[0]));      // 내가 그린 것 / 나머지는 랩 반입
+
+const man = JSON.parse(readFileSync(join(DIR, 'items.json'), 'utf8'));
+
+const drawable = [], pending = [];                      // PNG 가 하나라도 있어야 그린다
+for (const it of man.items)
+  (STAGES.some(([st]) => it[st] && existsSync(join(DIR, it[st].png))) ? drawable : pending).push(it);
 
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 900, height: 700 }, deviceScaleFactor: 2 });
 await p.goto('file://' + LAB);
 
-const out = [];
-for (const [code, ko, slot, fn] of ITEMS) {
-  const rec = { code, ko, slot, rot: ROT[code] || 0, stages: [] };
-  for (const [st, stKo, si] of STAGES) {
-    const r = build(code, slot, fn, si);
-    await p.evaluate(({ px, w, h, slot, anchor, deg, st }) => {
+const made = [];
+for (const it of drawable) {
+  const rec = { code: it.code, ko: it.ko || it.code, slot: it.slot, rot: it.rot || 0,
+                by: BY_SCRIPT.has(it.code) ? 'script' : 'lab', stages: [] };
+  for (const [st, stKo] of STAGES) {
+    const f = it[st] && join(DIR, it[st].png);
+    if (!f || !existsSync(f)) continue;
+    const b64 = 'data:image/png;base64,' + readFileSync(f).toString('base64');
+    const size = await p.evaluate(async ({ b64, slot, anchor, deg, st }) => {
+      const im = new Image();                            // PNG 한 픽셀 = 한 칸
+      await new Promise((r) => { im.onload = r; im.src = b64; });
+      const cv = document.createElement('canvas');
+      cv.width = im.width; cv.height = im.height;
+      const cx = cv.getContext('2d');
+      cx.drawImage(im, 0, 0);
+      const d = cx.getImageData(0, 0, im.width, im.height).data;
+      const px = new Map(), h2 = (v) => v.toString(16).padStart(2, '0');
+      for (let y = 0; y < im.height; y++) for (let x = 0; x < im.width; x++) {
+        const i = (y * im.width + x) * 4;
+        if (d[i + 3] < 8) continue;
+        px.set(x + ',' + y, '#' + h2(d[i]) + h2(d[i + 1]) + h2(d[i + 2]));
+      }
       const g = st === 'baby' ? babyParts(SKINS[0])
               : slimeParts(SKINS[0], st === 'awake' ? { awake: true } : undefined);
       // 랩 자체가 어두운 배경이라 그대로 찍으면 밝은 테마에서 검은 상자가 된다
       document.documentElement.style.background = 'transparent';
       document.body.style.cssText = 'margin:0;background:transparent';
-      document.body.innerHTML =
-        `<div id="one" style="width:200px">${wrap(g.inner + impSvg({ px: new Map(px), w, h }, slot, anchor, g.anchors, false, false, deg), 200)}</div>`;
+      document.body.innerHTML = `<div id="one" style="width:200px">${
+        wrap(g.inner + impSvg({ px, w: im.width, h: im.height }, slot, anchor, g.anchors, false, false, deg), 200)}</div>`;
       document.querySelector('#one svg').style.cssText = 'width:200px;height:auto;display:block';
-    }, { px: [...r.px], w: r.w, h: r.h, slot, anchor: r.anchor,
-         deg: (slot === 'left' ? -1 : 1) * (ROT[code] || 0), st });
-    const buf = await (await p.$('#one')).screenshot({ omitBackground: true });
-    rec.stages.push({ st, ko: stKo, w: r.w, h: r.h, anchor: r.anchor,
-                      img: 'data:image/png;base64,' + buf.toString('base64') });
+      return [im.width, im.height];
+    }, { b64, slot: it.slot, anchor: it[st].anchor,
+         deg: (it.slot === 'left' ? -1 : 1) * (it.rot || 0), st });
+    const shot = await (await p.$('#one')).screenshot({ omitBackground: true });
+    rec.stages.push({ st, ko: stKo, w: size[0], h: size[1], anchor: it[st].anchor,
+                      img: 'data:image/png;base64,' + shot.toString('base64') });
   }
-  out.push(rec);
+  made.push(rec);
 }
 await b.close();
 
-/* 그림 없이 앵커만 있는 것들 (랩에서 반입한 GPT 그림 — PNG 유실) */
-const man = JSON.parse(readFileSync(join(DIR, 'items.json'), 'utf8'));
-const have = new Set(ITEMS.map((i) => i[0]));
-const missing = man.items.filter((i) => !have.has(i.code))
-  .map((i) => ({ code: i.code, ko: i.ko, slot: i.slot, rot: i.rot || 0,
-                 anchors: ['baby', 'teen', 'awake'].map((st) => i[st] && i[st].anchor) }));
+const missing = pending.map((i) => ({ code: i.code, ko: i.ko, slot: i.slot, rot: i.rot || 0,
+  anchors: STAGES.map(([st]) => i[st] && i[st].anchor) }));
 
-const made = out;
-
-
-const SLOT_KO = { head: '머리', face: '얼굴', right: '오른손', left: '왼손' };
+/* ── 페이지 ─────────────────────────────────────── */
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
 const n = {};
-for (const i of [...made, ...missing]) n[i.slot] = (n[i.slot] || 0) + 1;
+for (const i of man.items) n[i.slot] = (n[i.slot] || 0) + 1;
+const byLab = made.filter((m) => m.by === 'lab').length;
 
 const card = (it) => `
-<article class="card" data-slot="${it.slot}">
+<article class="card" data-slot="${it.slot}" data-by="${it.by}">
   <div class="strip">
     ${it.stages.map((s) => `
     <figure class="shot">
@@ -76,7 +94,8 @@ const card = (it) => `
     </figure>`).join('')}
   </div>
   <div class="meta">
-    <h3>${esc(it.ko)}<span class="slot">${SLOT_KO[it.slot]}</span></h3>
+    <h3>${esc(it.ko)}<span class="slot">${SLOT_KO[it.slot]}</span>
+      <span class="by ${it.by}">${it.by === 'lab' ? '원장' : '스크립트'}</span></h3>
     <p class="code">${esc(it.code)}</p>
     <dl class="facts">
       <div><dt>앵커</dt><dd>${it.stages.map((s) => `${s.anchor[0]},${s.anchor[1]}`).join(' · ')}</dd></div>
@@ -136,6 +155,7 @@ nav.filters{ position:sticky; top:0; z-index:5; background:var(--bg);
 .chip[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--bg);
                             font-weight:700; }
 .chip:focus-visible{ outline:2px solid var(--cool); outline-offset:2px; }
+.sep{ width:1px; background:var(--line); margin:2px 4px; }
 
 .grid{ display:grid; gap:18px; grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); }
 .card{ background:var(--surface); border:1px solid var(--line); border-radius:3px; overflow:hidden; }
@@ -148,9 +168,11 @@ nav.filters{ position:sticky; top:0; z-index:5; background:var(--bg);
 .dim{ opacity:.6; }
 
 .meta{ padding:12px 14px 14px; }
-.meta h3{ font-size:17px; margin:0; display:flex; align-items:baseline; gap:8px; }
-.slot{ font-family:var(--mono); font-size:11px; font-weight:400; color:var(--accent);
-       border:1px solid var(--line); border-radius:2px; padding:1px 6px; }
+.meta h3{ font-size:17px; margin:0; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; }
+.slot,.by{ font-family:var(--mono); font-size:11px; font-weight:400; border-radius:2px; padding:1px 6px; }
+.slot{ color:var(--accent); border:1px solid var(--line); }
+.by.lab{ color:var(--cool); border:1px solid currentColor; }
+.by.script{ color:var(--muted); border:1px solid var(--line); }
 .code{ font-family:var(--mono); font-size:12px; color:var(--muted); margin:3px 0 10px;
        word-break:break-all; }
 .facts{ margin:0; display:grid; gap:3px; font-family:var(--mono); font-size:12px;
@@ -181,15 +203,17 @@ footer p{ margin:0 0 6px; max-width:62ch; }
 <header class="top"><div class="wrap">
   <p class="eyebrow">유종의미 슬라임 · 시즌 0</p>
   <h1>노말 파츠 도감</h1>
-  <p class="lede">지금까지 만든 노말 아이템을 베이비·틴·각성 세 단계에 실제로 입혀 본 것이다.
-    그림은 디자인 랩의 렌더러가 그대로 그린 것이라, 게임에 들어갈 때도 같은 자리에 놓인다.</p>
+  <p class="lede">노말 아이템을 베이비·틴·각성 세 단계에 실제로 입혀 본 것이다.
+    <b>원장</b> 표가 붙은 건 랩에서 GPT 그림으로 반입한 것, <b>스크립트</b>는 도트 코드가 그린 것이다.
+    둘 다 디자인 랩의 렌더러가 그대로 그리므로 게임에 들어갈 때도 같은 자리에 놓인다.</p>
   <ul class="tally">
-    <li>노말 <b>${made.length + missing.length}</b>/33종</li>
-    ${Object.entries(SLOT_KO).map(([k, v]) => `<li>${v} <b>${n[k] || 0}</b></li>`).join('')}
+    <li>노말 <b>${man.items.length}</b>/33종</li>
+    ${Object.keys(SLOT_KO).filter((k) => n[k]).map((k) => `<li>${SLOT_KO[k]} <b>${n[k]}</b></li>`).join('')}
     <li>그림 있음 <b>${made.length}</b></li>
+    <li>원장 그림 <b>${byLab}</b></li>
   </ul>
   <div class="knobs">
-    <h2>지금 걸려 있는 조절값</h2>
+    <h2>스크립트 쪽에 걸려 있는 조절값</h2>
     <dl>
       <dt>RAISE = 2</dt><dd>양손 스무 종의 높이. 아랫변이 손에서 몇 칸 아래 오는가</dd>
       <dt>LEFT_NUDGE = 1</dt><dd>왼손 열 종을 바깥으로 미는 칸 수</dd>
@@ -199,18 +223,22 @@ footer p{ margin:0 0 6px; max-width:62ch; }
 </div></header>
 
 <nav class="filters"><div class="wrap">
-  <button class="chip" aria-pressed="true" data-f="all">전체</button>
-  ${Object.entries(SLOT_KO).map(([k, v]) =>
-    `<button class="chip" aria-pressed="false" data-f="${k}">${v}</button>`).join('')}
+  <button class="chip" aria-pressed="true" data-k="slot" data-f="all">전체</button>
+  ${Object.keys(SLOT_KO).filter((k) => n[k]).map((k) =>
+    `<button class="chip" aria-pressed="false" data-k="slot" data-f="${k}">${SLOT_KO[k]}</button>`).join('')}
+  <span class="sep"></span>
+  <button class="chip" aria-pressed="true" data-k="by" data-f="all">둘 다</button>
+  <button class="chip" aria-pressed="false" data-k="by" data-f="lab">원장</button>
+  <button class="chip" aria-pressed="false" data-k="by" data-f="script">스크립트</button>
 </div></nav>
 
 <main class="wrap">
   <div class="grid">${made.map(card).join('')}</div>
-
+  ${missing.length ? `
   <section class="pending">
     <h2>그림이 없는 ${missing.length}종</h2>
     <p>랩에서 GPT 그림으로 반입한 것들이다. 눈으로 맞춘 앵커는 살아 있는데 그림(PNG)이 없다 —
-      아티팩트가 액자 안이라 자동 내려받기가 조용히 막혔던 탓이다. 원본 이미지를 랩에 다시 넣으면
+      그림까지 저장하도록 고치기 전에 담은 탓이다. 원본 PNG 만 저장소에 올라오면
       앵커는 그대로 두고 그림만 채워진다.</p>
     <div class="scroll"><table>
       <thead><tr><th>이름</th><th>코드</th><th>부위</th><th>앵커 (베·틴·각)</th><th>기울기</th></tr></thead>
@@ -222,27 +250,33 @@ footer p{ margin:0 0 6px; max-width:62ch; }
         <td class="c">${m.rot ? m.rot + '°' : '—'}</td></tr>`).join('')}
       </tbody>
     </table></div>
-  </section>
+  </section>` : ''}
 
   <footer>
-    <p><span class="tag">남은 것</span> 노말은 <code>nm_right_gun</code> 「총」 한 종뿐이고, 원장이 직접 넣기로 했다.
-      그 뒤로 세트템 70종 — 매직 25 → 레어 20 → 에픽 15 → 레전더리 10.</p>
-    <p>이 도감의 그림은 <code>game-design/items/</code> 의 도트 코드에서 나온다.
-      아트를 고치면 내보내기를 다시 돌려 전부 재현된다.</p>
+    <p><span class="tag">다음</span> 노말 33종은 다 찼다. 그다음은 세트템 70종 —
+      매직 25 → 레어 20 → 에픽 15 → 레전더리 10.</p>
+    <p>이 도감은 <code>game-design/items/items.json</code> 과 그 옆 PNG 에서 읽는다.
+      아트를 고치거나 PNG 가 채워진 뒤 <code>도감-만들기.mjs</code> 를 다시 돌리면 그대로 반영된다.</p>
   </footer>
 </main>
 
 <script>
 const chips = [...document.querySelectorAll('.chip')];
 const cards = [...document.querySelectorAll('.card')];
+const pick = { slot: 'all', by: 'all' };
 chips.forEach((c) => c.addEventListener('click', () => {
-  chips.forEach((o) => o.setAttribute('aria-pressed', String(o === c)));
-  const f = c.dataset.f;
-  cards.forEach((k) => { k.hidden = f !== 'all' && k.dataset.slot !== f; });
+  const k = c.dataset.k;
+  chips.filter((o) => o.dataset.k === k).forEach((o) => o.setAttribute('aria-pressed', String(o === c)));
+  pick[k] = c.dataset.f;
+  cards.forEach((n2) => {
+    n2.hidden = (pick.slot !== 'all' && n2.dataset.slot !== pick.slot)
+             || (pick.by !== 'all' && n2.dataset.by !== pick.by);
+  });
 }));
 </script>
 `;
 
-const out2 = join(DIR, '도감.html');
-writeFileSync(out2, html);
-console.log(`${made.length}종 × 3단계 + 앵커만 ${missing.length}종 → ${out2} (${(html.length / 1024 / 1024).toFixed(2)} MB)`);
+const out = join(DIR, '도감.html');
+writeFileSync(out, html);
+console.log(`그림 ${made.length}종(원장 ${byLab} · 스크립트 ${made.length - byLab}) + 앵커만 ${missing.length}종` +
+  ` → ${out} (${(html.length / 1024 / 1024).toFixed(2)} MB)`);

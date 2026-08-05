@@ -438,6 +438,34 @@
       "rot": 10
     },
     {
+      "code": "nm_right_gun",
+      "ko": "총",
+      "slot": "right",
+      "tier": "normal",
+      "rot": 15,
+      "baby": {
+        "png": "nm_right_gun_baby.png",
+        "anchor": [
+          4,
+          12
+        ]
+      },
+      "teen": {
+        "png": "nm_right_gun_teen.png",
+        "anchor": [
+          3,
+          16
+        ]
+      },
+      "awake": {
+        "png": "nm_right_gun_awake.png",
+        "anchor": [
+          3,
+          20
+        ]
+      }
+    },
+    {
       "code": "nm_right_pencil",
       "ko": "연필",
       "slot": "right",

@@ -1,5 +1,12 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { toISODate, dayLabelOf, kstToday, isPastClinicTime, nextDayISO } from "./weeks";
+import {
+  toISODate,
+  dayLabelOf,
+  kstToday,
+  isPastClinicTime,
+  nextDayISO,
+  kstTimeHHMM,
+} from "./weeks";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -8,6 +15,21 @@ afterEach(() => {
 describe("toISODate", () => {
   it("pads month/day and uses local time", () => {
     expect(toISODate(new Date(2026, 0, 5))).toBe("2026-01-05");
+  });
+});
+
+describe("kstTimeHHMM", () => {
+  it("shifts UTC to KST wall clock", () => {
+    expect(kstTimeHHMM("2026-08-01T06:12:33+00:00")).toBe("15:12");
+  });
+
+  it("wraps past midnight", () => {
+    // 16:30 UTC = 01:30 KST (다음 날)
+    expect(kstTimeHHMM("2026-08-01T16:30:00Z")).toBe("01:30");
+  });
+
+  it("pads single digits", () => {
+    expect(kstTimeHHMM("2026-08-01T00:05:00Z")).toBe("09:05");
   });
 });
 

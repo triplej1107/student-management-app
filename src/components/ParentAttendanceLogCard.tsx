@@ -19,8 +19,8 @@ const STATUS_STYLE: Record<AttendanceStatus, string> = {
   결석: "bg-danger-soft text-danger",
 };
 
-/** 기본으로 펼쳐 보여주는 줄 수 — 나머지는 "전체 보기"로. */
-const PREVIEW_COUNT = 6;
+/** 기본으로 펼쳐 보여주는 줄 수 — 나머지는 "전체 보기"로 (두 달치까지). */
+const PREVIEW_COUNT = 3;
 
 /**
  * 학부모 홈 최상단의 "클리닉 출결 로그" — 출석/지각/조정/결석 기록을
@@ -47,7 +47,7 @@ export function ParentAttendanceLogCard({ entries }: { entries: AttendanceLogEnt
                 className="flex items-center justify-between rounded-xl bg-bg px-3 py-2"
               >
                 <div className="text-[13px] font-semibold text-ink-secondary">
-                  {formatDate(e.dateISO)}
+                  {formatDate(e.dateISO)} {e.recordedAt}
                   {e.makeupDay && e.makeupTime && (
                     <span className="ml-1.5 text-[11px] font-normal text-ink-muted">
                       대체 {e.makeupDay} {e.makeupTime}

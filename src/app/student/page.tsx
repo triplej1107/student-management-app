@@ -59,10 +59,10 @@ export default async function StudentHomePage() {
     isStudent ? getStudentBacklogDetail(student.id) : Promise.resolve(null),
     isParent ? getParentQuestion(student.id, toISODate(questionWeekStart)) : Promise.resolve(null),
   ]);
-  // 학부모 홈 최상단 "클리닉 출결 로그" — 알림을 놓쳤거나 앱 설치에 실패한
-  // 학부모가 기록으로 확인할 수 있게. 반년치면 한 학기를 넉넉히 덮는다.
+  // 학부모 홈 "클리닉 출결 로그" — 알림을 놓쳤거나 앱 설치에 실패한 학부모가
+  // 기록으로 확인할 수 있게. "전체 보기"로 펼쳐도 두 달치까지만 본다.
   const attendanceLog = isParent
-    ? await getAttendanceLogForStudent(student.id, toISODate(addMonths(today, -6)))
+    ? await getAttendanceLogForStudent(student.id, toISODate(addMonths(today, -2)))
     : [];
   // 학생·학부모 모두에게 보여준다 — 챙겨야 할 돌발 일정은 집에서도 알아야 하므로.
   const reminders = isStudentOrParent
@@ -116,13 +116,14 @@ export default async function StudentHomePage() {
         showPushPrompt={isStudentOrParent}
       />
 
+      {/* 잊지마는 항상 최상단 고정 — 코앞의 일정이라 무엇보다 먼저 보여야 한다. */}
+      <StudentReminderCard reminders={reminders} />
+
       {isParent && (
         <div className="mt-4">
           <ParentAttendanceLogCard entries={attendanceLog} />
         </div>
       )}
-
-      <StudentReminderCard reminders={reminders} />
 
       {isParent && (
         <div className="mt-4">

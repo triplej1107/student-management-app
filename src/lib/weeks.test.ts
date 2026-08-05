@@ -6,6 +6,7 @@ import {
   isPastClinicTime,
   nextDayISO,
   kstTimeHHMM,
+  makeupDateISO,
 } from "./weeks";
 
 afterEach(() => {
@@ -15,6 +16,23 @@ afterEach(() => {
 describe("toISODate", () => {
   it("pads month/day and uses local time", () => {
     expect(toISODate(new Date(2026, 0, 5))).toBe("2026-01-05");
+  });
+});
+
+describe("makeupDateISO", () => {
+  it("maps a weekday within the same week as the original session", () => {
+    // 8/7은 금요일 → 그 주 수요일은 8/5.
+    expect(makeupDateISO("2026-08-07", "수")).toBe("2026-08-05");
+    expect(makeupDateISO("2026-07-31", "수")).toBe("2026-07-29");
+  });
+
+  it("handles Sunday (week ends on Sunday, not starts)", () => {
+    // 8/7(금)이 속한 주는 8/3(월)~8/9(일).
+    expect(makeupDateISO("2026-08-07", "일")).toBe("2026-08-09");
+  });
+
+  it("returns null for an unreadable day label", () => {
+    expect(makeupDateISO("2026-08-07", "")).toBeNull();
   });
 });
 

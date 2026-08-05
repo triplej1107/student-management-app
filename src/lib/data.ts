@@ -8,6 +8,7 @@ import {
   parseISODate,
   kstToday,
   kstTimeHHMM,
+  makeupDateISO,
 } from "./weeks";
 import { classKeyFor } from "./classKey";
 import { syncSlimeWeek } from "./slimeXp";
@@ -471,17 +472,24 @@ export interface AttendanceLogEntry {
   /** 그 출결이 기록된 시각(KST "HH:MM") — 조교가 버튼을 누른 시각, 또는
    * 시스템이 자동 지각/결석 처리한 시각. 학생이 실제로 도착한 시각은 앱이
    * 알 수 없어서(키오스크 쪽 정보) 이 값이 가장 가까운 근사치다.
-   * upsert가 created_at을 건드리지 않으므로 "최초로 기록된 시각"이 남는다. */
+   * 사람이 출결을 고치면 그 시점으로 갱신된다(setAttendance 참고). */
   recordedAt: string;
-  /** 그날 잡아둔 대체 일정 — 조정/결석 때 "언제로 옮겼는지"를 같이 보여준다.
-   * 조교 전달사항(note)은 내부용이라 일부러 빼고 요일/시간만 담는다. */
-  makeupDay: string | null;
+  /** 그날 잡아둔 대체 일정 — "언제로 옮겼는지"를 같이 보여준다.
+   * 조교 전달사항(note)은 내부용이라 일부러 뺐다. */
+  makeupDateISO: string | null;
   makeupTime: string | null;
 }
 
 /** 학부모 홈의 "클리닉 출결 로그" — 그 학생의 출결 기록을 최신순으로.
  * 학부모가 푸시 알림을 놓쳤거나 앱 설치에 실패했을 때 기록으로 확인하는
- * 용도라, 알림을 보냈든 안 보냈든 남아있는 기록을 그대로 보여준다. */
+ * 용도라, 알림을 보냈든 안 보냈든 남아있는 기록을 그대로 보여준다.
+ *
+ * 정렬은 "실제로 그 수업이 있었던 날" 기준이다. 대체 일정이 잡힌 건은
+ * 원래 수업일이 아니라 **옮겨간 날짜**로 줄을 세우고, 같은 날짜라면 그날
+ * 실제 출결(출석 등)을 위에, 그날로 옮겨온 조정 기록을 그 아래에 둔다.
+ * 예: 8/7(금) 수업을 8/5(수)로 옮겨 8/5에 왔다면 "8/5 출석"이 위,
+ * "8/7 → 8/5로 조정"이 바로 아래. 학부모가 위에서부터 읽으면 온 날이
+ * 먼저 보이고 그 이유가 뒤따른다. */
 export async function getAttendanceLogForStudent(
   studentId: number,
   sinceISO: string
@@ -506,15 +514,27 @@ export async function getAttendanceLogForStudent(
   }
 
   type Row = { session_date: string; status: AttendanceStatus; created_at: string };
-  return ((records.data as Row[]) ?? []).map((r) => {
+  const entries: AttendanceLogEntry[] = ((records.data as Row[]) ?? []).map((r) => {
     const makeup = makeupByDate.get(r.session_date);
+    const movedTo = makeup ? makeupDateISO(r.session_date, makeup.makeup_day) : null;
     return {
       dateISO: r.session_date,
       status: r.status,
       recordedAt: kstTimeHHMM(r.created_at),
-      makeupDay: makeup?.makeup_day ?? null,
-      makeupTime: makeup?.makeup_time ?? null,
+      makeupDateISO: movedTo,
+      makeupTime: movedTo ? makeup!.makeup_time : null,
     };
+  });
+
+  return entries.sort((a, b) => {
+    const ea = a.makeupDateISO ?? a.dateISO;
+    const eb = b.makeupDateISO ?? b.dateISO;
+    if (ea !== eb) return eb.localeCompare(ea); // 실제 수업일 최신순
+    // 같은 날: 그날 실제 출결이 위, 그날로 옮겨온 조정이 아래.
+    const am = a.makeupDateISO ? 1 : 0;
+    const bm = b.makeupDateISO ? 1 : 0;
+    if (am !== bm) return am - bm;
+    return b.dateISO.localeCompare(a.dateISO);
   });
 }
 
@@ -532,6 +552,11 @@ export async function setAttendance(
       marked_by: markedBy,
       // 사람이 직접 누른 것이므로 자동 결석 플래그는 항상 해제.
       auto_marked: false,
+      // 사람이 누른 "지금"으로 시각을 새로 찍는다 — 이 값이 학부모 출결
+      // 로그에 그대로 뜬다. 자동 지각(15:10)으로 잡혔다가 조교가 출석
+      // (15:30)으로 고치면 15:30이 남아야 하기 때문. 자동 처리 쪽은
+      // created_at을 건드리지 않으므로 자동 처리 시각이 그대로 유지된다.
+      created_at: new Date().toISOString(),
     },
     { onConflict: "student_id,session_date" }
   );

@@ -561,6 +561,7 @@
       <button id="impSaveAll" class="imp">이 아이템 담기 (PNG + 앵커)</button>
       <button id="impSaveJson" class="imp">items.json 받기</button>
       <button id="impFixSlot" class="imp" style="background:#2a2f3a;border-color:#3a4150;color:#9CC4EC">슬롯 고치기</button>
+      <button id="impDump" class="imp" style="background:#2a2f3a;border-color:#3a4150;color:#9CC4EC">전부 복사 (그림까지)</button>
       <span id="impSaveMsg" style="font-size:12px;color:#9BD468"></span>
     </div>
     <div id="impBox" style="font-size:12px;color:#9a9488;margin-bottom:10px;display:none">
@@ -3130,6 +3131,23 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
     if (!fixed.length) return flash("고칠 게 없다 — 코드와 슬롯이 다 맞다");
     saveItems(items); drawList();
     flash(`${fixed.length}개 고쳤다 · ${fixed.join(" · ")}`);
+  });
+
+  /* 내려받기가 막히는 자리가 있다 — 아티팩트는 액자(iframe) 안이라 자동 내려받기가
+     조용히 실패한다. 그럴 때 값을 통째로 복사해 밖으로 넘길 길을 열어 둔다.
+     그림(art)까지 들어 있으므로 이것만 있으면 PNG 를 어디서든 다시 만들 수 있다. */
+  document.getElementById("impDump").addEventListener("click", async () => {
+    const items = loadItems();
+    if (!items.length) return flash("담아 둔 게 없다", true);
+    const txt = JSON.stringify({ cell: 3, authoredFor: "teen", items });
+    const ta = document.createElement("textarea");
+    ta.value = txt;
+    ta.style.cssText = "width:100%;height:120px;margin-top:8px;background:#0e1014;color:#8b8578;" +
+      "border:1px solid #2b303b;border-radius:8px;padding:8px;font-size:11px;font-family:ui-monospace,monospace";
+    report.innerHTML = "";
+    report.appendChild(ta); ta.select();
+    try { await navigator.clipboard.writeText(txt); flash(`${items.length}종 복사됐다 — 붙여넣으면 파일로 만들 수 있다`); }
+    catch (e) { flash("아래 상자를 통째로 복사해라 (Ctrl+A → Ctrl+C)", true); }
   });
 
   document.getElementById("impSaveJson").addEventListener("click", () => {

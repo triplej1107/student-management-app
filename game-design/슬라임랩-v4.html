@@ -2015,8 +2015,9 @@ function buildSliders(hostId, list) {
   for (const [key, ko, min, max, step] of list) {
     const d = document.createElement("div");
     d.className = "ctl";
+    // id 를 붙여 둔다 — 다른 곳(등급 → 칸 크기)에서 값을 맞춰 줄 때 집어야 한다
     d.innerHTML = `<label>${ko}<b id="v_${key}">${P[key]}</b></label>` +
-      `<input type="range" min="${min}" max="${max}" step="${step}" value="${P[key]}">`;
+      `<input type="range" id="s_${key}" min="${min}" max="${max}" step="${step}" value="${P[key]}">`;
     host.appendChild(d);
     d.querySelector("input").addEventListener("input", (ev) => {
       P[key] = +ev.target.value;
@@ -2931,12 +2932,24 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
   };
   fileEl.addEventListener("change", run);
   document.getElementById("impBig").addEventListener("input", run);
-  /* 등급을 고르면 그 등급의 기본 덩치를 넣어 준다. 그 뒤 슬라이더로 더 만지면
-     만진 값이 이긴다 — 등급을 다시 고르기 전까지. */
+  /* 등급을 고르면 두 가지가 따라온다.
+     ① 기본 덩치 — 그 뒤 슬라이더로 만지면 만진 값이 이긴다(등급을 다시 고르기 전까지).
+     ② **칸 크기** — 노말~레어는 셀 3, 에픽·레전더리는 셀 1.5 로 카탈로그에 정해져 있다
+        (아이템카탈로그-v5.md). 사람이 고를 값이 아닌데 「아이템 픽셀 크기」 슬라이더가
+        따로 있어서, 레전더리 칸 수(두 배)로 그려 온 그림이 셀 3 상한에 걸려 통째로
+        버려진 적이 있다 (원장, 2026-08-05). 등급이 정하게 한다. */
   document.getElementById("impTier").addEventListener("change", (e) => {
-    const k = IMP_TIER_K[e.target.value] || 1;
+    const tier = e.target.value;
+    const k = IMP_TIER_K[tier] || 1;
     document.getElementById("impBig").value = k;
     document.getElementById("impBigv").textContent = k.toFixed(2);
+    const cell = (tier === "epic" || tier === "legendary") ? 1.5 : 3;
+    if (P.itemCell !== cell) {
+      P.itemCell = cell;
+      const sl = document.getElementById("s_itemCell");
+      if (sl) { sl.value = cell; const o = document.getElementById("v_itemCell"); if (o) o.textContent = cell; }
+      save(); render();                    // ICELL 은 render() 가 P 에서 다시 읽는다
+    }
     run();
   });
   document.getElementById("impSlot").addEventListener("change", run);

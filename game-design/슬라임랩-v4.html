@@ -2412,6 +2412,7 @@ function guessGrid(d, w, h, force) {
 function downscale(d, w, h, g) {
   const line = (k, off, span) => { const a = []; let s = off % k; if (s > 0.5) s -= k; for (; s < span - k * 0.5; s += k) a.push(s); return a; };
   const xs = line(g.kx, g.ox, w), ys = line(g.ky, g.oy, h), px = new Map();
+  const cover = new Map(), hue = new Map();       // 칸마다 얼마나 찼는지 / 그 색
   const hex = (v) => "#" + v.map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0")).join("");
   for (let Y = 0; Y < ys.length; Y++) for (let X = 0; X < xs.length; X++) {
     const x0 = Math.max(0, Math.floor(xs[X] + g.kx * 0.25)), x1 = Math.min(w - 1, Math.max(x0, Math.ceil(xs[X] + g.kx * 0.75) - 1));
@@ -2519,6 +2520,7 @@ function blobsRaw(d, w, h) {
 // 덩어리 하나를 CW×CH 칸으로 다시 뜬다 — 칸마다 평균색
 function resampleTo(d, w, h, b, CW, CH) {
   const bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1, px = new Map();
+  const cover = new Map(), hue = new Map();
   for (let Y = 0; Y < CH; Y++) for (let X = 0; X < CW; X++) {
     const x0 = b.x0 + Math.floor(X * bw / CW), x1 = b.x0 + Math.ceil((X + 1) * bw / CW) - 1;
     const y0 = b.y0 + Math.floor(Y * bh / CH), y1 = b.y0 + Math.ceil((Y + 1) * bh / CH) - 1;
@@ -2528,8 +2530,20 @@ function resampleTo(d, w, h, b, CW, CH) {
       if (d[i + 3] < 128) continue;
       r += d[i]; g += d[i + 1]; bl += d[i + 2]; n++;
     }
-    if (all && n / all >= 0.5)
-      px.set(X + "," + Y, "#" + [r / n, g / n, bl / n].map((v) => Math.round(v).toString(16).padStart(2, "0")).join(""));
+    const cov = all ? n / all : 0;
+    const col = n ? "#" + [r / n, g / n, bl / n].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("") : null;
+    if (cov > 0) { cover.set(X + "," + Y, cov); hue.set(X + "," + Y, col); }
+    if (cov >= 0.5) px.set(X + "," + Y, col);
+  }
+  // 가는 획이 끊기지 않게 — 줄마다 제일 많이 찬 칸은 살린다
+  for (let Y = 0; Y < CH; Y++) {
+    let bestK = null, best = 0, any = false;
+    for (let X = 0; X < CW; X++) {
+      const k = X + "," + Y, c = cover.get(k) || 0;
+      if (px.has(k)) any = true;
+      if (c > best) { best = c; bestK = k; }
+    }
+    if (!any && bestK && best >= 0.2) px.set(bestK, hue.get(bestK));
   }
   return px;
 }
@@ -2575,8 +2589,16 @@ function readPng(img, fix, force, slot, want, mode, cw, one) {
       const parts = jobs.map(([b, st0]) => {
         const st = st0 || "teen";
         const rec = IMP_REC[st][slot || "head"];
-        const CW = (cw && cw[st]) || rec[0];           // 손으로 준 가로 칸 수가 있으면 그걸 쓴다
-        const CH = Math.max(1, Math.round(CW * (b.y1 - b.y0 + 1) / (b.x1 - b.x0 + 1)));
+        /* 손으로 가로 칸 수를 준 게 있으면 그 폭에 맞추고, 없으면 **권장 상자 안에**
+           비율 그대로 넣는다. 예전엔 폭만 맞추고 세로는 비율대로 늘려서, 연필처럼
+           가늘고 긴 물건이 9×36칸이 되어 상한을 넘었다 (2026-08-05). */
+        const bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1;
+        let CW, CH;
+        if (cw && cw[st]) { CW = cw[st]; CH = Math.max(1, Math.round(CW * bh / bw)); }
+        else {
+          const sc = Math.min(rec[0] / bw, rec[1] / bh);
+          CW = Math.max(1, Math.round(bw * sc)); CH = Math.max(1, Math.round(bh * sc));
+        }
         const px = resampleTo(d, cv.width, cv.height, b, CW, CH);
         const n = quantize(px, IMP_COLORS);
         return { px, colors: new Set(px.values()), soft: 0, w: CW, h: CH, quantized: n, stage: st0 };

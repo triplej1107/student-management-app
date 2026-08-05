@@ -107,13 +107,21 @@ export async function getClinicBacklog(
  * 출결 화면용 — 주어진 학생들의 "몇 주 밀렸는지"만 뽑아 map으로 돌려준다.
  * 밀림이 없는 학생은 아예 키가 없다. 판정은 getClinicBacklog와 동일하므로
  * 밀림 관리 탭 숫자와 항상 일치한다.
+ *
+ * 출결 체크는 매일 쓰는 핵심 기능이라, 밀림 조회가 실패해도 화면 자체는
+ * 떠야 한다 — 실패하면 빈 map을 돌려주고 카드 색만 안 칠해진다.
  */
 export async function getBacklogWeeksByStudent(
   studentIds: number[]
 ): Promise<Map<number, number>> {
   if (studentIds.length === 0) return new Map();
-  const entries = await getClinicBacklog(10, { onlyStudentIds: studentIds });
-  return new Map(entries.map((e) => [e.studentId, e.weeksOverdue]));
+  try {
+    const entries = await getClinicBacklog(10, { onlyStudentIds: studentIds });
+    return new Map(entries.map((e) => [e.studentId, e.weeksOverdue]));
+  } catch (err) {
+    console.error("[attendance] 밀림 표시 조회 실패 — 색상 없이 렌더", err);
+    return new Map();
+  }
 }
 
 async function getClearedWeekSet(studentIds: number[]): Promise<Set<string>> {

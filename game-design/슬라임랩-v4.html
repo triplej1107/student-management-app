@@ -3100,28 +3100,25 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
           ` <span style="color:#7d776b">${IMP_TIER_KO[it.tier] || it.tier} · ${stages}` +
           (it.rot ? ` · ${it.rot}°` : "") + `</span> `);
         /* 코드를 잘못 적어 담은 경우 — 「슬롯 고치기」는 코드에서 슬롯을 읽으므로
-           코드 자체가 틀리면 손을 못 댄다. 여기서 코드를 고치면 슬롯도 따라가고
-           앵커도 새 슬롯 기준으로 옮겨진다 (다시 반입할 필요 없다). */
-        const ren = document.createElement("button");
-        ren.className = "imp"; ren.textContent = "코드";
-        ren.style.cssText = "padding:1px 7px;font-size:11px;background:#2a2f3a;border-color:#3a4150;color:#9CC4EC";
-        ren.onclick = () => {
-          const now = prompt(`${it.code} 의 새 코드`, it.code);
-          if (!now || now.trim() === it.code) return;
-          const code = now.trim();
-          if (!/^[a-z0-9_]+$/.test(code)) return flash("영소문자·숫자·밑줄만 쓴다", true);
+           코드 자체가 틀리면 손을 못 댄다. 여기서 고치면 슬롯도 따라가고 앵커도
+           새 슬롯 기준으로 옮겨진다 (다시 반입할 필요 없다).
+           **창(prompt)을 띄우지 않는다** — 아티팩트는 액자 안이라 조용히 막힌다.
+           눌러도 아무 일이 없어 뭘 하는 버튼인지 알 수가 없었다 (원장, 2026-08-05). */
+        const applyCode = (raw) => {
+          const code = (raw || "").trim();
+          if (!code || code === it.code) return true;
+          if (!/^[a-z0-9_]+$/.test(code)) { flash("영소문자·숫자·밑줄만 쓴다", true); return false; }
           const v = loadItems();
-          if (v.some((x, j) => x.code === code && j !== i)) return flash(`${code} 는 이미 있다`, true);
+          if (v.some((x, j) => x.code === code && j !== i)) { flash(`${code} 는 이미 있다`, true); return false; }
           const m2 = code.match(/_(head|face|right|left|fx)_/) || code.match(/_(head|face|right|left|fx)$/);
-          const to = m2 && m2[1];
-          const tgt = v[i];
-          if (to && to !== tgt.slot) {              // 슬롯이 바뀌면 앵커도 그 자리로 옮긴다
+          const to = m2 && m2[1], tgt = v[i], from = tgt.slot;
+          if (to && to !== from) {                  // 슬롯이 바뀌면 앵커도 그 자리로 옮긴다
             const A2 = { baby: babyParts(SKINS[sel]).anchors, teen: slimeParts(SKINS[sel]).anchors,
                          awake: slimeParts(SKINS[sel], { awake: true }).anchors };
             const C = cellOfItem(tgt);
             for (const st of ["baby", "teen", "awake"]) {
               if (!tgt[st]) continue;
-              const A = slotAt(A2[st], tgt.slot), B = slotAt(A2[st], to);
+              const A = slotAt(A2[st], from), B = slotAt(A2[st], to);
               tgt[st].anchor = [Math.round(tgt[st].anchor[0] + (B[0] - A[0]) / C),
                                 Math.round(tgt[st].anchor[1] + (B[1] - A[1]) / C)];
             }
@@ -3131,7 +3128,31 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
           tgt.code = code;
           for (const st of ["baby", "teen", "awake"]) if (tgt[st]) tgt[st].png = `${code}_${st}.png`;
           saveItems(v); drawList();
-          flash(`${was} → ${code}` + (to && to !== it.slot ? ` · 슬롯 ${IMP_SLOT_KO[to]} 로 옮기고 앵커도 맞췄다` : ""));
+          flash(`${was} → ${code}` + (to && to !== from ? ` · 슬롯 ${IMP_SLOT_KO[from]}→${IMP_SLOT_KO[to]} · 앵커도 맞췄다` : ""));
+          return true;
+        };
+        const ren = document.createElement("button");
+        ren.className = "imp"; ren.textContent = "코드 고치기";
+        ren.style.cssText = "padding:1px 7px;font-size:11px;background:#2a2f3a;border-color:#3a4150;color:#9CC4EC";
+        ren.onclick = () => {
+          if (row.querySelector("input")) return;                 // 이미 고치는 중
+          const ed = document.createElement("span");
+          ed.style.cssText = "margin-left:6px";
+          ed.innerHTML = `<input type="text" spellcheck="false" value="${it.code}" ` +
+            `style="width:170px;font-family:inherit;font-size:11.5px;background:#232833;color:#e8e4dc;` +
+            `border:1px solid #f0a33c;border-radius:6px;padding:2px 6px"> ` +
+            `<button class="imp" data-ok style="padding:1px 8px;font-size:11px">확인</button> ` +
+            `<button class="imp" data-no style="padding:1px 8px;font-size:11px;background:#232833;border-color:#333944;color:#9a9488">취소</button>` +
+            `<span style="color:#7d776b;margin-left:6px">코드를 바꾸면 슬롯·앵커가 따라간다</span>`;
+          row.appendChild(ed);
+          const inp = ed.querySelector("input");
+          inp.focus(); inp.select();
+          ed.querySelector("[data-no]").onclick = () => ed.remove();
+          ed.querySelector("[data-ok]").onclick = () => { if (applyCode(inp.value)) ed.remove(); };
+          inp.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") ed.querySelector("[data-ok]").click();
+            if (e.key === "Escape") ed.remove();
+          });
         };
         row.appendChild(ren);
         row.insertAdjacentHTML("beforeend", " ");

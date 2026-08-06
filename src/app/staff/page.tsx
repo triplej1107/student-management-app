@@ -10,6 +10,7 @@ import {
   getStaffById,
   listDutyItems,
   listNoticesForClass,
+  listStudents,
 } from "@/lib/data";
 import { isClinicComplete } from "@/lib/clinicProgress";
 import { getUnseenStaffFeedback } from "@/lib/staffFeedback";
@@ -41,10 +42,18 @@ export default async function StaffHomePage() {
       getUnseenStaffFeedback(session.staffId),
       getTodayActiveReminders(toISODate(today)),
     ]);
-  const [onboardings, examTimers] = await Promise.all([
+  const [onboardings, examTimers, allStudents] = await Promise.all([
     listOpenOnboardings(),
     listTodayExamTimers(),
+    listStudents({ enrolledOnly: true }),
   ]);
+  // 타이머 이름칸 자동완성용. 학교·학년까지 같이 넘겨야 내신 기간에 생기는
+  // 동명이인을 조교가 골라낼 수 있다.
+  const timerStudents = allStudents.map((s) => ({
+    name: s.name,
+    code: s.student_code,
+    detail: [s.school, s.grade ? `${s.grade}학년` : null].filter(Boolean).join(" "),
+  }));
   // 실제로 온 학생 수만 — 조정·지각은 아직 안 온 상태다(출결 화면과 동일 기준).
   const attendedCount = roster.filter((r) => attendanceMap.get(r.student.id) === "출석").length;
   const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
@@ -120,7 +129,7 @@ export default async function StaffHomePage() {
           </Link>
         </div>
 
-        <ExamTimerBoard timers={examTimers} />
+        <ExamTimerBoard timers={examTimers} students={timerStudents} />
 
         <div className="mt-3.5">
           <div className="mb-2.5 text-sm font-bold text-ink">공지사항</div>

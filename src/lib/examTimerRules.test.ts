@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   finishedMessage,
+  matchStudents,
   formatRemaining,
   kstTimeToISO,
   remainingSeconds,
@@ -75,6 +76,51 @@ describe("kstTimeToISO", () => {
     expect(kstTimeToISO("2026-08-06", "25:00")).toBeNull();
     expect(kstTimeToISO("2026-08-06", "13:70")).toBeNull();
     expect(kstTimeToISO("2026-08-06", "")).toBeNull();
+  });
+});
+
+describe("matchStudents", () => {
+  const students = [
+    { name: "김지우", code: "72331", detail: "가락고 1학년" },
+    { name: "박지우", code: "10011", detail: "배명고 2학년" },
+    { name: "이순신", code: "48641", detail: "배명고 2학년" },
+    { name: "지우개", code: "55512", detail: "" },
+  ];
+
+  it("안 쳤으면 아무것도 안 띄운다", () => {
+    expect(matchStudents(students, "")).toEqual([]);
+    expect(matchStudents(students, "   ")).toEqual([]);
+  });
+
+  it("이름 일부로 찾는다", () => {
+    expect(matchStudents(students, "지우").map((s) => s.name)).toEqual([
+      "지우개",
+      "김지우",
+      "박지우",
+    ]);
+  });
+
+  it("그 글자로 시작하는 사람이 위로 온다", () => {
+    expect(matchStudents(students, "김").map((s) => s.name)).toEqual(["김지우"]);
+  });
+
+  it("학번으로도 찾는다", () => {
+    expect(matchStudents(students, "48641").map((s) => s.name)).toEqual(["이순신"]);
+  });
+
+  it("이름을 정확히 다 쳤으면 목록을 닫는다", () => {
+    expect(matchStudents(students, "이순신")).toEqual([]);
+  });
+
+  it("동명이인이면 다 친 뒤에도 계속 보여준다", () => {
+    // 이름만으로는 누군지 모르니 학번을 보고 골라야 한다.
+    const withTwin = [...students, { name: "김지우", code: "99999", detail: "배명고 2학년" }];
+    expect(matchStudents(withTwin, "김지우").map((s) => s.code)).toEqual(["72331", "99999"]);
+  });
+
+  it("개수를 제한한다", () => {
+    const many = Array.from({ length: 20 }, (_, i) => ({ name: `학생${i}`, code: `${i}`, detail: "" }));
+    expect(matchStudents(many, "학생")).toHaveLength(6);
   });
 });
 

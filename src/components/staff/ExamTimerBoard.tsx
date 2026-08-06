@@ -9,9 +9,11 @@ import {
   finishedMessage,
   formatRemaining,
   remainingSeconds,
+  matchStudents,
   timerLevel,
   warningMessage,
   type TimerLevel,
+  type TimerStudentOption,
 } from "@/lib/examTimerRules";
 import type { ExamTimer } from "@/lib/examTimers";
 import {
@@ -44,7 +46,13 @@ const TIME_TONE: Record<TimerLevel, string> = {
   done: "text-danger",
 };
 
-export function ExamTimerBoard({ timers }: { timers: ExamTimer[] }) {
+export function ExamTimerBoard({
+  timers,
+  students,
+}: {
+  timers: ExamTimer[];
+  students: TimerStudentOption[];
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState<ExamTimer | "new" | null>(null);
 
@@ -117,6 +125,7 @@ export function ExamTimerBoard({ timers }: { timers: ExamTimer[] }) {
       {editing && (
         <TimerDialog
           timer={editing === "new" ? null : editing}
+          students={students}
           onClose={() => setEditing(null)}
           onDone={() => {
             setEditing(null);
@@ -200,10 +209,12 @@ function TimerCard({
 
 function TimerDialog({
   timer,
+  students,
   onClose,
   onDone,
 }: {
   timer: ExamTimer | null;
+  students: TimerStudentOption[];
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -217,6 +228,10 @@ function TimerDialog({
   const [durationMinutes, setDurationMinutes] = useState(
     String(timer ? Math.round(timer.duration_seconds / 60) : DEFAULT_DURATION_MINUTES)
   );
+  // 목록에서 고른 직후에는 후보를 닫는다 — 안 그러면 고른 이름으로 다시
+  // 검색돼서 방금 누른 항목이 그대로 떠 있는다.
+  const [pickedFromList, setPickedFromList] = useState(false);
+  const suggestions = pickedFromList ? [] : matchStudents(students, studentName);
 
   function save() {
     setError(null);
@@ -254,12 +269,38 @@ function TimerDialog({
         </div>
 
         <label className="mb-1 block text-[11px] font-bold text-ink-muted">학생 이름</label>
-        <input
-          value={studentName}
-          onChange={(e) => setStudentName(e.target.value)}
-          placeholder="예: 이순신"
-          className="mb-2.5 w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
-        />
+        <div className="relative mb-2.5">
+          <input
+            value={studentName}
+            onChange={(e) => {
+              setStudentName(e.target.value);
+              setPickedFromList(false);
+            }}
+            placeholder="예: 이순신"
+            autoComplete="off"
+            className="w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
+          />
+          {suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-line bg-white shadow-[0_6px_20px_rgba(20,30,60,0.18)]">
+              {suggestions.map((s) => (
+                <button
+                  key={s.code}
+                  type="button"
+                  onClick={() => {
+                    setStudentName(s.name);
+                    setPickedFromList(true);
+                  }}
+                  className="flex w-full items-center justify-between px-2.5 py-2 text-left text-[13px] text-ink hover:bg-accent-soft"
+                >
+                  <span className="font-bold">{s.name}</span>
+                  <span className="ml-2 truncate text-[11px] text-ink-muted">
+                    {s.detail || s.code}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="mb-2.5 flex gap-2">
           <div className="flex-1">

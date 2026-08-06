@@ -86,6 +86,36 @@ function withLabel(studentName: string, examLabel: string | null): string {
   return `${studentName} 학생${what}`;
 }
 
+export interface TimerStudentOption {
+  name: string;
+  code: string;
+  /** "배명고 2학년" — 내신 기간에 생기는 동명이인을 가려내려고 옆에 붙인다.
+   * 학교·학년이 비어 있으면 학번을 대신 보여준다. */
+  detail: string;
+}
+
+/**
+ * 이름 입력칸 자동완성 후보.
+ *
+ * 이름 일부로도, 학번으로도 찾을 수 있게 한다 — 조교가 학번을 보고 치는
+ * 경우도 있어서. 이름이 그 글자로 "시작하는" 사람을 위로 올린다(김을 치면
+ * 김OO이 먼저, 이름 가운데에 김이 든 사람은 뒤로).
+ */
+export function matchStudents(
+  students: TimerStudentOption[],
+  query: string,
+  limit = 6
+): TimerStudentOption[] {
+  const q = query.trim();
+  if (!q) return [];
+  const hits = students.filter((s) => s.name.includes(q) || s.code.includes(q));
+  // 이미 정확히 그 이름을 다 쳤으면 굳이 목록을 띄우지 않는다.
+  if (hits.length === 1 && hits[0].name === q) return [];
+  return hits
+    .sort((a, b) => Number(b.name.startsWith(q)) - Number(a.name.startsWith(q)))
+    .slice(0, limit);
+}
+
 /** 10분 전 알림 문구 — "이순신 학생 모의고사 4회차 10분 남았습니다!" */
 export function warningMessage(studentName: string, examLabel: string | null): string {
   return `${withLabel(studentName, examLabel)} 10분 남았습니다!`;

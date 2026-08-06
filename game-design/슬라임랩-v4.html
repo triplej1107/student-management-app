@@ -268,6 +268,19 @@
   body.nomo .jf, body.nomo .xf { animation: none; }
   body.nomo .jf { opacity: 1; }
 
+  /* 반입한 이펙트에 주는 움직임. 축은 몸통과 같은 접지점(0,145) —
+     viewBox -96 -26 192 200 에서 50% 85.5% 다. 발밑 문양이 제자리에서 돈다. */
+  .impAnim { transform-box: view-box; transform-origin: 50% 85.5%; }
+  .impSpin  { animation: impSpin  var(--sec, 8s) linear infinite; }
+  .impPulse { animation: impPulse var(--sec, 3s) ease-in-out infinite; }
+  .impFloat { animation: impFloat var(--sec, 4s) ease-in-out infinite; }
+  .impGlow  { animation: impGlow  var(--sec, 2.4s) ease-in-out infinite; }
+  @keyframes impSpin  { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes impPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+  @keyframes impFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes impGlow  { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+  body.nomo .impSpin, body.nomo .impPulse, body.nomo .impFloat, body.nomo .impGlow { animation: none; }
+
   /* 두 파라미터 묶음을 절대 헷갈리지 않게 — 색 띠 + 배지 */
   .teen-sec { border-left: 4px solid #4E7CB6; }
   .baby-sec { border-left: 4px solid #4A8A2A; }
@@ -506,6 +519,12 @@
         <input type="range" id="impColors" min="3" max="12" step="1" value="12"
                style="width:70px;accent-color:#f0a33c;vertical-align:-4px"><b id="impColorsv" style="color:#e8e4dc">12</b>색
         <span style="color:#7d776b">— 뭉개진 그림은 줄이면 산다</span></label>
+      <label style="font-size:12px;color:#9a9488" title="이펙트 슬롯에만 쓴다. 몸 뒤에서 이 움직임으로 돈다">움직임
+        <select id="impAnim" style="font-family:inherit;font-size:12px;background:#232833;color:#e8e4dc;border:1px solid #333944;border-radius:6px;padding:4px">
+          <option value="">없음</option><option value="spin">회전</option>
+          <option value="pulse">맥동</option><option value="float">떠오름</option>
+          <option value="glow">명멸</option>
+        </select> <span style="color:#7d776b">이펙트용</span></label>
       <label style="font-size:12px;color:#9a9488">기울기
         <input type="range" id="impLean" min="-30" max="30" step="1" value="0"
                style="width:80px;accent-color:#f0a33c;vertical-align:-4px"><b id="impLeanv" style="color:#e8e4dc">0</b>°
@@ -2831,6 +2850,17 @@ function impSvg(r, slot, anchor, a, shade, ghost, deg) {
    나중에 그리면 몸을 덮어 버린다 (원장, 2026-08-05). 나머지 슬롯은 몸 위에 얹힌다. */
 function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inner + item; }
 
+/* 이펙트 움직임 — 그림이 아니라 **놓을 때 주는 값**이다(rot·scale 과 같은 결).
+   레전더리 이펙트가 몸 뒤에서 살아 있어야 등급값이 산다 (원장, 2026-08-05).
+   축은 발밑이라 바닥 문양이 제자리에서 돈다. */
+const IMP_ANIM = { "": "없음", spin: "회전", pulse: "맥동", float: "떠오름", glow: "명멸" };
+const IMP_ANIM_SEC = { spin: 8, pulse: 3, float: 4, glow: 2.4 };
+function impAnimWrap(svg, anim) {
+  if (!anim || !IMP_ANIM[anim]) return svg;
+  const cls = "imp" + anim[0].toUpperCase() + anim.slice(1);
+  return `<g class="impAnim ${cls}" style="--sec:${IMP_ANIM_SEC[anim]}s">${svg}</g>`;
+}
+
 (function () {
   const fileEl = document.getElementById("impFile");
   if (!fileEl) return;
@@ -2985,7 +3015,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
           const fig = document.createElement("figure");
           fig.style.cssText = `text-align:center;flex:1 1 0;min-width:0;max-width:190px;` +
             `order:${{ baby: 1, teen: 2, awake: 3 }[stage]}`;
-          fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(IMP_CELL, r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot), 190)) +
+          fig.innerHTML = fit(wrap(impLayer(g.inner, impAnimWrap(impSvgAt(IMP_CELL, r, slot, anchor, g.anchors, shade, ghost, leanOf(slot)), slot === "fx" && document.getElementById("impAnim").value), slot), 190)) +
             `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[stage]}</figcaption>`;
           row.appendChild(fig);
           return;
@@ -3047,7 +3077,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
   const IPKEY = "slimeLabV4imp";
   const IMP_KEEP = ["impStage", "impSlot", "impDX", "impDY", "impFix", "impBlock", "impMode",
     "impCWb", "impCWt", "impCWa", "impGrip", "impColors", "impLean", "impBig", "impTier", "impCell",
-    "impShade", "impFlipX", "impFlipY", "impOne", "impGhost",
+    "impShade", "impFlipX", "impFlipY", "impOne", "impGhost", "impAnim",
     "impNXb", "impNYb", "impNXt", "impNYt", "impNXa", "impNYa"];
   const impRemember = () => {
     const v = {};
@@ -3303,9 +3333,9 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
         const it = parts.find((v) => v.slot === slot);
         if (!it || !it[st] || !it[st].art) continue;
         const rot = it.rot || 0;
-        const svg = impSvgAt(cellFor(it, st), unpackArt(it[st].art), slot, it[st].anchor, g.anchors,
+        const svg0 = impSvgAt(cellFor(it, st), unpackArt(it[st].art), slot, it[st].anchor, g.anchors,
                              false, ghost, slot === "left" ? -rot : rot);
-        if (slot === "fx") back += svg; else front += svg;    // 이펙트만 몸통 뒤
+        if (slot === "fx") back += impAnimWrap(svg0, it.anim); else front += svg0;   // 이펙트만 몸통 뒤 + 움직임
       }
       const fig = document.createElement("figure");
       fig.style.cssText = "text-align:center;flex:1 1 0;min-width:0;max-width:190px";
@@ -3384,6 +3414,19 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       line.append(mk2("←", -1, 0), mk2("→", 1, 0), mk2("↑", 0, -1), mk2("↓", 0, 1));
       line.insertAdjacentHTML("beforeend", `<span style="width:6px;display:inline-block"></span>`);
       line.append(mkSize("＋", 0.05), mkSize("－", -0.05));
+      if (slot === "fx") {                              // 이펙트만 몸 뒤에서 움직인다
+        const sel3 = document.createElement("select");
+        sel3.style.cssText = "font:inherit;font-size:11.5px;margin-left:6px;padding:1px 3px";
+        sel3.innerHTML = Object.entries(IMP_ANIM)
+          .map(([v, ko]) => `<option value="${v}"${(it.anim || "") === v ? " selected" : ""}>${ko}</option>`).join("");
+        sel3.onchange = () => {
+          const v = loadItems(), t = v.find((x) => x.code === it.code);
+          if (!t) return;
+          if (sel3.value) t.anim = sel3.value; else delete t.anim;
+          saveItems(v); drawList(); showSet(key);
+        };
+        line.appendChild(sel3);
+      }
       const pct = Math.round(scaleOf(it, setStage) * 100);
       line.insertAdjacentHTML("beforeend",
         ` <span style="color:#8b8578">${it.ko || it.code} [${it[setStage].anchor.join(", ")}]` +
@@ -3429,7 +3472,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       const deg = it.slot === "left" ? -rot : rot;
       const fig = document.createElement("figure");
       fig.style.cssText = "text-align:center;flex:1 1 0;min-width:0;max-width:190px";
-      fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(cellFor(it, st), r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot), 190)) +
+      fig.innerHTML = fit(wrap(impLayer(g.inner, impAnimWrap(impSvgAt(cellFor(it, st), r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot === "fx" && it.anim), it.slot), 190)) +
         `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[st]}</figcaption>`;
       /* 담은 뒤에도 자리를 미세하게 옮길 수 있어야 한다 — 예전엔 다시 반입하는 수밖에
          없었다 (원장, 2026-08-05). 앵커를 반대로 밀면 그림이 그 방향으로 간다. */
@@ -3604,6 +3647,8 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
     /* 칸 크기는 아이템마다 다르다 — 레전더리는 1.5 로 촘촘하게 그린다. 매니페스트
        머리의 cell 하나만 믿으면 레전더리가 게임에서 절반 크기로 붙는다. 종마다 적어 둔다. */
     item.cell = IMP_CELL;
+    const anim = document.getElementById("impAnim").value;
+    if (anim && item.slot === "fx") item.anim = anim;      // 이펙트에만 뜻이 있다
     for (const st of ["baby", "teen", "awake"]) {                // 규격서 §4 와 같은 순서
       const hit = done.find((d) => d.stage === st);
       if (!hit) continue;

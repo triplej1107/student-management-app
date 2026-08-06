@@ -3210,6 +3210,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
   }
   function showSet(key) {
     const wear = document.getElementById("impWear"), report = document.getElementById("impReport");
+    done = [];                                  // 담기가 덮어쓰지 못하게 (showSaved 와 같은 이유)
     const parts = (setsOf(loadItems()).get(key) || []).filter((it) =>
       ["baby", "teen", "awake"].some((st) => it[st] && it[st].art));
     if (!parts.length) {
@@ -3252,6 +3253,9 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
 
   function showSaved(it) {
     const wear = document.getElementById("impWear"), report = document.getElementById("impReport");
+    /* 담아 둔 걸 보는 동안에는 직전 반입 결과를 버린다. 안 그러면 화살표로 민 뒤에
+       「담기」를 눌렀을 때 자동 앵커로 덮여 방금 민 게 날아간다 (원장, 2026-08-05). */
+    done = [];
     const has = ["baby", "teen", "awake"].filter((st) => it[st] && it[st].art);
     if (!has.length) {
       report.innerHTML = `<b style="color:#f0a33c">${it.code}</b> — 그림이 안 들어 있다(고치기 전에 담은 것). ` +
@@ -3298,7 +3302,9 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
     report.innerHTML = `<b style="color:#9CC4EC">👁 ${it.code}</b> ${it.ko} — 담아 둔 것을 보는 중 · ` +
       has.map((st) => `${IMP_KO[st]} ${it[st].art.w}×${it[st].art.h}칸 앵커 [${it[st].anchor.join(", ")}]`).join(" · ") +
       (rot ? ` · 기울기 ${rot}°` : "") +
-      `<br><span style="color:#7d776b">　새 파일을 넣으면 이 화면은 사라진다.</span>`;
+      `<br><span style="color:#7d776b">　화살표로 민 값은 <b style="color:#9BD468">누르는 즉시 저장된다</b> — ` +
+      `「담기」를 다시 누를 필요 없다. 그림이 안 바뀌었으니 PNG 도 그대로다. ` +
+      `다 맞춘 뒤 「items.json 받기」만 한 번 하면 된다.<br>　새 파일을 넣으면 이 화면은 사라진다.</span>`;
   }
 
   document.getElementById("impSetPick").addEventListener("change", (e) => {

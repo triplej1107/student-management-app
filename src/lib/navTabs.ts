@@ -16,7 +16,7 @@ export interface NavTab {
 export const STAFF_TABS: NavTab[] = [
   { href: "/staff/checklist", label: "체크리스트" },
   { href: "/staff/attendance", label: "출결" },
-  { href: "/staff", label: "홈", icon: "홈", popped: true },
+  { href: "/staff", label: "조교홈", icon: "홈", popped: true },
   { href: "/staff/clinic", label: "클리닉" },
   { href: "/staff/clinic-backlog", label: "밀림" },
 ];

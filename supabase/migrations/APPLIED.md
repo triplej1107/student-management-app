@@ -39,3 +39,4 @@ SQL Editor에서 실행해 "성공했어" 확인해줄 때 이 파일에 한 줄
 - [x] 0032_scholarships.sql — 2026-08-02 확인
 - [x] 0033_slime_game.sql — 2026-08-02 확인
 - [x] 0034_slime_gacha.sql — 2026-08-02 확인
+- [x] 0035_exam_timers.sql — 2026-08-06 확인

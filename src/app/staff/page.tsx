@@ -21,6 +21,8 @@ import { Card } from "@/components/ui";
 import { StaffHomeModals } from "@/components/StaffHomeModals";
 import { ReminderBadges } from "@/components/ReminderBadges";
 import { NewStudentChecklist } from "@/components/NewStudentChecklist";
+import { ExamTimerBoard } from "@/components/staff/ExamTimerBoard";
+import { listTodayExamTimers } from "@/lib/examTimers";
 import { logoutAction } from "@/app/login/actions";
 import { markStaffFeedbackSeenAction } from "@/app/staff/actions";
 
@@ -39,7 +41,10 @@ export default async function StaffHomePage() {
       getUnseenStaffFeedback(session.staffId),
       getTodayActiveReminders(toISODate(today)),
     ]);
-  const onboardings = await listOpenOnboardings();
+  const [onboardings, examTimers] = await Promise.all([
+    listOpenOnboardings(),
+    listTodayExamTimers(),
+  ]);
   // 실제로 온 학생 수만 — 조정·지각은 아직 안 온 상태다(출결 화면과 동일 기준).
   const attendedCount = roster.filter((r) => attendanceMap.get(r.student.id) === "출석").length;
   const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
@@ -114,6 +119,8 @@ export default async function StaffHomePage() {
             </Card>
           </Link>
         </div>
+
+        <ExamTimerBoard timers={examTimers} />
 
         <div className="mt-3.5">
           <div className="mb-2.5 text-sm font-bold text-ink">공지사항</div>

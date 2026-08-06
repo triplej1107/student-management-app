@@ -158,6 +158,8 @@ function TimerCard({
   const paused = timer.paused_remaining_seconds !== null;
   const rem = remainingSeconds(stateOf(timer), nowMs);
   const level = timerLevel(rem);
+  const done = level === "done";
+  const [confirming, setConfirming] = useState(false);
 
   function run(action: () => Promise<void>) {
     startTransition(async () => {
@@ -167,7 +169,13 @@ function TimerCard({
   }
 
   return (
-    <div className={"overflow-hidden rounded-lg border " + CARD_TONE[level]}>
+    <div
+      // 시간이 끝난 카드는 어디를 눌러도 "제출 완료했나요?"를 물어본다 —
+      // 다 본 시험지를 걷고 카드를 치우는 게 이제 할 일의 전부다.
+      // 수정 버튼만 예외로 빠져나간다(아래 stopPropagation).
+      onClick={done ? () => setConfirming(true) : undefined}
+      className={"overflow-hidden rounded-lg border " + CARD_TONE[level]}
+    >
       <div className="truncate px-1 py-1.5 text-center text-[15px] font-extrabold text-ink">
         {timer.student_name}
       </div>
@@ -180,23 +188,99 @@ function TimerCard({
         </div>
       </div>
       <div className="flex border-t border-line-soft text-center text-[10px] font-bold">
+        {done ? (
+          // 끝난 뒤엔 시작·정지가 의미가 없다. disabled 버튼은 클릭이
+          // 바깥으로 안 새서 카드 어디를 눌러도 되게 하려면 span이어야 한다.
+          <>
+            <span className="flex-1 border-r border-line-soft py-1.5 text-ink-muted/40">시작</span>
+            <span className="flex-1 border-r border-line-soft py-1.5 text-ink-muted/40">정지</span>
+          </>
+        ) : (
+          <>
+            <button
+              disabled={pending || !paused}
+              onClick={() => run(() => resumeTimerAction(timer.id))}
+              className="flex-1 border-r border-line-soft py-1.5 text-accent disabled:text-ink-muted/40"
+            >
+              시작
+            </button>
+            <button
+              disabled={pending || paused}
+              onClick={() => run(() => pauseTimerAction(timer.id))}
+              className="flex-1 border-r border-line-soft py-1.5 text-ink-secondary disabled:text-ink-muted/40"
+            >
+              정지
+            </button>
+          </>
+        )}
         <button
-          disabled={pending || !paused}
-          onClick={() => run(() => resumeTimerAction(timer.id))}
-          className="flex-1 border-r border-line-soft py-1.5 text-accent disabled:text-ink-muted/40"
+          disabled={pending}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="flex-1 py-1.5 text-ink-secondary"
         >
-          시작
-        </button>
-        <button
-          disabled={pending || paused}
-          onClick={() => run(() => pauseTimerAction(timer.id))}
-          className="flex-1 border-r border-line-soft py-1.5 text-ink-secondary disabled:text-ink-muted/40"
-        >
-          정지
-        </button>
-        <button disabled={pending} onClick={onEdit} className="flex-1 py-1.5 text-ink-secondary">
           수정
         </button>
+      </div>
+
+      {confirming && (
+        <SubmitConfirmModal
+          name={timer.student_name}
+          pending={pending}
+          onNo={() => setConfirming(false)}
+          onYes={() =>
+            run(async () => {
+              await deleteTimerAction(timer.id);
+              setConfirming(false);
+            })
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/** 시간이 끝난 타이머를 눌렀을 때 — 시험지를 걷었으면 카드를 치운다. */
+function SubmitConfirmModal({
+  name,
+  pending,
+  onYes,
+  onNo,
+}: {
+  name: string;
+  pending: boolean;
+  onYes: () => void;
+  onNo: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="w-full max-w-[300px] rounded-2xl bg-white p-5 text-center shadow-[0_10px_40px_rgba(20,30,60,0.3)]">
+        <div className="text-[13px] font-bold text-ink-muted">{name} 학생</div>
+        <div className="mt-1 text-[17px] font-extrabold text-ink">제출 완료했나요?</div>
+        <div className="mt-1.5 text-[11px] text-ink-muted">
+          예를 누르면 이 타이머가 목록에서 사라져요.
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={onNo}
+            disabled={pending}
+            className="flex-1 rounded-xl border border-line bg-white py-2.5 text-[13px] font-bold text-ink-secondary disabled:opacity-50"
+          >
+            아니오
+          </button>
+          <button
+            onClick={onYes}
+            disabled={pending}
+            className="flex-1 rounded-xl bg-accent py-2.5 text-[13px] font-bold text-white disabled:opacity-50"
+          >
+            예
+          </button>
+        </div>
       </div>
     </div>
   );

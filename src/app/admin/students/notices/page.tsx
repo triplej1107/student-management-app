@@ -1,6 +1,6 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { listNoticesForClass } from "@/lib/data";
-import { CLASSES, type ClassKey } from "@/lib/types";
+import { CLASSES, NOTICE_AUDIENCES, type ClassKey } from "@/lib/types";
 import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink } from "@/components/ui";
 import { NoticeEditorRow } from "@/components/admin/NoticeEditorRow";
@@ -36,14 +36,25 @@ export default async function AdminNoticesPage({
         {notices.map((n) => (
           <NoticeEditorRow key={n.id} notice={n} />
         ))}
-        <form action={addNoticeAction.bind(null, classKey)}>
-          <button
-            type="submit"
-            className="w-full rounded-[10px] border border-dashed border-ink-secondary/60 py-3 text-[13px] font-bold text-ink-secondary shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
-          >
-            + 공지 추가
-          </button>
-        </form>
+        {/* 누구에게 보낼 공지인지 고르면서 바로 추가한다 — 반을 고른 다음
+            대상을 고르는 순서가 원장님이 쓰는 순서다. */}
+        <div className="rounded-[10px] border border-dashed border-ink-secondary/60 p-2.5">
+          <div className="mb-2 text-center text-[11px] font-bold text-ink-muted">
+            + 공지 추가 · 누구에게 보낼까요?
+          </div>
+          <div className="flex gap-1.5">
+            {NOTICE_AUDIENCES.map((a) => (
+              <form key={a.value} action={addNoticeAction.bind(null, classKey, a.value)} className="flex-1">
+                <button
+                  type="submit"
+                  className="w-full rounded-lg border border-line bg-white py-2 text-[12px] font-bold text-ink-secondary shadow-[0_1px_4px_rgba(20,30,60,0.10)]"
+                >
+                  {a.label}
+                </button>
+              </form>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

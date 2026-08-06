@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Notice } from "@/lib/types";
+import { NOTICE_AUDIENCES, type Notice, type NoticeAudience } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import { updateNoticeFieldAction, deleteNoticeAction } from "@/app/admin/students/notices/actions";
 
@@ -14,8 +14,9 @@ export function NoticeEditorRow({ notice }: { notice: Notice }) {
   const [date, setDate] = useState(notice.notice_date);
   const [tag, setTag] = useState(notice.tag);
   const [content, setContent] = useState(notice.content);
+  const [audience, setAudience] = useState<NoticeAudience>(notice.audience);
 
-  function commit(field: "title" | "notice_date" | "tag" | "content", value: string) {
+  function commit(field: "title" | "notice_date" | "tag" | "content" | "audience", value: string) {
     startTransition(async () => {
       await updateNoticeFieldAction(notice.id, field, value);
       showToast("저장됨");
@@ -33,6 +34,26 @@ export function NoticeEditorRow({ notice }: { notice: Notice }) {
 
   return (
     <div className="rounded-xl border border-line-soft bg-white p-3">
+      {/* 누구에게 보일지 — 학생 화면과 학부모 화면에서 각각 걸러진다. */}
+      <div className="mb-2 flex gap-1">
+        {NOTICE_AUDIENCES.map((a) => (
+          <button
+            key={a.value}
+            onClick={() => {
+              setAudience(a.value);
+              commit("audience", a.value);
+            }}
+            className={
+              "flex-1 rounded-lg border px-2 py-1.5 text-[11px] font-bold " +
+              (audience === a.value
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-white text-ink-muted")
+            }
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}

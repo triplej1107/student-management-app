@@ -325,6 +325,20 @@ export interface ClinicPercentilePoint {
   cohortSize: number | null;
 }
 
+/** 공지를 누구에게 보일지. 'both'가 기본 — 예전 공지는 전부 여기에 해당한다. */
+export type NoticeAudience = "student" | "parent" | "both";
+
+export const NOTICE_AUDIENCES: { value: NoticeAudience; label: string }[] = [
+  { value: "student", label: "학생" },
+  { value: "parent", label: "학부모" },
+  { value: "both", label: "학생＋학부모" },
+];
+
+/** 그 공지가 이 사람(학생/학부모)에게 보이는지. */
+export function isNoticeVisibleTo(audience: NoticeAudience, role: "student" | "parent"): boolean {
+  return audience === "both" || audience === role;
+}
+
 export interface Notice {
   id: number;
   class_key: ClassKey;
@@ -332,6 +346,7 @@ export interface Notice {
   notice_date: string;
   tag: string;
   content: string;
+  audience: NoticeAudience;
   created_at: string;
 }
 

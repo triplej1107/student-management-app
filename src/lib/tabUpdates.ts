@@ -37,7 +37,10 @@ function latestPublishedWeekISO(): string | null {
 }
 
 /** 탭별 "마지막으로 내용이 바뀐 시각". 값이 없으면 보여줄 게 없다는 뜻. */
-async function getLatestUpdates(student: Student): Promise<Record<StudentTabKey, string | null>> {
+async function getLatestUpdates(
+  student: Student,
+  role: string
+): Promise<Record<StudentTabKey, string | null>> {
   const classKey = student.class_key;
   const publishedWeek = latestPublishedWeekISO();
 
@@ -74,6 +77,8 @@ async function getLatestUpdates(student: Student): Promise<Record<StudentTabKey,
           .from("notices")
           .select("created_at")
           .eq("class_key", classKey)
+          // 학부모 전용 공지 때문에 학생 탭에 점이 뜨면 안 된다(반대도 마찬가지).
+          .in("audience", ["both", role === "parent" ? "parent" : "student"])
           .order("created_at", { ascending: false })
           .limit(1)
       : Promise.resolve({ data: [] }),
@@ -99,7 +104,7 @@ async function getLatestUpdates(student: Student): Promise<Record<StudentTabKey,
  */
 export async function getStudentTabDots(student: Student, role: string): Promise<string[]> {
   const [updates, { data: seenRows }] = await Promise.all([
-    getLatestUpdates(student),
+    getLatestUpdates(student, role),
     supabase
       .from("student_tab_seen")
       .select("tab, seen_at")

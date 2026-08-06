@@ -23,7 +23,9 @@ export default async function StudentNoticesPage({
   const nextMonth = toYearMonth(addMonths(monthDate, 1));
 
   const [notices, allMonthNotes] = await Promise.all([
-    student.class_key ? listNoticesForClass(student.class_key) : [],
+    student.class_key
+      ? listNoticesForClass(student.class_key, undefined, session.role === "parent" ? "parent" : "student")
+      : [],
     listCalendarNotesForRange(monthStart(monthDate), monthEnd(monthDate)),
   ]);
   const calendarNotes = allMonthNotes.filter(

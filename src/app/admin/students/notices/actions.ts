@@ -3,17 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { requireZongjuSession } from "@/lib/authz";
 import { createNotice, updateNotice, deleteNotice } from "@/lib/data";
-import type { ClassKey, Notice } from "@/lib/types";
+import type { ClassKey, Notice, NoticeAudience } from "@/lib/types";
 
-export async function addNoticeAction(classKey: ClassKey) {
+export async function addNoticeAction(classKey: ClassKey, audience: NoticeAudience) {
   await requireZongjuSession();
-  await createNotice(classKey);
+  await createNotice(classKey, audience);
   revalidatePath("/admin/students/notices");
 }
 
 export async function updateNoticeFieldAction(
   id: number,
-  field: keyof Pick<Notice, "title" | "notice_date" | "tag" | "content">,
+  field: keyof Pick<Notice, "title" | "notice_date" | "tag" | "content" | "audience">,
   value: string
 ) {
   await requireZongjuSession();

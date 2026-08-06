@@ -52,7 +52,9 @@ export default async function StudentHomePage() {
   const [template, check, notices, balance, tier, history, backlog, parentQuestion] = await Promise.all([
     student.class_key ? getClinicTemplate(student.class_key, clinicWeekStart) : null,
     getClinicCheck(student.id, clinicWeekStart),
-    student.class_key ? listNoticesForClass(student.class_key, 3) : [],
+    student.class_key
+      ? listNoticesForClass(student.class_key, 3, isStudent ? "student" : "parent")
+      : [],
     isStudent ? getUjcBalance(student.id) : Promise.resolve(null),
     isStudent ? getStudentTier(student.id) : Promise.resolve(null),
     isStudent ? getUjcHistory(student.id, 5) : Promise.resolve([]),

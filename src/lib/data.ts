@@ -27,6 +27,7 @@ import type {
   MakeupSchedule,
   MockExam,
   Notice,
+  NoticeAudience,
   SchoolExam,
   Staff,
   Student,
@@ -813,9 +814,15 @@ export async function getStaffNameMap(): Promise<Map<number, string>> {
 // notices
 // ============================================================
 
+/**
+ * @param forRole 넘기면 그 사람에게 공개된 공지만 — 학생 화면은 학부모 전용
+ *   공지를, 학부모 화면은 학생 전용 공지를 보면 안 된다. 종주T·조교 화면은
+ *   안 넘기고 전부 본다.
+ */
 export async function listNoticesForClass(
   classKey: ClassKey,
-  limit?: number
+  limit?: number,
+  forRole?: "student" | "parent"
 ): Promise<Notice[]> {
   let q = supabase
     .from("notices")
@@ -823,15 +830,23 @@ export async function listNoticesForClass(
     .eq("class_key", classKey)
     .order("notice_date", { ascending: false })
     .order("id", { ascending: false });
+  if (forRole) q = q.in("audience", ["both", forRole]);
   if (limit) q = q.limit(limit);
   const { data } = await q;
   return (data as Notice[]) ?? [];
 }
 
-export async function createNotice(classKey: ClassKey) {
+export async function createNotice(classKey: ClassKey, audience: NoticeAudience = "both") {
   const { data } = await supabase
     .from("notices")
-    .insert({ class_key: classKey, title: "", notice_date: toISODate(kstToday()), tag: "", content: "" })
+    .insert({
+      class_key: classKey,
+      title: "",
+      notice_date: toISODate(kstToday()),
+      tag: "",
+      content: "",
+      audience,
+    })
     .select("*")
     .single();
   return data as Notice;
@@ -839,7 +854,7 @@ export async function createNotice(classKey: ClassKey) {
 
 export async function updateNotice(
   id: number,
-  fields: Partial<Pick<Notice, "title" | "notice_date" | "tag" | "content">>
+  fields: Partial<Pick<Notice, "title" | "notice_date" | "tag" | "content" | "audience">>
 ) {
   await supabase.from("notices").update(fields).eq("id", id);
 }

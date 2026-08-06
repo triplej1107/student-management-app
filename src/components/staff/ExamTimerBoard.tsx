@@ -10,6 +10,7 @@ import {
   formatRemaining,
   remainingSeconds,
   matchStudents,
+  sortByRemaining,
   timerLevel,
   warningMessage,
   type TimerLevel,
@@ -26,6 +27,14 @@ import {
 
 function nowHHMM() {
   return kstTimeHHMM(new Date().toISOString());
+}
+
+function stateOf(t: ExamTimer) {
+  return {
+    startAtISO: t.start_at,
+    durationSeconds: t.duration_seconds,
+    pausedRemainingSeconds: t.paused_remaining_seconds,
+  };
 }
 
 /** 10분 남으면 노란 칸, 1분 남으면 빨간 칸. 그 사이(5분)는 글자만 빨개진다 —
@@ -71,14 +80,7 @@ export function ExamTimerBoard({
   useEffect(() => {
     const fresh: string[] = [];
     for (const t of timers) {
-      const rem = remainingSeconds(
-        {
-          startAtISO: t.start_at,
-          durationSeconds: t.duration_seconds,
-          pausedRemainingSeconds: t.paused_remaining_seconds,
-        },
-        nowMs
-      );
+      const rem = remainingSeconds(stateOf(t), nowMs);
       const prev = prevRemaining.current.get(t.id);
       if (prev !== undefined) {
         const crossed = (line: number) => prev > line && rem <= line;
@@ -116,7 +118,7 @@ export function ExamTimerBoard({
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-1.5">
-          {timers.map((t) => (
+          {sortByRemaining(timers, nowMs, stateOf).map((t) => (
             <TimerCard key={t.id} timer={t} nowMs={nowMs} onEdit={() => setEditing(t)} />
           ))}
         </div>
@@ -154,14 +156,7 @@ function TimerCard({
   const [pending, startTransition] = useTransition();
 
   const paused = timer.paused_remaining_seconds !== null;
-  const rem = remainingSeconds(
-    {
-      startAtISO: timer.start_at,
-      durationSeconds: timer.duration_seconds,
-      pausedRemainingSeconds: timer.paused_remaining_seconds,
-    },
-    nowMs
-  );
+  const rem = remainingSeconds(stateOf(timer), nowMs);
   const level = timerLevel(rem);
 
   function run(action: () => Promise<void>) {

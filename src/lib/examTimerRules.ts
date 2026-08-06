@@ -86,6 +86,23 @@ function withLabel(studentName: string, examLabel: string | null): string {
   return `${studentName} 학생${what}`;
 }
 
+/**
+ * 적게 남은 사람이 앞으로 — 화면 좌측 상단부터 급한 순서로 깔린다.
+ *
+ * 끝난(0 이하) 타이머가 맨 앞에 온다. 시험지를 제일 먼저 걷어야 할 사람이라
+ * 눈에 제일 먼저 띄어야 한다. 남은 시간이 같으면 먼저 등록한 순서를 지킨다
+ * (자바스크립트 sort가 안정 정렬이라 입력 순서가 그대로 남는다).
+ */
+export function sortByRemaining<T>(
+  timers: T[],
+  nowMs: number,
+  toState: (t: T) => TimerState
+): T[] {
+  return [...timers].sort(
+    (a, b) => remainingSeconds(toState(a), nowMs) - remainingSeconds(toState(b), nowMs)
+  );
+}
+
 export interface TimerStudentOption {
   name: string;
   code: string;

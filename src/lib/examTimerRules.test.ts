@@ -6,6 +6,7 @@ import {
   kstTimeToISO,
   remainingSeconds,
   resumeStartAtISO,
+  sortByRemaining,
   timerLevel,
   warningMessage,
 } from "./examTimerRules";
@@ -58,6 +59,44 @@ describe("resumeStartAtISO", () => {
       now
     );
     expect(after).toBe(25 * 60);
+  });
+});
+
+describe("sortByRemaining", () => {
+  const now = Date.parse("2026-08-06T05:00:00.000Z");
+  const at = (minutesLeft: number, name: string) => ({
+    name,
+    startAtISO: new Date(now - (80 - minutesLeft) * 60 * 1000).toISOString(),
+    durationSeconds: 80 * 60,
+    pausedRemainingSeconds: null as number | null,
+  });
+  const state = (t: ReturnType<typeof at>) => t;
+
+  it("적게 남은 사람이 앞으로", () => {
+    const sorted = sortByRemaining([at(40, "가"), at(5, "나"), at(70, "다")], now, state);
+    expect(sorted.map((t) => t.name)).toEqual(["나", "가", "다"]);
+  });
+
+  it("끝난 타이머가 맨 앞 — 제일 먼저 걷어야 한다", () => {
+    const sorted = sortByRemaining([at(5, "가"), at(-3, "끝남"), at(1, "나")], now, state);
+    expect(sorted.map((t) => t.name)).toEqual(["끝남", "나", "가"]);
+  });
+
+  it("정지된 타이머는 멈춰둔 남은 시간으로 줄을 선다", () => {
+    const paused = { ...at(70, "정지중"), pausedRemainingSeconds: 60 };
+    const sorted = sortByRemaining([at(5, "가"), paused], now, state);
+    expect(sorted.map((t) => t.name)).toEqual(["정지중", "가"]);
+  });
+
+  it("남은 시간이 같으면 먼저 등록한 순서를 지킨다", () => {
+    const sorted = sortByRemaining([at(10, "먼저"), at(10, "나중")], now, state);
+    expect(sorted.map((t) => t.name)).toEqual(["먼저", "나중"]);
+  });
+
+  it("원본 배열을 건드리지 않는다", () => {
+    const input = [at(40, "가"), at(5, "나")];
+    sortByRemaining(input, now, state);
+    expect(input.map((t) => t.name)).toEqual(["가", "나"]);
   });
 });
 

@@ -6,9 +6,12 @@ import { kstTimeHHMM } from "@/lib/weeks";
 import {
   DEFAULT_DURATION_MINUTES,
   WARN_BEFORE_SECONDS,
+  finishedMessage,
   formatRemaining,
   remainingSeconds,
+  timerLevel,
   warningMessage,
+  type TimerLevel,
 } from "@/lib/examTimerRules";
 import type { ExamTimer } from "@/lib/examTimers";
 import {
@@ -23,6 +26,24 @@ function nowHHMM() {
   return kstTimeHHMM(new Date().toISOString());
 }
 
+/** 10분 남으면 노란 칸, 1분 남으면 빨간 칸. 그 사이(5분)는 글자만 빨개진다 —
+ * 칸까지 다 빨개지면 정작 1분 남은 학생이 안 보인다. */
+const CARD_TONE: Record<TimerLevel, string> = {
+  normal: "border-line bg-white",
+  warn: "border-warn bg-warn-soft",
+  urgent: "border-warn bg-warn-soft",
+  critical: "border-danger bg-danger-soft",
+  done: "border-danger bg-danger-soft",
+};
+
+const TIME_TONE: Record<TimerLevel, string> = {
+  normal: "text-ink",
+  warn: "text-warn",
+  urgent: "text-danger",
+  critical: "text-danger",
+  done: "text-danger",
+};
+
 export function ExamTimerBoard({ timers }: { timers: ExamTimer[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState<ExamTimer | "new" | null>(null);
@@ -35,8 +56,8 @@ export function ExamTimerBoard({ timers }: { timers: ExamTimer[] }) {
     return () => clearInterval(id);
   }, []);
 
-  // 10분 선을 "넘는 순간"만 잡는다. 남은 시간이 10분 이하인 걸 그냥 보고
-  // 띄우면 새로고침할 때마다 다시 뜬다.
+  // 10분 선과 0초 선을 "넘는 순간"만 잡는다. 남은 시간이 그 아래인 걸 그냥
+  // 보고 띄우면 새로고침할 때마다 다시 뜬다.
   const prevRemaining = useRef(new Map<number, number>());
   const [warnings, setWarnings] = useState<string[]>([]);
   useEffect(() => {
@@ -51,8 +72,12 @@ export function ExamTimerBoard({ timers }: { timers: ExamTimer[] }) {
         nowMs
       );
       const prev = prevRemaining.current.get(t.id);
-      if (prev !== undefined && prev > WARN_BEFORE_SECONDS && rem <= WARN_BEFORE_SECONDS && rem > 0) {
-        fresh.push(warningMessage(t.student_name, t.exam_label));
+      if (prev !== undefined) {
+        const crossed = (line: number) => prev > line && rem <= line;
+        if (crossed(0)) fresh.push(finishedMessage(t.student_name, t.exam_label));
+        else if (crossed(WARN_BEFORE_SECONDS)) {
+          fresh.push(warningMessage(t.student_name, t.exam_label));
+        }
       }
       prevRemaining.current.set(t.id, rem);
     }
@@ -128,8 +153,7 @@ function TimerCard({
     },
     nowMs
   );
-  const done = rem <= 0;
-  const soon = !done && rem <= WARN_BEFORE_SECONDS;
+  const level = timerLevel(rem);
 
   function run(action: () => Promise<void>) {
     startTransition(async () => {
@@ -139,12 +163,7 @@ function TimerCard({
   }
 
   return (
-    <div
-      className={
-        "overflow-hidden rounded-lg border " +
-        (done ? "border-danger bg-danger-soft" : soon ? "border-warn bg-warn-soft" : "border-line bg-white")
-      }
-    >
+    <div className={"overflow-hidden rounded-lg border " + CARD_TONE[level]}>
       <div className="truncate px-1 py-1.5 text-center text-[15px] font-extrabold text-ink">
         {timer.student_name}
       </div>
@@ -152,12 +171,7 @@ function TimerCard({
         <div className="flex-1 border-r border-line-soft py-1 text-[11px] text-ink-muted tabular-nums">
           {kstTimeHHMM(timer.start_at)}
         </div>
-        <div
-          className={
-            "flex-1 py-1 text-[11px] font-extrabold tabular-nums " +
-            (done ? "text-danger" : soon ? "text-warn" : "text-ink")
-          }
-        >
+        <div className={"flex-1 py-1 text-[11px] font-extrabold tabular-nums " + TIME_TONE[level]}>
           {paused ? `⏸ ${formatRemaining(rem)}` : formatRemaining(rem)}
         </div>
       </div>

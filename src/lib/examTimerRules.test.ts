@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
+  finishedMessage,
   formatRemaining,
   kstTimeToISO,
   remainingSeconds,
   resumeStartAtISO,
+  timerLevel,
   warningMessage,
 } from "./examTimerRules";
 
@@ -73,6 +75,45 @@ describe("kstTimeToISO", () => {
     expect(kstTimeToISO("2026-08-06", "25:00")).toBeNull();
     expect(kstTimeToISO("2026-08-06", "13:70")).toBeNull();
     expect(kstTimeToISO("2026-08-06", "")).toBeNull();
+  });
+});
+
+describe("timerLevel", () => {
+  it("10분 넘게 남았으면 평소 색", () => {
+    expect(timerLevel(11 * 60)).toBe("normal");
+    expect(timerLevel(600.5)).toBe("normal");
+  });
+
+  it("10분 이하면 노란 칸", () => {
+    expect(timerLevel(10 * 60)).toBe("warn");
+    expect(timerLevel(5 * 60 + 1)).toBe("warn");
+  });
+
+  it("5분 이하면 글자가 빨개진다 (칸은 아직 노랑)", () => {
+    expect(timerLevel(5 * 60)).toBe("urgent");
+    expect(timerLevel(61)).toBe("urgent");
+  });
+
+  it("1분 이하면 칸까지 빨개진다", () => {
+    expect(timerLevel(60)).toBe("critical");
+    expect(timerLevel(1)).toBe("critical");
+  });
+
+  it("시간이 다 되면 종료", () => {
+    expect(timerLevel(0)).toBe("done");
+    expect(timerLevel(-5)).toBe("done");
+  });
+});
+
+describe("finishedMessage", () => {
+  it("시험 이름이 있으면 같이 넣는다", () => {
+    expect(finishedMessage("이순신", "모의고사 4회차")).toBe(
+      "이순신 학생 모의고사 4회차 시간이 끝났습니다!"
+    );
+  });
+
+  it("시험 이름이 없으면 이름만", () => {
+    expect(finishedMessage("이순신", null)).toBe("이순신 학생 시간이 끝났습니다!");
   });
 });
 

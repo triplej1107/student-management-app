@@ -12,6 +12,10 @@ export const DEFAULT_DURATION_MINUTES = 80;
 
 /** 이만큼 남았을 때 조교에게 팝업을 띄운다. */
 export const WARN_BEFORE_SECONDS = 10 * 60;
+/** 남은 시간 글자가 빨개진다. */
+export const RED_TEXT_SECONDS = 5 * 60;
+/** 칸 전체가 빨개진다 — 이제 곧 걷어야 한다. */
+export const RED_CARD_SECONDS = 60;
 
 export interface TimerState {
   startAtISO: string;
@@ -63,8 +67,31 @@ export function kstTimeToISO(dateISO: string, hhmm: string): string | null {
   return new Date(Date.UTC(y, mo - 1, d, hh - 9, mm)).toISOString();
 }
 
+/**
+ * 카드 색 단계. 시간이 다가올수록 세게 — 10분 노란 칸, 5분 빨간 글자,
+ * 1분 빨간 칸, 끝나면 종료.
+ */
+export type TimerLevel = "normal" | "warn" | "urgent" | "critical" | "done";
+
+export function timerLevel(remaining: number): TimerLevel {
+  if (remaining <= 0) return "done";
+  if (remaining <= RED_CARD_SECONDS) return "critical";
+  if (remaining <= RED_TEXT_SECONDS) return "urgent";
+  if (remaining <= WARN_BEFORE_SECONDS) return "warn";
+  return "normal";
+}
+
+function withLabel(studentName: string, examLabel: string | null): string {
+  const what = examLabel?.trim() ? ` ${examLabel.trim()}` : "";
+  return `${studentName} 학생${what}`;
+}
+
 /** 10분 전 알림 문구 — "이순신 학생 모의고사 4회차 10분 남았습니다!" */
 export function warningMessage(studentName: string, examLabel: string | null): string {
-  const what = examLabel?.trim() ? ` ${examLabel.trim()}` : "";
-  return `${studentName} 학생${what} 10분 남았습니다!`;
+  return `${withLabel(studentName, examLabel)} 10분 남았습니다!`;
+}
+
+/** 시간이 다 됐을 때 — "이순신 학생 모의고사 4회차 시간이 끝났습니다!" */
+export function finishedMessage(studentName: string, examLabel: string | null): string {
+  return `${withLabel(studentName, examLabel)} 시간이 끝났습니다!`;
 }

@@ -324,6 +324,34 @@ export async function setMakeup(
   );
 }
 
+/**
+ * 그 주차 클리닉 기간에 잡힌 조정(대체) 일정 — 점검표 화면에서 "조교
+ * 전달사항"을 띄우는 데 쓴다.
+ *
+ * 점검표 주차(week_start)는 "수업을 한 주"이고 그 클리닉은 다음 주에
+ * 진행되므로(today.ts의 clinicWeekStart 참고), 조정 기록은 한 주 뒤 구간에서
+ * 찾아야 한다. 학생은 주당 클리닉이 하나라 보통 한 건이지만, 혹시 여러 건이면
+ * 가장 나중 것을 쓴다.
+ */
+export async function getMakeupForClinicWeek(
+  studentId: number,
+  weekStart: Date
+): Promise<MakeupSchedule | null> {
+  const from = new Date(weekStart);
+  from.setDate(from.getDate() + 7);
+  const to = new Date(from);
+  to.setDate(to.getDate() + 6);
+  const { data } = await supabase
+    .from("makeup_schedules")
+    .select("*")
+    .eq("student_id", studentId)
+    .gte("session_date", toISODate(from))
+    .lte("session_date", toISODate(to))
+    .order("session_date", { ascending: false })
+    .limit(1);
+  return ((data as MakeupSchedule[]) ?? [])[0] ?? null;
+}
+
 export async function clearMakeup(studentId: number, sessionDate: Date) {
   await supabase
     .from("makeup_schedules")

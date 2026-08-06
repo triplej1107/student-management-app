@@ -1,13 +1,20 @@
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/BackButton";
 import { requireStaffSession } from "@/lib/authz";
-import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from "@/lib/data";
+import {
+  getClinicCheck,
+  getClinicTemplate,
+  getMakeupForClinicWeek,
+  getStaffById,
+  getStudentById,
+} from "@/lib/data";
 import { getOmrSubmissionsForStudentWeek } from "@/lib/clinicOmr";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
 import { resolveBackHref, fromQuery } from "@/lib/backTarget";
 import { ClinicChecklistEditor } from "@/components/staff/ClinicChecklistEditor";
 import { FeedbackEditor } from "@/components/staff/FeedbackEditor";
+import { ClinicStaffNote } from "@/components/staff/ClinicStaffNote";
 
 export default async function StaffClinicDetailPage({
   params,
@@ -28,11 +35,12 @@ export default async function StaffClinicDetailPage({
   const selectedWeekISO = toISODate(selectedWeekStart);
 
   const classKey = student.class_key;
-  const [template, check, currentStaff, omrSubmissions] = await Promise.all([
+  const [template, check, currentStaff, omrSubmissions, makeup] = await Promise.all([
     classKey ? getClinicTemplate(classKey, selectedWeekStart) : null,
     getClinicCheck(student.id, selectedWeekStart),
     getStaffById(session.staffId),
     getOmrSubmissionsForStudentWeek(student.id, selectedWeekISO),
+    getMakeupForClinicWeek(student.id, selectedWeekStart),
   ]);
   const approvedByStaff = check?.staff_approved_by ? await getStaffById(check.staff_approved_by) : null;
 
@@ -81,6 +89,8 @@ export default async function StaffClinicDetailPage({
         </span>
         <span className="text-ink-muted">{todayLabel}</span>
       </div>
+
+      <ClinicStaffNote makeup={makeup} />
 
       {!template && <EmptyState>이 주차는 아직 종주T가 원본을 등록하지 않았어요.</EmptyState>}
 

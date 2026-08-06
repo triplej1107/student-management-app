@@ -1,13 +1,20 @@
 import { notFound } from "next/navigation";
 import { BackButton } from "@/components/BackButton";
 import { requireZongjuSession } from "@/lib/authz";
-import { getClinicCheck, getClinicTemplate, getStaffById, getStudentById } from "@/lib/data";
+import {
+  getClinicCheck,
+  getClinicTemplate,
+  getMakeupForClinicWeek,
+  getStaffById,
+  getStudentById,
+} from "@/lib/data";
 import { getOmrSubmissionsForStudentWeek } from "@/lib/clinicOmr";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
 import { resolveBackHref, fromQuery } from "@/lib/backTarget";
 import { AdminApprovalChecklist } from "@/components/admin/AdminApprovalChecklist";
 import { ZongjuFeedbackEditor } from "@/components/admin/ZongjuFeedbackEditor";
+import { ClinicStaffNote } from "@/components/staff/ClinicStaffNote";
 
 export default async function AdminApprovalDetailPage({
   params,
@@ -28,10 +35,11 @@ export default async function AdminApprovalDetailPage({
   const selectedWeekISO = toISODate(selectedWeekStart);
 
   const classKey = student.class_key;
-  const [template, check, omrSubmissions] = await Promise.all([
+  const [template, check, omrSubmissions, makeup] = await Promise.all([
     classKey ? getClinicTemplate(classKey, selectedWeekStart) : null,
     getClinicCheck(student.id, selectedWeekStart),
     getOmrSubmissionsForStudentWeek(student.id, selectedWeekISO),
+    getMakeupForClinicWeek(student.id, selectedWeekStart),
   ]);
   const approvedByStaff = check?.staff_approved_by ? await getStaffById(check.staff_approved_by) : null;
 
@@ -78,6 +86,8 @@ export default async function AdminApprovalDetailPage({
         </span>
         <span className="text-ink-muted">{todayLabel}</span>
       </div>
+
+      <ClinicStaffNote makeup={makeup} />
 
       {!template && <EmptyState>이 주차는 아직 원본을 등록하지 않았어요.</EmptyState>}
 

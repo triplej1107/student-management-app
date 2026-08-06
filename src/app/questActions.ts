@@ -11,6 +11,7 @@ import {
   deleteQuestPreset,
   markQuestFeedbackSeen,
   reviewQuest,
+  updateQuestPreset,
 } from "@/lib/quests";
 import { getPushSubscriptionsForAllStaff, sendQuestPush } from "@/lib/clinicPush";
 
@@ -66,6 +67,14 @@ export async function addQuestPresetAction(content: string) {
   const text = content.trim();
   if (!text) throw new Error("문구를 입력해주세요.");
   await createQuestPreset(text);
+  revalidatePath("/admin/staff/quests");
+}
+
+export async function updateQuestPresetAction(id: number, content: string) {
+  await requireZongjuSession();
+  const text = content.trim();
+  if (!text) throw new Error("문구를 입력해주세요.");
+  await updateQuestPreset(id, text);
   revalidatePath("/admin/staff/quests");
 }
 

@@ -134,6 +134,10 @@ export async function createQuestPreset(content: string) {
   await supabase.from("quest_presets").insert({ content });
 }
 
+export async function updateQuestPreset(id: number, content: string) {
+  await supabase.from("quest_presets").update({ content }).eq("id", id);
+}
+
 export async function deleteQuestPreset(id: number) {
   await supabase.from("quest_presets").delete().eq("id", id);
 }

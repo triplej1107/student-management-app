@@ -10,6 +10,7 @@ import {
   deleteQuestAction,
   deleteQuestPresetAction,
   sendQuestAction,
+  updateQuestPresetAction,
 } from "@/app/questActions";
 
 const STAGE_LABEL: Record<QuestStage, string> = {
@@ -27,6 +28,49 @@ const STAGE_STYLE: Record<QuestStage, string> = {
   feedback: "bg-accent-soft text-accent",
   closed: "bg-line-soft text-ink-muted",
 };
+
+/** 문구 관리 중일 때의 한 줄 — 고쳐 쓰면 칸을 벗어날 때 저장된다. */
+function PresetEditRow({ preset, disabled }: { preset: QuestPreset; disabled: boolean }) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [, startTransition] = useTransition();
+  const [text, setText] = useState(preset.content);
+
+  return (
+    <div className="flex gap-1.5">
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={(e) => {
+          const next = e.target.value.trim();
+          if (!next || next === preset.content) {
+            setText(preset.content);
+            return;
+          }
+          startTransition(async () => {
+            await updateQuestPresetAction(preset.id, next);
+            showToast("문구를 고쳤어요");
+            router.refresh();
+          });
+        }}
+        className="flex-1 rounded-xl border border-line px-2.5 py-2.5 text-[13px]"
+      />
+      <button
+        disabled={disabled}
+        onClick={() => {
+          if (!confirm(`"${preset.content}" 문구를 지울까요?`)) return;
+          startTransition(async () => {
+            await deleteQuestPresetAction(preset.id);
+            router.refresh();
+          });
+        }}
+        className="flex-none rounded-xl border border-danger-soft bg-danger-soft px-2.5 text-[11px] font-bold text-danger disabled:opacity-50"
+      >
+        삭제
+      </button>
+    </div>
+  );
+}
 
 export function QuestManager({
   presets,
@@ -58,6 +102,23 @@ export function QuestManager({
   return (
     <div>
       <div className="rounded-2xl border border-line-soft bg-white p-3.5">
+        <div className="text-sm font-extrabold text-ink">직접 쓰기</div>
+        <textarea
+          value={freeText}
+          onChange={(e) => setFreeText(e.target.value)}
+          placeholder="예: 3층 복사기 토너 갈아주세요"
+          className="mt-2 min-h-[60px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
+        />
+        <button
+          disabled={pending || !freeText.trim()}
+          onClick={() => send(freeText, () => setFreeText(""))}
+          className="mt-2 w-full rounded-xl bg-accent py-2.5 text-[13px] font-bold text-white disabled:opacity-50"
+        >
+          조교에게 보내기
+        </button>
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-line-soft bg-white p-3.5">
         <div className="flex items-center justify-between">
           <div className="text-sm font-extrabold text-ink">자주 쓰는 요청</div>
           <button
@@ -77,31 +138,20 @@ export function QuestManager({
               저장해둔 문구가 없어요. &ldquo;문구 관리&rdquo;에서 추가해보세요.
             </div>
           )}
-          {presets.map((p) => (
-            <div key={p.id} className="flex gap-1.5">
+          {presets.map((p) =>
+            editingPresets ? (
+              <PresetEditRow key={p.id} preset={p} disabled={pending} />
+            ) : (
               <button
+                key={p.id}
                 disabled={pending}
                 onClick={() => send(p.content)}
-                className="flex-1 rounded-xl border border-accent bg-accent-soft px-3 py-2.5 text-left text-[13px] font-bold text-accent disabled:opacity-50"
+                className="rounded-xl border border-accent bg-accent-soft px-3 py-2.5 text-left text-[13px] font-bold text-accent disabled:opacity-50"
               >
                 ⚡ {p.content}
               </button>
-              {editingPresets && (
-                <button
-                  disabled={pending}
-                  onClick={() =>
-                    startTransition(async () => {
-                      await deleteQuestPresetAction(p.id);
-                      router.refresh();
-                    })
-                  }
-                  className="flex-none rounded-xl border border-danger-soft bg-danger-soft px-2.5 text-[11px] font-bold text-danger disabled:opacity-50"
-                >
-                  삭제
-                </button>
-              )}
-            </div>
-          ))}
+            )
+          )}
         </div>
 
         {editingPresets && (
@@ -127,23 +177,6 @@ export function QuestManager({
             </button>
           </div>
         )}
-      </div>
-
-      <div className="mt-3 rounded-2xl border border-line-soft bg-white p-3.5">
-        <div className="text-sm font-extrabold text-ink">직접 쓰기</div>
-        <textarea
-          value={freeText}
-          onChange={(e) => setFreeText(e.target.value)}
-          placeholder="예: 3층 복사기 토너 갈아주세요"
-          className="mt-2 min-h-[60px] w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
-        />
-        <button
-          disabled={pending || !freeText.trim()}
-          onClick={() => send(freeText, () => setFreeText(""))}
-          className="mt-2 w-full rounded-xl bg-accent py-2.5 text-[13px] font-bold text-white disabled:opacity-50"
-        >
-          조교에게 보내기
-        </button>
       </div>
 
       <div className="mt-4">

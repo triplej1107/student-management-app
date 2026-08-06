@@ -1164,28 +1164,10 @@ function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
   const snap = (v: number) => Math.round(v / cell) * cell;
   const topY = BASELINE - p.bodyH;
   let s = "";
-  // 얼굴 아이템은 반드시 손 아이템보다 뒤 (원장 지시 2026-08-03)
+  /* 겹치는 순서 — 먼저 그린 것이 아래. 얼굴 → 모자 → 왼손 → 오른손.
+     얼굴은 손보다 아래 (원장 지시 2026-08-03), 손은 모자보다도 위 (2026-08-05).
+     손에 든 물건이 몸 앞으로 나와야 든 것으로 보인다. */
   if (equip.eyewear) s += pixelGlassesFor(equip.eyewear, p, cell);
-  const rSp = equip.weapon ? equipSpriteFor(equip.weapon, cell) : null;
-  if (rSp) {
-    const w = rSp.rows[0].length * rSp.cell;
-    // 그립이 몸 가장자리에 살짝 겹치게 — 들고 있는 느낌
-    // 삼지창은 두 칸 안쪽으로 붙인다 (원장 지시 2026-08-03)
-    const inset = equip.weapon === "archdemon_right" ? 2 * cell : 0;
-    const x0 = snap(p.bodyW - 6) - Math.floor(w / 2 / cell) * cell - inset;
-    const y0 = snap(BASELINE - cell * 2) - rSp.rows.length * rSp.cell;
-    const gx = x0 + w / 2;
-    const gy = y0 + rSp.rows.length * rSp.cell - cell;
-    s += `<g transform="rotate(28 ${gx} ${gy})">` + spriteWithFx(rSp, x0, y0) + `</g>`;
-  }
-  const lSp = equip.shield ? equipSpriteFor(equip.shield, cell) : null;
-  if (lSp) {
-    const w = lSp.rows[0].length * lSp.cell;
-    const x0 = snap(-(p.bodyW + 11)) - Math.floor(w / 2 / cell) * cell;
-    // 오른손(그립이 바닥 근처)과 균형 맞춰 두 칸 아래 (원장 지시 2026-08-03)
-    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor((lSp.rows.length * lSp.cell) / 2 / cell) * cell + 2 * cell;
-    s += spriteWithFx(lSp, x0, y0);
-  }
   const hSp = equip.hat ? equipSpriteFor(equip.hat, cell) : null;
   if (hSp) {
     // 정중앙 + 1.2배 — "왕이다!". 꼭지는 slimeSvg에서 생략된다.
@@ -1198,6 +1180,26 @@ function equipLayer(equip: SlimeEquip, p: Derived, cell: number): string {
     const drop = equip.hat === "cap" || equip.hat === "meshcap" ? 1 : 0;
     const y0 = topY - (hatSp.rows.length - 2.5 - drop) * hatSp.cell;
     s += spriteWithFx(hatSp, x0, y0);
+  }
+  const lSp = equip.shield ? equipSpriteFor(equip.shield, cell) : null;
+  if (lSp) {
+    const w = lSp.rows[0].length * lSp.cell;
+    const x0 = snap(-(p.bodyW + 11)) - Math.floor(w / 2 / cell) * cell;
+    // 오른손(그립이 바닥 근처)과 균형 맞춰 두 칸 아래 (원장 지시 2026-08-03)
+    const y0 = snap(BASELINE - p.bodyH * 0.5) - Math.floor((lSp.rows.length * lSp.cell) / 2 / cell) * cell + 2 * cell;
+    s += spriteWithFx(lSp, x0, y0);
+  }
+  const rSp = equip.weapon ? equipSpriteFor(equip.weapon, cell) : null;
+  if (rSp) {
+    const w = rSp.rows[0].length * rSp.cell;
+    // 그립이 몸 가장자리에 살짝 겹치게 — 들고 있는 느낌
+    // 삼지창은 두 칸 안쪽으로 붙인다 (원장 지시 2026-08-03)
+    const inset = equip.weapon === "archdemon_right" ? 2 * cell : 0;
+    const x0 = snap(p.bodyW - 6) - Math.floor(w / 2 / cell) * cell - inset;
+    const y0 = snap(BASELINE - cell * 2) - rSp.rows.length * rSp.cell;
+    const gx = x0 + w / 2;
+    const gy = y0 + rSp.rows.length * rSp.cell - cell;
+    s += `<g transform="rotate(28 ${gx} ${gy})">` + spriteWithFx(rSp, x0, y0) + `</g>`;
   }
   return s;
 }

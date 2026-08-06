@@ -72,7 +72,12 @@ for (const it of data.items) {
 }
 const clean = data.items.map((it) => {
   const o = { ...it };
-  for (const st of ['baby', 'teen', 'awake']) if (o[st]) o[st] = { png: o[st].png, anchor: o[st].anchor };
+  for (const st of ['baby', 'teen', 'awake']) {
+    if (!o[st]) continue;
+    const keepScale = o[st].scale;
+    o[st] = { png: o[st].png, anchor: o[st].anchor };
+    if (keepScale && keepScale !== 1) o[st].scale = keepScale;   // 놓을 때 주는 배율은 살린다
+  }
   return o;
 });
 writeFileSync(join(out, 'items.json'),

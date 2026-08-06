@@ -2336,6 +2336,11 @@ const impCellOf = (tier) => (tier === "epic" || tier === "legendary") ? 1.5 : 3;
    cell 이 없는 것은 그 필드가 생기기 전에 담은 것이고, 그때 전역 기본값이 3 이었다.
    **등급은 새로 반입하는 것에만 적용된다. 담긴 것은 건드리지 않는다.** */
 const cellOfItem = (it) => (it && it.cell) || 3;
+/* 담은 뒤에 크기를 손보는 값. cell 은 「그린 해상도」라 거기에 섞으면 뜻이 흐려진다 —
+   기울기(rot)처럼 **놓을 때 주는 배치값**으로 따로 둔다. 앵커를 축으로 커지고 작아지므로
+   쥐는 자리·눈높이는 그대로 있고 덩치만 바뀐다. 단계마다 따로 준다(앵커와 같은 결). */
+const scaleOf = (it, st) => (it && it[st] && it[st].scale) || 1;
+const cellFor = (it, st) => cellOfItem(it) * scaleOf(it, st);
 let IMP_CELL = 3;
 /* 아이템 하나를 그 아이템의 칸 크기로 그린다. IBuf·toRects 가 전역 ICELL 을 보므로
    잠깐 바꿔 끼웠다가 되돌린다 — 몸통은 CELL 을 쓰니 영향이 없다. */
@@ -3298,7 +3303,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
         const it = parts.find((v) => v.slot === slot);
         if (!it || !it[st] || !it[st].art) continue;
         const rot = it.rot || 0;
-        const svg = impSvgAt(cellOfItem(it), unpackArt(it[st].art), slot, it[st].anchor, g.anchors,
+        const svg = impSvgAt(cellFor(it, st), unpackArt(it[st].art), slot, it[st].anchor, g.anchors,
                              false, ghost, slot === "left" ? -rot : rot);
         if (slot === "fx") back += svg; else front += svg;    // 이펙트만 몸통 뒤
       }
@@ -3358,9 +3363,31 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
         };
         return bt;
       };
+      const mkSize = (label, k) => {
+        const bt = document.createElement("button");
+        bt.textContent = label;
+        bt.style.cssText = "font:inherit;font-size:13px;line-height:1;padding:2px 7px;cursor:pointer;" +
+          "border:1px solid #c9c3b6;border-radius:6px;background:#fff;color:#c05a2e;font-weight:700";
+        bt.onclick = () => {
+          const v = loadItems(), t = v.find((x) => x.code === it.code);
+          if (!t) return;
+          for (const st of (setAll ? has : [setStage])) {
+            if (!t[st]) continue;
+            const now = Math.round(((t[st].scale || 1) + k) * 100) / 100;
+            t[st].scale = Math.min(3, Math.max(0.3, now));   // 0.3~3배 사이
+            if (t[st].scale === 1) delete t[st].scale;       // 기본값은 안 적는다
+          }
+          saveItems(v); drawList(); showSet(key);
+        };
+        return bt;
+      };
       line.append(mk2("←", -1, 0), mk2("→", 1, 0), mk2("↑", 0, -1), mk2("↓", 0, 1));
+      line.insertAdjacentHTML("beforeend", `<span style="width:6px;display:inline-block"></span>`);
+      line.append(mkSize("＋", 0.05), mkSize("－", -0.05));
+      const pct = Math.round(scaleOf(it, setStage) * 100);
       line.insertAdjacentHTML("beforeend",
-        ` <span style="color:#8b8578">${it.ko || it.code} [${it[setStage].anchor.join(", ")}]</span>`);
+        ` <span style="color:#8b8578">${it.ko || it.code} [${it[setStage].anchor.join(", ")}]` +
+        (pct !== 100 ? ` <b style="color:#c05a2e">${pct}%</b>` : "") + `</span>`);
       pane.appendChild(line);
     }
     wear.appendChild(pane);
@@ -3402,7 +3429,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       const deg = it.slot === "left" ? -rot : rot;
       const fig = document.createElement("figure");
       fig.style.cssText = "text-align:center;flex:1 1 0;min-width:0;max-width:190px";
-      fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(cellOfItem(it), r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot), 190)) +
+      fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(cellFor(it, st), r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot), 190)) +
         `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[st]}</figcaption>`;
       /* 담은 뒤에도 자리를 미세하게 옮길 수 있어야 한다 — 예전엔 다시 반입하는 수밖에
          없었다 (원장, 2026-08-05). 앵커를 반대로 밀면 그림이 그 방향으로 간다. */
@@ -3420,8 +3447,24 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
         };
         return bt;
       };
-      pad.append(mk("←", -1, 0), mk("→", 1, 0), mk("↑", 0, -1), mk("↓", 0, 1));
-      pad.insertAdjacentHTML("beforeend", ` <span>[${it[st].anchor.join(", ")}]</span>`);
+      const mkS = (label, k) => {
+        const bt = document.createElement("button");
+        bt.className = "imp"; bt.textContent = label;
+        bt.style.cssText = "padding:0 6px;font-size:12px;background:#232833;border-color:#4a3a20;color:#f5b95e";
+        bt.onclick = () => {
+          const v = loadItems(), t = v.find((x) => x.code === it.code);
+          if (!t || !t[st]) return;
+          const now = Math.round(((t[st].scale || 1) + k) * 100) / 100;
+          t[st].scale = Math.min(3, Math.max(0.3, now));
+          if (t[st].scale === 1) delete t[st].scale;
+          saveItems(v); drawList(); showSaved(t);
+        };
+        return bt;
+      };
+      pad.append(mk("←", -1, 0), mk("→", 1, 0), mk("↑", 0, -1), mk("↓", 0, 1), mkS("＋", 0.05), mkS("－", -0.05));
+      const pc = Math.round(scaleOf(it, st) * 100);
+      pad.insertAdjacentHTML("beforeend",
+        ` <span>[${it[st].anchor.join(", ")}]${pc !== 100 ? ` · <b style="color:#f5b95e">${pc}%</b>` : ""}</span>`);
       fig.appendChild(pad);
       row.appendChild(fig);
     }
@@ -3630,7 +3673,12 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
     // art 는 랩이 다시 보려고 들고 있는 것 — 매니페스트에는 넣지 않는다
     const clean = items.map((it) => {
       const o = { ...it };
-      for (const st of ["baby", "teen", "awake"]) if (o[st]) o[st] = { png: o[st].png, anchor: o[st].anchor };
+      for (const st of ["baby", "teen", "awake"]) {
+        if (!o[st]) continue;
+        o[st] = { png: o[st].png, anchor: o[st].anchor };
+        const sc = it[st].scale;
+        if (sc && sc !== 1) o[st].scale = sc;          // 놓을 때 주는 배율 (기본 1이면 안 적는다)
+      }
       return o;
     });
     return JSON.stringify({ cell: 3, authoredFor: "teen", items: clean }, null, 2)

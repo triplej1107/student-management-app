@@ -4,4 +4,5 @@ export const STAFF_SUB_TABS = [
   { href: "/admin/staff/feedback", label: "조교 피드백" },
   { href: "/admin/staff/reminders", label: "잊지마" },
   { href: "/admin/staff/new-students", label: "아싸신규" },
+  { href: "/admin/staff/quests", label: "돌발퀘스트" },
 ];

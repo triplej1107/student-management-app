@@ -23,7 +23,9 @@ import { StaffHomeModals } from "@/components/StaffHomeModals";
 import { ReminderBadges } from "@/components/ReminderBadges";
 import { NewStudentChecklist } from "@/components/NewStudentChecklist";
 import { ExamTimerBoard } from "@/components/staff/ExamTimerBoard";
+import { StaffQuestBanner } from "@/components/staff/StaffQuestBanner";
 import { listTodayExamTimers } from "@/lib/examTimers";
+import { getStaffQuests } from "@/lib/quests";
 import { logoutAction } from "@/app/login/actions";
 import { markStaffFeedbackSeenAction } from "@/app/staff/actions";
 
@@ -42,10 +44,11 @@ export default async function StaffHomePage() {
       getUnseenStaffFeedback(session.staffId),
       getTodayActiveReminders(toISODate(today)),
     ]);
-  const [onboardings, examTimers, allStudents] = await Promise.all([
+  const [onboardings, examTimers, allStudents, quests] = await Promise.all([
     listOpenOnboardings(),
     listTodayExamTimers(),
     listStudents({ enrolledOnly: true }),
+    getStaffQuests(),
   ]);
   // 타이머 이름칸 자동완성용. 학교·학년까지 같이 넘겨야 내신 기간에 생기는
   // 동명이인을 조교가 골라낼 수 있다.
@@ -80,6 +83,7 @@ export default async function StaffHomePage() {
   return (
     <div className="box-border px-5 pt-2 pb-6">
       <ReminderBadges reminders={reminders} />
+      <StaffQuestBanner quests={quests} />
 
       <div className="flex items-center justify-between">
         <div>

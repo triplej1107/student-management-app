@@ -22,6 +22,8 @@ import { DutySubstituteSection } from "@/components/admin/DutySubstituteSection"
 import { ParentQuestionsSection } from "@/components/admin/ParentQuestionsSection";
 import { AdminHomeModals } from "@/components/AdminHomeModals";
 import { ReminderBadges } from "@/components/ReminderBadges";
+import { ZongjuQuestBanner } from "@/components/admin/ZongjuQuestBanner";
+import { getZongjuQuests } from "@/lib/quests";
 import { NewStudentChecklist } from "@/components/NewStudentChecklist";
 import { addDutySubstituteAction, removeDutySubstituteAction, answerParentQuestionAction } from "./actions";
 import { DAY_ORDER } from "@/lib/types";
@@ -80,6 +82,7 @@ export default async function AdminHomePage() {
 
   const reminders = await getTodayActiveReminders(toISODate(today));
   const onboardings = await listOpenOnboardings();
+  const doneQuests = await getZongjuQuests();
 
   // 홈 화면은 아직 답변이 필요한 질문만 — 답변 완료된 건 "지난 내역 보기"에서 확인.
   const parentQuestions = (await getParentQuestionsForWeek(toISODate(questionWeekStart))).filter(
@@ -91,6 +94,7 @@ export default async function AdminHomePage() {
   return (
     <div>
       <ReminderBadges reminders={reminders} />
+      <ZongjuQuestBanner quests={doneQuests} />
 
       <div className="mt-1 text-[13px] text-ink-muted">{dateLabel}</div>
 

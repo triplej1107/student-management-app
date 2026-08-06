@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { supabase } from "./supabase";
 import { nowKST } from "./weeks";
 import { isQuietHour } from "./quietHours";
+import { isDeployedEnvironment } from "./env";
 
 const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -108,6 +109,12 @@ async function sendPushToSubs(
 ) {
   if (!publicKey || !privateKey || subs.length === 0) return;
   if (isQuietHoursKST() && !opts?.allowInQuietHours) return;
+  // 로컬에서 화면을 눌러보다가 실제 학생·조교 폰으로 알림이 나가는 사고를
+  // 막는다. 로컬은 운영 DB를 그대로 보기 때문에 구독 정보도 진짜다.
+  if (!isDeployedEnvironment()) {
+    console.log(`[push:dry-run] ${payload.title} / ${payload.body} → ${subs.length}건`);
+    return;
+  }
 
   const json = JSON.stringify(payload);
   const results = await Promise.allSettled(
@@ -144,6 +151,15 @@ export async function sendStaffFeedbackPush(subs: PushSubscriptionRow[], message
   await sendPushToSubs(subs, {
     title: "종주T의 한마디",
     body: message,
+    url: "/staff",
+  });
+}
+
+/** 돌발퀘스트를 조교 기기에 바로 띄운다 — 앱을 안 보고 있어도 알게. */
+export async function sendQuestPush(subs: PushSubscriptionRow[], content: string) {
+  await sendPushToSubs(subs, {
+    title: "⚡ 돌발퀘스트",
+    body: content,
     url: "/staff",
   });
 }

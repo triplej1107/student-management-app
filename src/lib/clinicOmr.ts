@@ -2,6 +2,7 @@ import "server-only";
 import { supabase } from "./supabase";
 import { getClinicCheck, setClinicTestScores, listStudentsByClass } from "./data";
 import { parseISODate } from "./weeks";
+import { wrongAnswers, type WrongAnswer } from "./omrReview";
 import type { ClassKey, ClinicAnswerKey, ClinicOmrSubmission, TestScore } from "./types";
 
 export async function getAnswerKey(
@@ -134,7 +135,7 @@ export async function submitOmr(
   testIndex: number,
   answers: string[],
   leftApp = false
-): Promise<{ score: number; total: number }> {
+): Promise<{ score: number; total: number; wrong: WrongAnswer[] }> {
   const key = await getAnswerKey(classKey, weekStartISO, testIndex);
   if (!key) throw new Error("아직 정답이 등록되지 않았어요.");
   if (answers.length !== key.answers.length) {
@@ -167,7 +168,7 @@ export async function submitOmr(
   testScores[testIndex] = { score: String(score), total: String(total) };
   await setClinicTestScores(studentId, weekStart, testScores);
 
-  return { score, total };
+  return { score, total, wrong: wrongAnswers(key.answers, answers) };
 }
 
 export interface QuestionAnalysis {

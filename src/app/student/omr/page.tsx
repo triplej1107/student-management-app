@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getStudentById, getClinicTemplate } from "@/lib/data";
 import { getAnswerKey, getOmrSubmission, questionWeights, isWeightedKey } from "@/lib/clinicOmr";
+import { wrongAnswers } from "@/lib/omrReview";
 import { filledTestSlots } from "@/lib/clinicProgress";
 import { getToday } from "@/lib/today";
 import { toISODate } from "@/lib/weeks";
@@ -27,7 +28,10 @@ export default async function StudentOmrPage() {
         student.class_key ? getAnswerKey(student.class_key, weekStartISO, testIndex) : null,
         getOmrSubmission(student.id, weekStartISO, testIndex),
       ]);
-      return { testIndex, label: template!.test_labels[testIndex], key, submission };
+      // 오답 정리는 서버에서만 계산한다 — 정답키 자체를 화면으로 내려보내면
+      // 제출 전에 정답을 볼 수 있게 된다.
+      const wrong = key && submission ? wrongAnswers(key.answers, submission.answers) : [];
+      return { testIndex, label: template!.test_labels[testIndex], key, submission, wrong };
     })
   );
 
@@ -45,7 +49,7 @@ export default async function StudentOmrPage() {
 
       <div className="mt-4 flex flex-col gap-3">
         {slotData.length === 0 && <EmptyState>이번 주엔 등록된 클리닉테스트가 없어요.</EmptyState>}
-        {slotData.map(({ testIndex, label, key, submission }) => (
+        {slotData.map(({ testIndex, label, key, submission, wrong }) => (
           <OmrMarkingCard
             key={testIndex}
             testIndex={testIndex}
@@ -54,6 +58,7 @@ export default async function StudentOmrPage() {
             weights={key && key.answers.length > 0 ? questionWeights(key) : []}
             weighted={key ? isWeightedKey(key) : false}
             submission={submission}
+            wrong={wrong}
           />
         ))}
       </div>

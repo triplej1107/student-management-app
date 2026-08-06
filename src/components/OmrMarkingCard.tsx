@@ -5,6 +5,7 @@ import { useToast } from "@/components/Toast";
 import { submitOmrAction } from "@/app/student/actions";
 import { OmrStartWarningModal } from "@/components/OmrStartWarningModal";
 import { OMR_CHOICE_COUNT, type ClinicOmrSubmission } from "@/lib/types";
+import { circled, type WrongAnswer } from "@/lib/omrReview";
 
 const CIRCLED = ["①", "②", "③", "④", "⑤"];
 
@@ -15,6 +16,7 @@ export function OmrMarkingCard({
   weights,
   weighted,
   submission,
+  wrong,
 }: {
   testIndex: number;
   label: string;
@@ -22,6 +24,8 @@ export function OmrMarkingCard({
   weights: number[];
   weighted: boolean;
   submission: ClinicOmrSubmission | null;
+  /** 이미 제출한 상태로 들어왔을 때의 오답 목록 (서버에서 계산해 넘어온다) */
+  wrong: WrongAnswer[];
 }) {
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
@@ -31,6 +35,7 @@ export function OmrMarkingCard({
     Array.from({ length: answerCount }, () => null)
   );
   const [result, setResult] = useState(submission);
+  const [wrongList, setWrongList] = useState(wrong);
   const answersRef = useRef(answers);
   const lockedRef = useRef(false);
 
@@ -49,7 +54,8 @@ export function OmrMarkingCard({
       const finalAnswers = answersRef.current.map((a) => a ?? "0");
       startTransition(async () => {
         try {
-          const { score, total } = await submitOmrAction(testIndex, finalAnswers, true);
+          const { score, total, wrong: w } = await submitOmrAction(testIndex, finalAnswers, true);
+          setWrongList(w);
           setResult({
             id: 0,
             student_id: 0,
@@ -95,12 +101,47 @@ export function OmrMarkingCard({
             {result.left_app ? "이탈로 자동 제출됨" : "제출 완료"}
           </span>
         </div>
-        <div className="mt-2 text-[22px] font-extrabold text-ink">
+        {/* 채점 결과보다 이게 먼저 눈에 들어와야 한다 — 점수부터 보면
+            폰을 든 채로 계속 앉아 있게 된다. */}
+        <div className="mt-3 rounded-xl bg-accent px-3 py-3 text-center">
+          <div className="text-[17px] font-extrabold leading-snug text-white">
+            📱 핸드폰을 데스크에 제출해주세요!
+          </div>
+        </div>
+
+        <div className="mt-3 text-[22px] font-extrabold text-ink">
           {weighted ? `${result.score}점/${result.total}점` : `${result.score}/${result.total}개 정답`}
         </div>
         {result.left_app && (
           <div className="mt-1.5 text-xs text-danger">
             시험 중 화면을 벗어나 그 시점까지의 답안으로 자동 제출됐어요.
+          </div>
+        )}
+
+        {wrongList.length === 0 ? (
+          <div className="mt-2 text-[13px] font-bold text-success">전부 맞혔어요! 🎉</div>
+        ) : (
+          <div className="mt-3 border-t border-line-soft pt-3">
+            <div className="mb-1.5 text-[13px] font-bold text-ink">
+              틀린 문제 <span className="text-danger">{wrongList.length}개</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              {wrongList.map((w) => (
+                <div
+                  key={w.number}
+                  className="flex items-center gap-2 rounded-lg bg-bg-page px-2.5 py-1.5 text-[13px]"
+                >
+                  <span className="w-9 flex-none font-extrabold text-ink">{w.number}번</span>
+                  <span className="text-ink-secondary">
+                    정답 <b className="text-success">{circled(w.correct)}</b>
+                  </span>
+                  <span className="text-ink-muted">·</span>
+                  <span className="text-ink-secondary">
+                    내 답 <b className="text-danger">{circled(w.chosen)}</b>
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -143,7 +184,8 @@ export function OmrMarkingCard({
     startTransition(async () => {
       try {
         const finalAnswers = answers as string[];
-        const { score, total } = await submitOmrAction(testIndex, finalAnswers);
+        const { score, total, wrong: w } = await submitOmrAction(testIndex, finalAnswers);
+        setWrongList(w);
         setResult({
           id: 0,
           student_id: 0,

@@ -12,7 +12,6 @@ import {
   clearAttendanceAction,
   saveMakeupAction,
   cancelMakeupAction,
-  toggleParentTextedAction,
 } from "@/app/staff/attendance/actions";
 
 const STATUS_STYLE: Record<
@@ -33,7 +32,6 @@ export function AttendanceRow({
   makeup,
   status,
   dateISO,
-  parentTexted,
   autoMarked,
   clinicHrefBase,
   backlogWeeks,
@@ -44,7 +42,6 @@ export function AttendanceRow({
   makeup?: MakeupSchedule;
   status?: AttendanceStatus;
   dateISO: string;
-  parentTexted?: boolean;
   /** 이름을 눌렀을 때 열 점검표 주소의 앞부분 — 조교는 /staff/clinic,
    * 종주T는 /admin/students/approvals. 종주T에게 조교 전용 주소를 주면
    * 권한 검사에 걸려 홈으로 튕긴다. */
@@ -67,21 +64,12 @@ export function AttendanceRow({
   const [timeDraft, setTimeDraft] = useState(makeup?.makeup_time ?? "");
   const [noteDraft, setNoteDraft] = useState(makeup?.note ?? "");
   const classTag = classDayTimeTag(student.class_day, student.class_time);
-  const [texted, setTexted] = useState(parentTexted ?? false);
   const backlogTone =
     !backlogWeeks
       ? "border-line-soft bg-white"
       : backlogWeeks >= 2
         ? "border-danger/50 bg-danger-soft"
         : "border-warn/50 bg-warn-soft";
-
-  function toggleTexted() {
-    const next = !texted;
-    setTexted(next);
-    startTransition(async () => {
-      await toggleParentTextedAction(student.id, dateISO, next);
-    });
-  }
 
   function mark(next: AttendanceStatus) {
     if (status === next) {
@@ -187,12 +175,6 @@ export function AttendanceRow({
               );
             })}
           </div>
-          {status && (
-            <label className="flex items-center gap-1 text-[10px] leading-none text-ink-muted whitespace-nowrap">
-              <input type="checkbox" checked={texted} onChange={toggleTexted} className="h-2.5 w-2.5" />
-              학부모 문자 전송
-            </label>
-          )}
         </div>
       </div>
 

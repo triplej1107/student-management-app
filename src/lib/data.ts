@@ -600,26 +600,9 @@ export async function clearAttendance(studentId: number, date: Date) {
   await syncSlimeWeek(studentId, date);
 }
 
-/** 2학기 전까지만 쓰는 임시 기능 — 학부모에게 문자를 보냈는지 체크. */
-export async function setParentTexted(studentId: number, date: Date, texted: boolean) {
-  await supabase
-    .from("attendance_records")
-    .update({ parent_texted: texted })
-    .eq("student_id", studentId)
-    .eq("session_date", toISODate(date));
-}
-
-export async function getParentTextedMapForDate(date: Date): Promise<Map<number, boolean>> {
-  const { data } = await supabase
-    .from("attendance_records")
-    .select("student_id, parent_texted")
-    .eq("session_date", toISODate(date));
-  const map = new Map<number, boolean>();
-  for (const row of data ?? []) {
-    map.set(row.student_id, !!row.parent_texted);
-  }
-  return map;
-}
+// 학부모 문자 전송 체크(parent_texted)는 2학기부터 문자를 따로 보내지 않기로
+// 하면서 화면에서 뺐다. attendance_records.parent_texted 컬럼은 지난 기록이라
+// 그대로 두고, 읽고 쓰는 코드만 없앴다.
 
 // ============================================================
 // clinic templates & checks

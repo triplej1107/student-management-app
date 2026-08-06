@@ -4,7 +4,6 @@ import { toISODate, kstToday, parseISODate, dayLabelOf } from "@/lib/weeks";
 import {
   activeClinicDaysFrom,
   getAttendanceMapForDate,
-  getParentTextedMapForDate,
   getWeeklyRoster,
   getUnresolvedAutoAbsences,
 } from "@/lib/data";
@@ -37,7 +36,6 @@ export default async function StaffAttendancePage({
   const dateISO = toISODate(sessionDate);
 
   let attendanceMap = selectedDay ? await getAttendanceMapForDate(sessionDate) : new Map();
-  const parentTextedMap = selectedDay ? await getParentTextedMapForDate(sessionDate) : new Map();
 
   // 오늘 탭을 보고 있을 때만: 클리닉 시각이 지났는데 미출석인 학생을 자동
   // 지각 처리하고, 어제 자동 결석 처리된 학생을 맨 위에 "확인 필요"로 올린다.
@@ -53,9 +51,6 @@ export default async function StaffAttendancePage({
   const checkedCount = roster.filter((r) => attendanceMap.get(r.student.id) === "출석").length;
 
   const autoAbsenceGroups = isViewingToday ? await getUnresolvedAutoAbsences(kstToday()) : [];
-  const autoAbsenceTextedMaps = await Promise.all(
-    autoAbsenceGroups.map((g) => getParentTextedMapForDate(parseISODate(g.dateISO)))
-  );
   const autoAbsenceTotal = autoAbsenceGroups.reduce((sum, g) => sum + g.entries.length, 0);
 
   // 화면에 뜨는 학생만 밀림 계산 — 1주 밀림이면 노란 카드, 2주 이상이면 빨간 카드.
@@ -88,7 +83,7 @@ export default async function StaffAttendancePage({
           <div className="mb-2 text-[13px] font-bold text-danger">
             ⚠️ 자동 결석 처리됨 · 확인 필요 ({autoAbsenceTotal}명)
           </div>
-          {autoAbsenceGroups.map((group, gi) => {
+          {autoAbsenceGroups.map((group) => {
             const d = parseISODate(group.dateISO);
             return (
               <div key={group.dateISO} className="mb-2.5">
@@ -105,7 +100,6 @@ export default async function StaffAttendancePage({
                       makeup={entry.makeup}
                       status="결석"
                       dateISO={group.dateISO}
-                      parentTexted={autoAbsenceTextedMaps[gi]?.get(entry.student.id)}
                       autoMarked
                       clinicHrefBase="/staff/clinic"
                       backlogWeeks={backlogMap.get(entry.student.id)}
@@ -133,7 +127,6 @@ export default async function StaffAttendancePage({
               makeup={entry.makeup}
               status={attendanceMap.get(entry.student.id)}
               dateISO={dateISO}
-              parentTexted={parentTextedMap.get(entry.student.id)}
               autoMarked={autoMarkedIds.has(entry.student.id)}
               clinicHrefBase="/staff/clinic"
               backlogWeeks={backlogMap.get(entry.student.id)}

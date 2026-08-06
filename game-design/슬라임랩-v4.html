@@ -3247,7 +3247,7 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       return `${IMP_SLOT_KO[s]} ${it ? `<b style="color:#9BD468">${it.ko || it.code}</b>` : '<span style="color:#f5785c">없음</span>'}`;
     });
     report.innerHTML = `<b style="color:#9CC4EC">👁 ${key} 세트</b> — ${parts.length}/5 부위를 한꺼번에 입힌 모습 · ` +
-      got.join(" · ") + `<br><span style="color:#7d776b">　이펙트는 몸통 뒤에 깔린다. 새 파일을 넣으면 이 화면은 사라진다.</span>`;
+      got.join(" · ") + `<br><span style="color:#7d776b">　겹치는 순서는 이펙트 → 몸통 → 얼굴 → 머리 → 왼손 → 오른손. 자리를 옮기려면 아래 목록에서 그 부위 이름을 눌러라 (화살표로 민다).</span>`;
   }
 
   function showSaved(it) {
@@ -3273,6 +3273,25 @@ function impLayer(inner, item, slot) { return slot === "fx" ? item + inner : inn
       fig.style.cssText = "text-align:center;flex:1 1 0;min-width:0;max-width:190px";
       fig.innerHTML = fit(wrap(impLayer(g.inner, impSvgAt(cellOfItem(it), r, it.slot, it[st].anchor, g.anchors, false, ghost, deg), it.slot), 190)) +
         `<figcaption style="font-size:11.5px;font-weight:700;color:#c05a2e">${IMP_KO[st]}</figcaption>`;
+      /* 담은 뒤에도 자리를 미세하게 옮길 수 있어야 한다 — 예전엔 다시 반입하는 수밖에
+         없었다 (원장, 2026-08-05). 앵커를 반대로 밀면 그림이 그 방향으로 간다. */
+      const pad = document.createElement("div");
+      pad.style.cssText = "margin-top:3px;font-size:11px;color:#7d776b;line-height:1.5";
+      const mk = (label, dx, dy) => {
+        const bt = document.createElement("button");
+        bt.className = "imp"; bt.textContent = label;
+        bt.style.cssText = "padding:0 6px;font-size:12px;background:#232833;border-color:#333944;color:#e8e4dc";
+        bt.onclick = () => {
+          const v = loadItems(), t = v.find((x) => x.code === it.code);
+          if (!t || !t[st]) return;
+          t[st].anchor = [t[st].anchor[0] - dx, t[st].anchor[1] - dy];   // 앵커는 반대로
+          saveItems(v); drawList(); showSaved(t);
+        };
+        return bt;
+      };
+      pad.append(mk("←", -1, 0), mk("→", 1, 0), mk("↑", 0, -1), mk("↓", 0, 1));
+      pad.insertAdjacentHTML("beforeend", ` <span>[${it[st].anchor.join(", ")}]</span>`);
+      fig.appendChild(pad);
       row.appendChild(fig);
     }
     wear.appendChild(row);

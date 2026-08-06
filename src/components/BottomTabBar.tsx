@@ -125,10 +125,13 @@ export function BottomTabBar({
       style={{ boxShadow: "0 -6px 16px -8px rgb(0 0 0 / 0.12)" }}
     >
       {tabs.map((tab) => {
+        // prefix는 경로 조각 단위로 본다 — 그냥 startsWith로 보면
+        // /staff/clinic-backlog가 /staff/clinic에도 걸려서 클리닉과 밀림 탭이
+        // 동시에 켜진다.
+        const underPrefix = (p: string) => pathname === p || pathname.startsWith(p + "/");
         const active =
           tab.href === pathname ||
-          (!ROOT_HREFS.includes(tab.href) &&
-            (tab.matchPrefixes ?? [tab.href]).some((p) => pathname.startsWith(p)));
+          (!ROOT_HREFS.includes(tab.href) && (tab.matchPrefixes ?? [tab.href]).some(underPrefix));
         const icon = ICONS[tab.icon ?? tab.label]?.(active);
 
         if (tab.popped) {

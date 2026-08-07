@@ -8,7 +8,12 @@ import type { MacgaiCheckIn } from "./lectureAttendance";
  * 전부 lectureAttendance.ts에 이미 있고, 여기서 넘겨주는 것은
  * `{ studentCode, checkedInTime }` 배열뿐이다.
  *
- * 만드는 방법은 `docs/macgai7-연동-핸드오프.md` 참고. 요약하면:
+ * 만드는 방법은 `docs/맥가이7-연동-작업지시.md` 참고. 먼저 조사 도구부터
+ * 돌리면 아래 1~3을 손으로 알아낼 필요가 없다:
+ *
+ *     MACGAI7_ID=... MACGAI7_PASSWORD=... npm run macgai:probe
+ *
+ * 요약하면:
  *
  * 1. MACGAI7_ID / MACGAI7_PASSWORD로 로그인해 세션 쿠키를 받는다.
  *    (.aspx 기반이라 __VIEWSTATE 등 숨은 필드를 같이 넘겨야 할 수 있다)
@@ -22,7 +27,7 @@ import type { MacgaiCheckIn } from "./lectureAttendance";
  */
 export async function fetchTodayCheckIns(): Promise<MacgaiCheckIn[]> {
   throw new Error(
-    "맥가이7 연동이 아직 구현되지 않았습니다. docs/macgai7-연동-핸드오프.md를 보고 fetchTodayCheckIns를 채워주세요."
+    "맥가이7 연동이 아직 구현되지 않았습니다. docs/맥가이7-연동-작업지시.md를 보고 fetchTodayCheckIns를 채워주세요."
   );
 }
 

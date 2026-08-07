@@ -7,6 +7,8 @@
  * 것은 "실제로 누가 찍었는지" 하나뿐이다.
  */
 
+import type { ClassKey } from "./types";
+
 /** 수업 시작 후 이만큼 지나서 찍으면 지각으로 본다. */
 export const LATE_AFTER_MINUTES = 10;
 
@@ -125,6 +127,49 @@ export function missingMessage(time: string): string {
 }
 
 export type LectureStatus = "출석" | "지각" | "조정" | "결석";
+
+export interface LectureSlot {
+  day: string;
+  /** "HH:MM" */
+  time: string;
+}
+
+/**
+ * 반별 강의 타임표.
+ *
+ * 조정·보강은 결국 **그 반의 다른 타임**으로 옮기는 것이라, 조교가 요일과
+ * 시각을 손으로 칠 이유가 없다. 버튼으로 바로 고르게 하려고 여기에 둔다.
+ *
+ * ClassKey를 키로 쓰므로 학기가 바뀌어 반 구성이 달라지면(types.ts의 CLASSES)
+ * 타입 검사가 바로 걸린다 — 표를 같이 고치라는 뜻이다.
+ */
+export const LECTURE_SLOTS: Record<ClassKey, LectureSlot[]> = {
+  "1학년정규": [
+    { day: "토", time: "09:00" },
+    { day: "토", time: "16:00" },
+    { day: "일", time: "19:00" },
+  ],
+  "2학년정규": [
+    { day: "토", time: "19:00" },
+    { day: "일", time: "13:00" },
+  ],
+  예비고1: [{ day: "일", time: "16:00" }],
+};
+
+/**
+ * 그 학생이 옮겨갈 수 있는 타임 — 자기 반의 다른 타임들.
+ * 지금 있는 타임(같은 요일·시각)은 옮길 이유가 없으니 뺀다.
+ */
+export function makeupSlotsFor(
+  classKey: ClassKey | null,
+  currentDay: string,
+  currentTime: string
+): LectureSlot[] {
+  if (!classKey) return [];
+  return (LECTURE_SLOTS[classKey] ?? []).filter(
+    (s) => !(s.day === currentDay && s.time === currentTime)
+  );
+}
 
 /**
  * 강의 출결 화면의 묶음 이름 — "토요일 9시" / "일요일 4시".

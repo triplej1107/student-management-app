@@ -11,6 +11,7 @@ import {
   isDutyNagTime,
   shouldFillClinicFromKiosk,
   lectureSlotLabel,
+  makeupSlotsFor,
   statusForCheckIn,
   type LectureRosterEntry,
 } from "./lectureRules";
@@ -232,5 +233,24 @@ describe("lectureSlotLabel", () => {
 
   it("시각을 못 읽으면 원문 그대로 — 조용히 틀린 라벨을 보여주지 않는다", () => {
     expect(lectureSlotLabel("토", "아침")).toBe("토요일 아침");
+  });
+});
+
+describe("makeupSlotsFor", () => {
+  it("자기 반의 다른 타임만 준다 — 지금 있는 타임은 옮길 이유가 없다", () => {
+    const slots = makeupSlotsFor("1학년정규", "토", "09:00");
+    expect(slots.map((s) => `${s.day}${s.time}`)).toEqual(["토16:00", "일19:00"]);
+  });
+
+  it("타임이 하나뿐인 반은 옮길 곳이 없다", () => {
+    expect(makeupSlotsFor("예비고1", "일", "16:00")).toEqual([]);
+  });
+
+  it("다른 타임에 있으면 그 반 타임이 전부 후보에 남는다", () => {
+    expect(makeupSlotsFor("예비고1", "토", "09:00")).toHaveLength(1);
+  });
+
+  it("반이 없으면 빈 목록 — 화면은 직접 입력으로 넘어간다", () => {
+    expect(makeupSlotsFor(null, "토", "09:00")).toEqual([]);
   });
 });

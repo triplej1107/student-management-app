@@ -21,11 +21,12 @@ export default async function StaffClinicDetailPage({
   searchParams,
 }: {
   params: Promise<{ studentId: string }>;
-  searchParams: Promise<{ week?: string; from?: string }>;
+  searchParams: Promise<{ week?: string; from?: string; date?: string }>;
 }) {
   const session = await requireStaffSession();
   const { studentId } = await params;
-  const { week, from } = await searchParams;
+  // date는 강의 출결에서 들어왔을 때 그 날짜로 되돌아가기 위한 것.
+  const { week, from, date } = await searchParams;
 
   const student = await getStudentById(Number(studentId));
   if (!student) notFound();
@@ -50,10 +51,16 @@ export default async function StaffClinicDetailPage({
   return (
     <div className="box-border px-5 pt-2 pb-7">
       <BackButton
-        href={resolveBackHref(from, "/staff/clinic", {
-          backlog: "/staff/clinic-backlog",
-          attendance: "/staff/attendance",
-        })}
+        href={resolveBackHref(
+          from,
+          "/staff/clinic",
+          {
+            backlog: "/staff/clinic-backlog",
+            attendance: "/staff/attendance",
+            lecture: "/staff/lecture-attendance",
+          },
+          date
+        )}
       />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">클리닉 점검표</div>
@@ -73,7 +80,7 @@ export default async function StaffClinicDetailPage({
           return (
             <PillLink
               key={iso}
-              href={`/staff/clinic/${studentId}?week=${iso}${fromQuery(from)}`}
+              href={`/staff/clinic/${studentId}?week=${iso}${fromQuery(from, date)}`}
               active={iso === selectedWeekISO}
             >
               {weekLabel(w)}

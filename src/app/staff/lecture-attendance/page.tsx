@@ -2,6 +2,7 @@ import { requireStaffSession } from "@/lib/authz";
 import { getToday } from "@/lib/today";
 import { toISODate, parseISODate, dayLabelOf } from "@/lib/weeks";
 import { getLectureAttendanceBoard, getSyncStatusLabel } from "@/lib/lectureAttendance";
+import { getBacklogWeeksByStudent } from "@/lib/clinicBacklog";
 import { ScreenTitle } from "@/components/ui";
 import { LectureAttendanceBoard } from "@/components/staff/LectureAttendanceBoard";
 import { LectureDatePicker } from "@/components/staff/LectureDatePicker";
@@ -22,6 +23,10 @@ export default async function StaffLectureAttendancePage({
     getSyncStatusLabel(),
   ]);
 
+  // 오늘 강의에 오는 학생만 밀림 계산 — 1주 밀림이면 노란 카드, 2주 이상이면
+  // 빨간 카드. 클리닉 출결 화면과 완전히 같은 판정을 쓴다.
+  const backlogMap = await getBacklogWeeksByStudent(entries.map((e) => e.studentId));
+
   return (
     <div className="box-border px-5 pt-2 pb-6">
       <ScreenTitle>강의 출결</ScreenTitle>
@@ -40,6 +45,8 @@ export default async function StaffLectureAttendancePage({
         dateISO={dateISO}
         dayLabel={dayLabelOf(selected)}
         entries={entries}
+        clinicHrefBase="/staff/clinic"
+        backlogWeeks={Object.fromEntries(backlogMap)}
       />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { DAY_ORDER } from "@/lib/types";
 import type { ClassKey } from "@/lib/types";
 import { lectureSlotLabel, makeupSlotsFor, type LectureStatus } from "@/lib/lectureRules";
@@ -37,11 +38,21 @@ export function LectureAttendanceBoard({
   dateISO,
   dayLabel,
   entries,
+  clinicHrefBase,
+  backlogWeeks,
 }: {
   dateISO: string;
   /** "토" — 묶음 이름에 쓴다. 화면이 하루치만 보여주므로 하나로 충분하다. */
   dayLabel: string;
   entries: LectureAttendanceEntry[];
+  /** 이름을 눌렀을 때 열 점검표 주소의 앞부분 — 조교는 /staff/clinic,
+   * 종주T는 /admin/students/approvals. 종주T에게 조교 전용 주소를 주면
+   * 권한 검사에 걸려 홈으로 튕긴다. */
+  clinicHrefBase: string;
+  /** 학생 id → 클리닉이 몇 주 밀렸는지. 밀림이 없는 학생은 키가 없다.
+   * Map이 아니라 순수 객체인 이유는 서버 컴포넌트에서 이 클라이언트
+   * 컴포넌트로 그대로 넘어가야 하기 때문. */
+  backlogWeeks: Record<number, number>;
 }) {
   // 반이 아니라 **타임**으로 묶는다. 같은 반이 여러 시간대에 흩어져 있어서
   // 반으로 묶으면 지금 눈앞의 타임을 체크하는 데 도움이 안 된다.
@@ -94,6 +105,8 @@ export function LectureAttendanceBoard({
                 dateISO={dateISO}
                 dayLabel={dayLabel}
                 entry={entry}
+                clinicHrefBase={clinicHrefBase}
+                backlogWeeks={backlogWeeks[entry.studentId]}
               />
             ))}
           </div>
@@ -107,10 +120,15 @@ function LectureRow({
   dateISO,
   dayLabel,
   entry,
+  clinicHrefBase,
+  backlogWeeks,
 }: {
   dateISO: string;
   dayLabel: string;
   entry: LectureAttendanceEntry;
+  clinicHrefBase: string;
+  /** 클리닉이 몇 주 밀렸는지. 밀림이 없으면 undefined. */
+  backlogWeeks?: number;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -163,14 +181,25 @@ function LectureRow({
     });
   }
 
-  const tone = entry.needsMakeup
-    ? "border-danger/50 bg-danger-soft"
-    : "border-line-soft bg-white";
+  // 카드 색은 **클리닉 밀림 전용**이다 — 1주면 노랑, 2주 이상이면 빨강.
+  // 보강 필요는 빨간 배지와 위쪽 집계로 따로 알린다: 같은 빨강이 "밀렸다"와
+  // "보강 잡아야 한다" 두 가지를 뜻하면 체크하다가 헷갈린다.
+  const tone = !backlogWeeks
+    ? "border-line-soft bg-white"
+    : backlogWeeks >= 2
+      ? "border-danger/50 bg-danger-soft"
+      : "border-warn/50 bg-warn-soft";
 
   return (
     <div className={`rounded-2xl border p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)] ${tone}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        {/* 이름 쪽을 누르면 점검표로 — 색만 보고 "뭐가 밀렸지" 궁금할 때
+            바로 열어보라는 것. 출결 버튼까지 링크로 덮으면 체크가 안 되므로
+            왼쪽 정보 칸만 감싼다(클리닉 출결 화면과 같은 방식). */}
+        <Link
+          href={`${clinicHrefBase}/${entry.studentId}?from=lecture&date=${dateISO}`}
+          className="min-w-0 cursor-pointer"
+        >
           <div className="text-[15px] font-bold text-ink">
             {entry.name}
             {entry.classKey && (
@@ -193,7 +222,7 @@ function LectureRow({
           {entry.status && entry.auto && (
             <div className="mt-0.5 text-[11px] text-ink-muted">🤖 키오스크 자동 기록</div>
           )}
-        </div>
+        </Link>
         <div className="flex flex-none gap-1">
           {STATUSES.map((s) => {
             const style = entry.status === s ? STATUS_STYLE[s] : UNSET_STYLE;

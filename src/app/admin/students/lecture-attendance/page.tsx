@@ -2,6 +2,7 @@ import { requireZongjuSession } from "@/lib/authz";
 import { getToday } from "@/lib/today";
 import { toISODate, parseISODate, dayLabelOf } from "@/lib/weeks";
 import { getLectureAttendanceBoard, getSyncStatusLabel } from "@/lib/lectureAttendance";
+import { getBacklogWeeksByStudent } from "@/lib/clinicBacklog";
 import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { LectureAttendanceBoard } from "@/components/staff/LectureAttendanceBoard";
 import { LectureDatePicker } from "@/components/staff/LectureDatePicker";
@@ -23,6 +24,10 @@ export default async function AdminLectureAttendancePage({
     getSyncStatusLabel(),
   ]);
 
+  // 오늘 강의에 오는 학생만 밀림 계산 — 1주 밀림이면 노란 카드, 2주 이상이면
+  // 빨간 카드. 클리닉 출결 화면과 완전히 같은 판정을 쓴다.
+  const backlogMap = await getBacklogWeeksByStudent(entries.map((e) => e.studentId));
+
   return (
     <div>
       <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
@@ -43,6 +48,8 @@ export default async function AdminLectureAttendancePage({
         dateISO={dateISO}
         dayLabel={dayLabelOf(selected)}
         entries={entries}
+        clinicHrefBase="/admin/students/approvals"
+        backlogWeeks={Object.fromEntries(backlogMap)}
       />
     </div>
   );

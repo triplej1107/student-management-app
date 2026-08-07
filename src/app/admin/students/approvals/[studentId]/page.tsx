@@ -21,11 +21,12 @@ export default async function AdminApprovalDetailPage({
   searchParams,
 }: {
   params: Promise<{ studentId: string }>;
-  searchParams: Promise<{ week?: string; from?: string }>;
+  searchParams: Promise<{ week?: string; from?: string; date?: string }>;
 }) {
   await requireZongjuSession();
   const { studentId } = await params;
-  const { week, from } = await searchParams;
+  // date는 강의 출결에서 들어왔을 때 그 날짜로 되돌아가기 위한 것.
+  const { week, from, date } = await searchParams;
 
   const student = await getStudentById(Number(studentId));
   if (!student) notFound();
@@ -49,10 +50,16 @@ export default async function AdminApprovalDetailPage({
   return (
     <div>
       <BackButton
-        href={resolveBackHref(from, "/admin/students/approvals", {
-          backlog: "/admin/clinic-backlog",
-          attendance: "/admin/students/attendance",
-        })}
+        href={resolveBackHref(
+          from,
+          "/admin/students/approvals",
+          {
+            backlog: "/admin/clinic-backlog",
+            attendance: "/admin/students/attendance",
+            lecture: "/admin/students/lecture-attendance",
+          },
+          date
+        )}
       />
       <div className="border-b border-line pb-3 pt-1 text-center">
         <div className="text-[19px] font-extrabold text-ink">클리닉 점검표</div>
@@ -70,7 +77,7 @@ export default async function AdminApprovalDetailPage({
           return (
             <PillLink
               key={iso}
-              href={`/admin/students/approvals/${studentId}?week=${iso}${fromQuery(from)}`}
+              href={`/admin/students/approvals/${studentId}?week=${iso}${fromQuery(from, date)}`}
               active={iso === selectedWeekISO}
             >
               {weekLabel(w)}

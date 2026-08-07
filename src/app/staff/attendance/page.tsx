@@ -103,6 +103,7 @@ export default async function StaffAttendancePage({
                       autoMarked
                       clinicHrefBase="/staff/clinic"
                       backlogWeeks={backlogMap.get(entry.student.id)}
+                      day={selectedDay}
                     />
                   ))}
                 </div>
@@ -130,6 +131,7 @@ export default async function StaffAttendancePage({
               autoMarked={autoMarkedIds.has(entry.student.id)}
               clinicHrefBase="/staff/clinic"
               backlogWeeks={backlogMap.get(entry.student.id)}
+              day={selectedDay}
             />
           ),
         }))}

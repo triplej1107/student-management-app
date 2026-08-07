@@ -9,6 +9,10 @@ import {
   sortByRemaining,
   timerLevel,
   warningMessage,
+  normalizeStudentName,
+  isBannerVisible,
+  STUDENT_BANNER_LINGER_SECONDS,
+  studentBannerHeadline,
 } from "./examTimerRules";
 
 describe("formatRemaining", () => {
@@ -212,5 +216,56 @@ describe("warningMessage", () => {
   it("시험 이름이 없으면 이름만", () => {
     expect(warningMessage("이순신", null)).toBe("이순신 학생 10분 남았습니다!");
     expect(warningMessage("이순신", "  ")).toBe("이순신 학생 10분 남았습니다!");
+  });
+});
+
+describe("normalizeStudentName", () => {
+  it("공백 차이를 무시한다", () => {
+    expect(normalizeStudentName("이 순신")).toBe(normalizeStudentName("이순신"));
+    expect(normalizeStudentName(" 이순신 ")).toBe("이순신");
+  });
+
+  it("다른 이름은 여전히 다르다", () => {
+    expect(normalizeStudentName("이순신")).not.toBe(normalizeStudentName("이순인"));
+  });
+});
+
+describe("isBannerVisible", () => {
+  it("진행 중이면 보인다", () => {
+    expect(isBannerVisible(600)).toBe(true);
+  });
+
+  it("시간이 끝난 직후에도 잠깐 남아 있다", () => {
+    expect(isBannerVisible(-60)).toBe(true);
+  });
+
+  it("한참 지나면 스스로 내려간다 — 조교가 타이머를 안 지워도", () => {
+    expect(isBannerVisible(-STUDENT_BANNER_LINGER_SECONDS - 1)).toBe(false);
+  });
+});
+
+describe("studentBannerHeadline", () => {
+  it("여유가 있으면 남은 시간만 보여준다", () => {
+    expect(studentBannerHeadline("normal", false)).toBe("시험 진행 중");
+  });
+
+  it("10분 안쪽이면 마킹을 시작하라고 한다", () => {
+    expect(studentBannerHeadline("warn", false)).toContain("마킹을 시작");
+  });
+
+  it("5분 안쪽부터는 마무리하라고 바뀐다 — 지난 문구가 그대로 남지 않게", () => {
+    for (const level of ["urgent", "critical"] as const) {
+      expect(studentBannerHeadline(level, false)).toContain("마무리");
+      expect(studentBannerHeadline(level, false)).not.toContain("시작");
+    }
+  });
+
+  it("시간이 끝나면 끝났다고 말한다", () => {
+    expect(studentBannerHeadline("done", false)).toContain("끝났");
+  });
+
+  it("정지 중이면 남은 시간대와 무관하게 멈춤으로", () => {
+    expect(studentBannerHeadline("critical", true)).toBe("잠시 멈춤");
+    expect(studentBannerHeadline("normal", true)).toBe("잠시 멈춤");
   });
 });

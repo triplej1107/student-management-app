@@ -2326,12 +2326,16 @@ const IMP_CATALOG = [
 ];
 /* 세트 17종 — 이 목록 × 5부위가 세트템 전부다 (레전더리 5 · 에픽 3 · 레어 4 · 매직 5). */
 const IMP_SETS = [
-  ["archangel", "대천사"], ["archdemon", "심연의 대악마"], ["threeblade", "삼도류의 귀신"],
-  ["yokai", "요괴 사냥꾼"], ["spider", "붉은 거미 자경단"],
-  ["chainsaw", "엔진의 악마"], ["bamboo", "대나무를 문 혈귀"], ["infinity", "무한의 주술사"],
-  ["archmage", "대마법사"], ["hero", "전설의 용사"], ["spirit", "정령술사"], ["ranger", "엘프 레인저"],
-  ["doctor", "명의"], ["lawyer", "정의의 변호사"], ["scientist", "천재 과학자"],
-  ["youtuber", "여행 유튜버"], ["soldier", "군인"],
+  ["archangel", "대천사", "legendary"], ["archdemon", "심연의 대악마", "legendary"],
+  ["threeblade", "삼도류의 귀신", "legendary"], ["yokai", "요괴 사냥꾼", "legendary"],
+  ["spider", "붉은 거미 자경단", "legendary"],
+  ["chainsaw", "엔진의 악마", "epic"], ["bamboo", "대나무를 문 혈귀", "epic"],
+  ["infinity", "무한의 주술사", "epic"],
+  ["archmage", "대마법사", "rare"], ["hero", "전설의 용사", "rare"],
+  ["spirit", "정령술사", "rare"], ["ranger", "엘프 레인저", "rare"],
+  ["doctor", "명의", "magic"], ["lawyer", "정의의 변호사", "magic"],
+  ["scientist", "천재 과학자", "magic"], ["youtuber", "여행 유튜버", "magic"],
+  ["soldier", "군인", "magic"],
 ];
 /* 위 표는 **셀 3 기준 칸 수**다. 에픽·레전더리는 셀 1.5 로 두 배 촘촘하니 같은 물건이
    칸 수로는 두 배가 된다 — 그대로 재면 전부 상한에 걸린다. 셀 크기로 환산해서 쓴다.
@@ -3301,13 +3305,24 @@ function impAnimWrap(svg, anim) {
     }
     return m;
   }
+  /* 세트 17종을 **전부** 등급별로 보여 준다. 예전엔 담긴 게 있는 것만 떠서
+     레어·매직 세트를 고를 수가 없었다 (원장, 2026-08-05).
+     담긴 부위 수를 옆에 적어 어디까지 했는지 목록에서 바로 보이게 한다. */
   function fillSets() {
     const sel2 = document.getElementById("impSetPick");
     if (!sel2) return;
     const keep = sel2.value, sets = setsOf(loadItems());
+    const byTier = {};
+    for (const [k, ko, tier] of IMP_SETS) (byTier[tier] = byTier[tier] || []).push([k, ko]);
     sel2.innerHTML = '<option value="">— 세트 고르기 —</option>' +
-      [...sets].map(([k, v]) => `<option value="${k}">${k} (${v.length}/5)</option>`).join("");
-    if ([...sets.keys()].includes(keep)) sel2.value = keep;
+      ["legendary", "epic", "rare", "magic"].map((t) => {
+        const rows = (byTier[t] || []).map(([k, ko]) => {
+          const n = (sets.get(k) || []).length;
+          return `<option value="${k}">${ko} ${n}/5${n >= 5 ? " ✓" : ""}</option>`;
+        }).join("");
+        return `<optgroup label="${IMP_TIER_KO[t]}">${rows}</optgroup>`;
+      }).join("");
+    if (IMP_SETS.some(([k]) => k === keep)) sel2.value = keep;
   }
   function showSet(key) {
     const wear = document.getElementById("impWear"), report = document.getElementById("impReport");
@@ -3315,7 +3330,12 @@ function impAnimWrap(svg, anim) {
     const parts = (setsOf(loadItems()).get(key) || []).filter((it) =>
       ["baby", "teen", "awake"].some((st) => it[st] && it[st].art));
     if (!parts.length) {
-      report.innerHTML = `<b style="color:#f0a33c">${key}</b> — 그림이 들어 있는 부위가 없다.`;
+      const ko = (IMP_SETS.find(([k]) => k === key) || [])[1] || key;
+      const wear2 = document.getElementById("impWear");
+      wear2.style.display = "none"; wear2.innerHTML = "";
+      report.innerHTML = `<b style="color:#f0a33c">${ko}</b> — 아직 담은 부위가 없다. ` +
+        `<span style="color:#7d776b">코드는 <b>${key}_head · ${key}_face · ${key}_right · ` +
+        `${key}_left · ${key}_fx</b> 다. 반입해서 담으면 여기 뜬다.</span>`;
       return;
     }
     const G = { baby: babyParts(SKINS[sel]), teen: slimeParts(SKINS[sel]),

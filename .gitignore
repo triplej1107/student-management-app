@@ -49,3 +49,6 @@ next-env.d.ts
 
 # 생성물 — game-design/items/도감-만들기.mjs 가 만든다
 game-design/items/도감.html
+
+# 생성물 — game-design/items/작업표-만들기.mjs 가 만든다
+game-design/items/작업표.html

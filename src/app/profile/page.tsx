@@ -1,4 +1,6 @@
 import { BackButton } from "@/components/BackButton";
+import { GuideLink } from "@/components/GuideLink";
+import { GuideNewDot } from "@/components/GuideNewDot";
 
 function CrownIcon() {
   return (
@@ -120,17 +122,18 @@ export default function ProfilePage() {
 
       <div className="mt-2 grid grid-cols-3 gap-2.5">
         {GUIDES.map(({ href, label, Icon }) => (
-          <a
+          <GuideLink
             key={href}
             href={href}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-line-soft bg-white py-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
+            className="relative flex flex-col items-center gap-1.5 rounded-2xl border border-line-soft bg-white py-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           >
+            <GuideNewDot className="absolute right-2 top-2" />
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent [&>svg]:h-5 [&>svg]:w-5">
               <Icon />
             </span>
             <span className="text-[13px] font-bold text-ink">{label}</span>
             <span className="text-[10px] font-semibold text-ink-muted">앱 사용 안내서</span>
-          </a>
+          </GuideLink>
         ))}
       </div>
 

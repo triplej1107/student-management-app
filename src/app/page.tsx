@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { GuideNewDot } from "@/components/GuideNewDot";
 
 function GraduationCapIcon() {
   return (
@@ -88,7 +89,8 @@ export default async function RoleSelectPage() {
 
   return (
     <div className="flex h-full flex-1 flex-col items-center justify-center px-7 pb-5 pt-6">
-      <Link href="/profile" className="mt-2 cursor-pointer">
+      {/* 로고를 누르면 프로필 → 사용 안내서. 안내서가 갱신되면 파란 점이 뜬다. */}
+      <Link href="/profile" className="relative mt-2 cursor-pointer">
         <Image
           src="/icon-192.png"
           alt="유종의미 국어학원"
@@ -97,6 +99,7 @@ export default async function RoleSelectPage() {
           className="logo-wiggle rounded-[26px] shadow-[0_3px_14px_rgba(20,30,60,0.12)]"
           priority
         />
+        <GuideNewDot className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5" />
       </Link>
       <div className="mt-4 text-lg font-extrabold text-ink">유종의미 국어학원</div>
       <div className="mt-1 text-xs italic text-ink-muted">

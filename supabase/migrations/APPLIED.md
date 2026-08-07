@@ -42,3 +42,4 @@ SQL Editor에서 실행해 "성공했어" 확인해줄 때 이 파일에 한 줄
 - [x] 0035_exam_timers.sql — 2026-08-06 확인
 - [x] 0036_notice_audience.sql — 2026-08-06 확인
 - [x] 0037_surprise_quests.sql — 2026-08-06 확인
+- [x] 0038_exam_timer_student_id.sql — 2026-08-07 확인

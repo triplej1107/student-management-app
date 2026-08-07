@@ -53,6 +53,7 @@ export default async function StaffHomePage() {
   // 타이머 이름칸 자동완성용. 학교·학년까지 같이 넘겨야 내신 기간에 생기는
   // 동명이인을 조교가 골라낼 수 있다.
   const timerStudents = allStudents.map((s) => ({
+    id: s.id,
     name: s.name,
     code: s.student_code,
     detail: [s.school, s.grade ? `${s.grade}학년` : null].filter(Boolean).join(" "),

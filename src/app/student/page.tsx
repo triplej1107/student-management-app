@@ -28,7 +28,7 @@ import { StudentReminderCard } from "@/components/StudentReminderCard";
 import { ParentAttendanceLogCard } from "@/components/ParentAttendanceLogCard";
 import { TierBadge } from "@/components/TierBadge";
 import { StudentExamTimerBanner } from "@/components/StudentExamTimerBanner";
-import { getExamTimerForStudentName } from "@/lib/examTimers";
+import { getExamTimerForStudent } from "@/lib/examTimers";
 import { InstallSeenBeacon } from "@/components/InstallSeenBeacon";
 import { logoutAction } from "@/app/login/actions";
 import { submitParentQuestionAction } from "./actions";
@@ -76,7 +76,7 @@ export default async function StudentHomePage() {
 
   // 시험 중이면 조교가 올려둔 타이머의 남은 시간을 홈에도 띄운다 — 앱을
   // 열어보다가 "아직 마킹 안 했네"를 알아채라고. 학부모에겐 필요 없다.
-  const examTimer = isStudent ? await getExamTimerForStudentName(student.name) : null;
+  const examTimer = isStudent ? await getExamTimerForStudent(student.id, student.name) : null;
 
   // 슬라임 — 시즌 기간(2026-08-22~)에만 노출. 그 전엔 카드 자체가 없다.
   const liveSeason = isStudent ? await getLiveSeason() : null;

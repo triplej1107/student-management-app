@@ -10,7 +10,7 @@ import { BackButton } from "@/components/BackButton";
 import { ScreenTitle, EmptyState } from "@/components/ui";
 import { OmrMarkingCard } from "@/components/OmrMarkingCard";
 import { StudentExamTimerBanner } from "@/components/StudentExamTimerBanner";
-import { getExamTimerForStudentName } from "@/lib/examTimers";
+import { getExamTimerForStudent } from "@/lib/examTimers";
 
 export default async function StudentOmrPage() {
   const session = await getSession();
@@ -23,7 +23,7 @@ export default async function StudentOmrPage() {
   const weekStartISO = toISODate(clinicWeekStart);
   // 조교가 올려둔 시험 타이머 — 마킹하는 화면 안에 남은 시간을 띄운다.
   // 푸시로 부르지 않는 이유는 StudentExamTimerBanner 주석 참고.
-  const examTimer = await getExamTimerForStudentName(student.name);
+  const examTimer = await getExamTimerForStudent(student.id, student.name);
   const template = student.class_key ? await getClinicTemplate(student.class_key, clinicWeekStart) : null;
   const slots = filledTestSlots(template ?? undefined);
 

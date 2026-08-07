@@ -310,12 +310,17 @@ function TimerDialog({
   // 목록에서 고른 직후에는 후보를 닫는다 — 안 그러면 고른 이름으로 다시
   // 검색돼서 방금 누른 항목이 그대로 떠 있는다.
   const [pickedFromList, setPickedFromList] = useState(false);
+  // 목록에서 고른 학생 — 이걸 같이 보내야 동명이인이어도 정확히 그 학생
+  // 화면에 남은 시간이 뜬다. 이름을 다시 고치면 누구를 고른 건지 알 수
+  // 없으므로 비운다(그때는 서버가 이름으로 다시 찾는다).
+  const [studentId, setStudentId] = useState<number | null>(timer?.student_id ?? null);
   const suggestions = pickedFromList ? [] : matchStudents(students, studentName);
 
   function save() {
     setError(null);
     const input = {
       studentName,
+      studentId,
       examLabel,
       startTime,
       durationMinutes: Number(durationMinutes),
@@ -354,6 +359,7 @@ function TimerDialog({
             onChange={(e) => {
               setStudentName(e.target.value);
               setPickedFromList(false);
+              setStudentId(null);
             }}
             placeholder="예: 이순신"
             autoComplete="off"
@@ -367,6 +373,7 @@ function TimerDialog({
                   type="button"
                   onClick={() => {
                     setStudentName(s.name);
+                    setStudentId(s.id);
                     setPickedFromList(true);
                   }}
                   className="flex w-full items-center justify-between px-2.5 py-2 text-left text-[13px] text-ink hover:bg-accent-soft"

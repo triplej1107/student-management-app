@@ -139,6 +139,7 @@ export function isBannerVisible(remaining: number): boolean {
 }
 
 export interface TimerStudentOption {
+  id: number;
   name: string;
   code: string;
   /** "배명고 2학년" — 내신 기간에 생기는 동명이인을 가려내려고 옆에 붙인다.

@@ -124,10 +124,10 @@ describe("kstTimeToISO", () => {
 
 describe("matchStudents", () => {
   const students = [
-    { name: "김지우", code: "72331", detail: "가락고 1학년" },
-    { name: "박지우", code: "10011", detail: "배명고 2학년" },
-    { name: "이순신", code: "48641", detail: "배명고 2학년" },
-    { name: "지우개", code: "55512", detail: "" },
+    { id: 1, name: "김지우", code: "72331", detail: "가락고 1학년" },
+    { id: 2, name: "박지우", code: "10011", detail: "배명고 2학년" },
+    { id: 3, name: "이순신", code: "48641", detail: "배명고 2학년" },
+    { id: 4, name: "지우개", code: "55512", detail: "" },
   ];
 
   it("안 쳤으면 아무것도 안 띄운다", () => {
@@ -157,12 +157,12 @@ describe("matchStudents", () => {
 
   it("동명이인이면 다 친 뒤에도 계속 보여준다", () => {
     // 이름만으로는 누군지 모르니 학번을 보고 골라야 한다.
-    const withTwin = [...students, { name: "김지우", code: "99999", detail: "배명고 2학년" }];
+    const withTwin = [...students, { id: 5, name: "김지우", code: "99999", detail: "배명고 2학년" }];
     expect(matchStudents(withTwin, "김지우").map((s) => s.code)).toEqual(["72331", "99999"]);
   });
 
   it("개수를 제한한다", () => {
-    const many = Array.from({ length: 20 }, (_, i) => ({ name: `학생${i}`, code: `${i}`, detail: "" }));
+    const many = Array.from({ length: 20 }, (_, i) => ({ id: i, name: `학생${i}`, code: `${i}`, detail: "" }));
     expect(matchStudents(many, "학생")).toHaveLength(6);
   });
 });

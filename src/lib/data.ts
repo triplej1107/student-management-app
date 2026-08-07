@@ -498,6 +498,8 @@ export async function getAttendanceMapForDate(
 export interface AttendanceLogEntry {
   dateISO: string;
   status: AttendanceStatus;
+  /** 클리닉 수업인지 강의(주말 정규) 수업인지 — 학부모 로그에서 구분해 보여준다. */
+  kind: "클리닉" | "강의";
   /** 그 출결이 기록된 시각(KST "HH:MM") — 조교가 버튼을 누른 시각, 또는
    * 시스템이 자동 지각/결석 처리한 시각. 학생이 실제로 도착한 시각은 앱이
    * 알 수 없어서(키오스크 쪽 정보) 이 값이 가장 가까운 근사치다.
@@ -523,7 +525,7 @@ export async function getAttendanceLogForStudent(
   studentId: number,
   sinceISO: string
 ): Promise<AttendanceLogEntry[]> {
-  const [records, makeups] = await Promise.all([
+  const [records, makeups, lectureRecords, lectureOverrides] = await Promise.all([
     supabase
       .from("attendance_records")
       .select("session_date, status, created_at")
@@ -535,11 +537,28 @@ export async function getAttendanceLogForStudent(
       .select("session_date, makeup_day, makeup_time")
       .eq("student_id", studentId)
       .gte("session_date", sinceISO),
+    // 주말 강의 출결도 같은 로그에 합친다 — 학부모 입장에선 클리닉이든
+    // 강의든 "우리 애가 언제 왔나"가 한 줄로 이어져야 한다.
+    supabase
+      .from("lecture_attendance")
+      .select("session_date, status, checked_in_at, created_at")
+      .eq("student_id", studentId)
+      .gte("session_date", sinceISO),
+    supabase
+      .from("lecture_overrides")
+      .select("session_date, moved_day, moved_time")
+      .eq("student_id", studentId)
+      .gte("session_date", sinceISO),
   ]);
 
   const makeupByDate = new Map<string, { makeup_day: string; makeup_time: string }>();
   for (const m of makeups.data ?? []) {
     makeupByDate.set(m.session_date, { makeup_day: m.makeup_day, makeup_time: m.makeup_time });
+  }
+
+  const lectureMakeupByDate = new Map<string, { makeup_day: string; makeup_time: string }>();
+  for (const m of lectureOverrides.data ?? []) {
+    lectureMakeupByDate.set(m.session_date, { makeup_day: m.moved_day, makeup_time: m.moved_time });
   }
 
   type Row = { session_date: string; status: AttendanceStatus; created_at: string };
@@ -549,12 +568,34 @@ export async function getAttendanceLogForStudent(
     return {
       dateISO: r.session_date,
       status: r.status,
+      kind: "클리닉" as const,
       recordedAt: kstTimeHHMM(r.created_at),
       makeupDateISO: movedTo,
       makeupTime: movedTo ? makeup!.makeup_time : null,
     };
   });
 
+  type LectureRow = {
+    session_date: string;
+    status: AttendanceStatus;
+    checked_in_at: string | null;
+    created_at: string;
+  };
+  for (const r of (lectureRecords.data as LectureRow[]) ?? []) {
+    const makeup = lectureMakeupByDate.get(r.session_date);
+    const movedTo = makeup ? makeupDateISO(r.session_date, makeup.makeup_day) : null;
+    entries.push({
+      dateISO: r.session_date,
+      status: r.status,
+      kind: "강의" as const,
+      // 강의는 키오스크에 찍힌 시각이 곧 "온 시각"이라 그게 있으면 그걸 쓴다.
+      recordedAt: kstTimeHHMM(r.checked_in_at ?? r.created_at),
+      makeupDateISO: movedTo,
+      makeupTime: movedTo ? makeup!.makeup_time : null,
+    });
+  }
+
+  // 클리닉과 강의를 합쳤으니 전체를 다시 줄 세운다.
   return entries.sort((a, b) => {
     const ea = a.makeupDateISO ?? a.dateISO;
     const eb = b.makeupDateISO ?? b.dateISO;

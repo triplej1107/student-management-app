@@ -20,7 +20,8 @@ export const STUDENT_TAB_GROUPS: SubTabGroup[] = [
   {
     label: "운영",
     tabs: [
-      { href: "/admin/students/attendance", label: "출결" },
+      { href: "/admin/students/lecture-attendance", label: "강의 출결" },
+      { href: "/admin/students/attendance", label: "클리닉 출결" },
       { href: "/admin/students/plans", label: "수업" },
       { href: "/admin/students/templates", label: "점검표" },
       { href: "/admin/students/approvals", label: "결재" },

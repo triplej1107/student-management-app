@@ -13,9 +13,11 @@ export interface NavTab {
 
 // 홈이 가운데 튀어나온 파란 버튼 — 학생·학부모·종주T 화면과 같은 모양.
 // 조교 화면만 홈이 맨 왼쪽 평범한 탭이라 혼자 달라 보였다.
+// 업무 체크리스트는 탭에서 빼고 조교홈 안으로 넣었다 — 매일 여는 홈에서
+// 바로 체크하는 게 자연스럽고, 그 자리는 주말마다 쓰는 강의 출결이 더 급하다.
 export const STAFF_TABS: NavTab[] = [
-  { href: "/staff/checklist", label: "체크리스트" },
-  { href: "/staff/attendance", label: "출결" },
+  { href: "/staff/lecture-attendance", label: "강의 출결" },
+  { href: "/staff/attendance", label: "클리닉 출결" },
   { href: "/staff", label: "조교홈", icon: "홈", popped: true },
   { href: "/staff/clinic", label: "클리닉" },
   { href: "/staff/clinic-backlog", label: "밀림" },

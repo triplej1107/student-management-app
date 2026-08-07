@@ -124,6 +124,48 @@ export function missingMessage(time: string): string {
   return `${time} 강의 수업인데 아직 등원하지 않았어요.`;
 }
 
+export type LectureStatus = "출석" | "지각" | "조정" | "결석";
+
+/**
+ * 키오스크 기록으로 그날 **클리닉** 출결까지 채울지.
+ *
+ * 학생은 학원에 들어올 때 한 번만 찍는다. 같은 날 강의와 클리닉을 이어서
+ * 하는 경우가 많아서(강의 → 클리닉, 또는 클리닉 → 강의), 한 번 찍힌 것으로
+ * 그날 클리닉 출결도 잡아준다. 조교가 같은 학생을 두 번 체크할 이유가 없다.
+ *
+ * 다만 이미 있는 기록을 함부로 덮지는 않는다:
+ * - 사람이 눌러둔 것(조정·결석 등)은 사정을 알고 바꾼 것이라 그대로 둔다.
+ * - 시스템이 짐작으로 찍은 자동 지각은 키오스크 기록이 더 정확하므로 덮는다.
+ */
+export function shouldFillClinicFromKiosk(
+  hasExistingRecord: boolean,
+  existingIsAutoMarked: boolean
+): boolean {
+  if (!hasExistingRecord) return true;
+  return existingIsAutoMarked;
+}
+
+/**
+ * "보강이 필요한" 학생인지 — 강의는 클리닉과 달리 못 온 주가 밀리는 게
+ * 아니라 보강을 잡아줘야 한다.
+ *
+ * 결석인데 옮겨둔 일정이 아직 없으면 보강 대상이다. 조정(미리 옮긴 것)은
+ * 이미 갈 곳이 정해져 있으니 대상이 아니고, 결석이라도 보강 일정을 잡아두면
+ * 목록에서 빠진다.
+ */
+export function needsMakeup(status: LectureStatus, hasScheduledMakeup: boolean): boolean {
+  return status === "결석" && !hasScheduledMakeup;
+}
+
+/** 조교 업무 체크리스트를 재촉할 시각(KST). 밤 9시 30분. */
+export const DUTY_NAG_AT_MINUTES = 21 * 60 + 30;
+
+/** 지금이 재촉할 시각을 지났는지 — 지나기만 하면 계속 true라, 화면을 늦게
+ * 열어도 안내를 놓치지 않는다. */
+export function isDutyNagTime(nowMinutes: number, nagAt = DUTY_NAG_AT_MINUTES): boolean {
+  return nowMinutes >= nagAt;
+}
+
 /** 동기화가 이만큼 끊기면 종주T에게 알린다. 주말 강의는 하루에 몰려 있어서
  * 반나절이면 그날 수업이 통째로 비어버린다. */
 export const SYNC_STALE_HOURS = 3;

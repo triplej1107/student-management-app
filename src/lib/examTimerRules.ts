@@ -103,6 +103,41 @@ export function sortByRemaining<T>(
   );
 }
 
+/** 이름 대조용 정규화 — 조교가 이름칸을 직접 타이핑하기도 해서 공백 차이로
+ * 어긋나지 않게 한다("이 순신" → "이순신"). */
+export function normalizeStudentName(name: string): string {
+  return name.replace(/\s+/g, "");
+}
+
+/**
+ * 학생 화면 배너 문구 — 남은 시간대에 따라 할 일이 달라진다.
+ * 남은 시간 숫자는 배너에 크게 따로 뜨므로 문구에서 분을 되풀이하지 않는다
+ * (3분 남았는데 "10분 남았어요"라고 떠 있으면 안 되니까).
+ */
+export function studentBannerHeadline(level: TimerLevel, paused: boolean): string {
+  if (paused) return "잠시 멈춤";
+  switch (level) {
+    case "done":
+      return "시간이 끝났어요 — 마킹을 마무리하세요";
+    case "critical":
+    case "urgent":
+      return "⏰ 곧 끝나요 — 마킹을 마무리하세요";
+    case "warn":
+      return "⏰ OMR 마킹을 시작하세요";
+    default:
+      return "시험 진행 중";
+  }
+}
+
+/** 시간이 끝나고 이만큼 더 지나면 학생 화면 배너를 내린다 — 조교가 타이머를
+ * 안 지우고 퇴근해도 학생 화면에 하루 종일 남아 있지 않게. */
+export const STUDENT_BANNER_LINGER_SECONDS = 10 * 60;
+
+/** 학생 화면에 이 타이머를 아직 띄울지. */
+export function isBannerVisible(remaining: number): boolean {
+  return remaining > -STUDENT_BANNER_LINGER_SECONDS;
+}
+
 export interface TimerStudentOption {
   name: string;
   code: string;

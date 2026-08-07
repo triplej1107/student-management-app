@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
     "seed:students": "node --env-file=.env.local scripts/seed-students.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "macgai:probe": "node scripts/macgai7-probe.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

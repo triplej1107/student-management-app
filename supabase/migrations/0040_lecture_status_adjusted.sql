@@ -16,3 +16,16 @@ alter table lecture_overrides
 
 comment on column lecture_overrides.moved_date is
   '보강이 다음 주로 넘어갈 때 쓰는 실제 날짜. 비어 있으면 같은 주 안에서 moved_day로 찾는다.';
+
+-- 나중에 클리닉 출결까지 키오스크로 자동화할 때 쓸 칸. 지금 코드는 안 쓴다.
+--
+-- marked_by(조교 id)로 구분하면 되지 않나 싶지만, 그 칸은 조교가 누른 게
+-- 아닐 때 전부 null이라 "키오스크가 찍은 것"과 "시스템이 짐작으로 찍은 자동
+-- 지각"을 못 가른다. 매일 도는 동기화가 조교가 고쳐둔 걸 되돌리지 않으려면
+-- 그 셋을 구분해야 해서 별도 칸을 둔다.
+--
+-- 기존 기록은 전부 'manual'로 들어간다 — 지금까지는 조교가 손으로 누른 것이
+-- 맞으므로 정확하다.
+alter table attendance_records
+  add column if not exists source text not null default 'manual'
+  check (source in ('manual', 'macgai7'));

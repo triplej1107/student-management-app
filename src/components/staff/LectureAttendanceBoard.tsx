@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DAY_ORDER } from "@/lib/types";
 import type { ClassKey } from "@/lib/types";
-import { lectureSlotLabel, type LectureStatus } from "@/lib/lectureRules";
+import { lectureSlotLabel, makeupSlotsFor, type LectureStatus } from "@/lib/lectureRules";
 import type { LectureAttendanceEntry } from "@/lib/lectureAttendance";
 import { useToast } from "@/components/Toast";
 import {
@@ -89,7 +89,12 @@ export function LectureAttendanceBoard({
           </div>
           <div className="flex flex-col gap-2">
             {list.map((entry) => (
-              <LectureRow key={entry.studentId} dateISO={dateISO} entry={entry} />
+              <LectureRow
+                key={entry.studentId}
+                dateISO={dateISO}
+                dayLabel={dayLabel}
+                entry={entry}
+              />
             ))}
           </div>
         </div>
@@ -98,13 +103,34 @@ export function LectureAttendanceBoard({
   );
 }
 
-function LectureRow({ dateISO, entry }: { dateISO: string; entry: LectureAttendanceEntry }) {
+function LectureRow({
+  dateISO,
+  dayLabel,
+  entry,
+}: {
+  dateISO: string;
+  dayLabel: string;
+  entry: LectureAttendanceEntry;
+}) {
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
   const [editingMakeup, setEditingMakeup] = useState(false);
   const [dayDraft, setDayDraft] = useState(entry.makeupDay ?? "");
   const [timeDraft, setTimeDraft] = useState(entry.makeupTime ?? "");
+  // 타임표에 없는 곳으로 보내야 할 때만 여는 수동 입력.
+  const [manual, setManual] = useState(false);
+  const slots = makeupSlotsFor(entry.classKey, dayLabel, entry.time);
+
+  /** 타임 버튼 — 한 번 누르면 바로 저장하고 칸을 닫는다. */
+  function pickSlot(day: string, time: string) {
+    startTransition(async () => {
+      await saveLectureMakeupAction(entry.studentId, dateISO, day, time);
+      setEditingMakeup(false);
+      showToast(`보강: ${lectureSlotLabel(day, time)}`);
+      router.refresh();
+    });
+  }
 
   function mark(next: LectureStatus) {
     startTransition(async () => {
@@ -161,7 +187,7 @@ function LectureRow({ dateISO, entry }: { dateISO: string; entry: LectureAttenda
           )}
           {entry.makeupDay && entry.makeupTime && (
             <div className="mt-0.5 text-[11px] font-bold text-accent">
-              보강: {entry.makeupDay} {entry.makeupTime}
+              보강: {lectureSlotLabel(entry.makeupDay, entry.makeupTime)}
             </div>
           )}
           {entry.status && entry.auto && (
@@ -187,41 +213,80 @@ function LectureRow({ dateISO, entry }: { dateISO: string; entry: LectureAttenda
 
       {editingMakeup && (
         <div className="mt-2.5 border-t border-line-soft pt-2.5">
-          <div className="mb-1.5 text-xs font-bold text-ink-muted">보강 요일/시간</div>
-          <div className="flex flex-wrap gap-1.5">
-            {DAY_ORDER.map((d) => (
+          {/* 반 타임표가 있으면 손으로 칠 이유가 없다 — 한 번 누르면 바로 저장된다. */}
+          {slots.length > 0 && (
+            <>
+              <div className="mb-1.5 text-xs font-bold text-ink-muted">어느 타임으로 보낼까요?</div>
+              <div className="flex flex-wrap gap-1.5">
+                {slots.map((slot) => {
+                  const picked = entry.makeupDay === slot.day && entry.makeupTime === slot.time;
+                  return (
+                    <button
+                      key={`${slot.day}-${slot.time}`}
+                      disabled={pending}
+                      onClick={() => pickSlot(slot.day, slot.time)}
+                      className={
+                        "rounded-lg border px-2.5 py-2 text-xs font-bold " +
+                        (picked
+                          ? "border-accent bg-accent text-white"
+                          : "border-accent/50 bg-accent-soft text-accent")
+                      }
+                    >
+                      {lectureSlotLabel(slot.day, slot.time)}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <button
+            onClick={() => setManual((v) => !v)}
+            className="mt-2 text-[11px] font-bold text-ink-muted underline"
+          >
+            {manual ? "타임 목록으로" : "직접 입력"}
+          </button>
+
+          {(manual || slots.length === 0) && (
+            <div className="mt-1.5">
+              <div className="mb-1.5 text-xs font-bold text-ink-muted">보강 요일/시간</div>
+              <div className="flex flex-wrap gap-1.5">
+                {DAY_ORDER.map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDayDraft(d)}
+                    className={
+                      "rounded-lg border px-2.5 py-1.5 text-xs font-bold " +
+                      (dayDraft === d
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-white text-ink-secondary")
+                    }
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <input
+                value={timeDraft}
+                onChange={(e) => setTimeDraft(e.target.value)}
+                placeholder="예: 20:00"
+                className="mt-2 w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
+              />
               <button
-                key={d}
-                onClick={() => setDayDraft(d)}
-                className={
-                  "rounded-lg border px-2.5 py-1.5 text-xs font-bold " +
-                  (dayDraft === d
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-line bg-white text-ink-secondary")
-                }
+                onClick={saveMakeup}
+                className="mt-2 rounded-lg bg-accent px-3.5 py-2 text-xs font-bold text-white"
               >
-                {d}
+                저장
               </button>
-            ))}
-          </div>
-          <input
-            value={timeDraft}
-            onChange={(e) => setTimeDraft(e.target.value)}
-            placeholder="예: 20:00"
-            className="mt-2 w-full box-border rounded-lg border border-line px-2.5 py-2 text-[13px]"
-          />
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              onClick={saveMakeup}
-              className="rounded-lg bg-accent px-3.5 py-2 text-xs font-bold text-white"
-            >
-              저장
-            </button>
+            </div>
+          )}
+
+          <div className="mt-2 flex items-center gap-3">
             <button
               onClick={() => setEditingMakeup(false)}
-              className="rounded-lg border border-line bg-white px-3.5 py-2 text-xs font-bold text-ink-secondary"
+              className="text-[11px] font-bold text-ink-secondary underline"
             >
-              취소
+              닫기
             </button>
             {entry.makeupDay && (
               <button onClick={cancelMakeup} className="text-[11px] font-bold text-danger underline">

@@ -7,6 +7,9 @@ import {
   minutesOfTime,
   missingMessage,
   missingStudents,
+  needsMakeup,
+  isDutyNagTime,
+  shouldFillClinicFromKiosk,
   statusForCheckIn,
   type LectureRosterEntry,
 } from "./lectureRules";
@@ -158,5 +161,53 @@ describe("isSyncStale", () => {
 
   it("값이 깨져 있어도 죽은 것으로 본다", () => {
     expect(isSyncStale("몰라", now)).toBe(true);
+  });
+});
+
+describe("needsMakeup", () => {
+  it("결석이고 옮겨둔 일정이 없으면 보강 대상", () => {
+    expect(needsMakeup("결석", false)).toBe(true);
+  });
+
+  it("보강 일정을 잡아두면 목록에서 빠진다", () => {
+    expect(needsMakeup("결석", true)).toBe(false);
+  });
+
+  it("조정은 이미 갈 곳이 정해져 있어 대상이 아니다", () => {
+    expect(needsMakeup("조정", false)).toBe(false);
+  });
+
+  it("출석·지각은 당연히 대상이 아니다", () => {
+    expect(needsMakeup("출석", false)).toBe(false);
+    expect(needsMakeup("지각", false)).toBe(false);
+  });
+});
+
+describe("isDutyNagTime", () => {
+  it("9시 30분 전에는 안 띄운다", () => {
+    expect(isDutyNagTime(21 * 60 + 29)).toBe(false);
+    expect(isDutyNagTime(19 * 60)).toBe(false);
+  });
+
+  it("9시 30분부터 띄운다", () => {
+    expect(isDutyNagTime(21 * 60 + 30)).toBe(true);
+  });
+
+  it("한참 지나서 열어도 계속 띄운다 — 늦게 열었다고 안내를 놓치면 안 된다", () => {
+    expect(isDutyNagTime(23 * 60)).toBe(true);
+  });
+});
+
+describe("shouldFillClinicFromKiosk", () => {
+  it("클리닉 출결이 아직 비어 있으면 키오스크 기록으로 채운다", () => {
+    expect(shouldFillClinicFromKiosk(false, false)).toBe(true);
+  });
+
+  it("자동 지각으로 찍혀 있으면 덮는다 — 키오스크 기록이 더 정확하다", () => {
+    expect(shouldFillClinicFromKiosk(true, true)).toBe(true);
+  });
+
+  it("사람이 눌러둔 건 건드리지 않는다 — 사정을 알고 바꾼 것이다", () => {
+    expect(shouldFillClinicFromKiosk(true, false)).toBe(false);
   });
 });

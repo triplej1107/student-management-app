@@ -1,8 +1,10 @@
 import "server-only";
 import { supabase } from "./supabase";
-import { listStudents } from "./data";
+import { getAttendanceMapForDate, getRosterForDate, listStudents } from "./data";
+import { getAutoMarkedSetForDate } from "./attendanceAuto";
 import { getPushSubscriptionsForStudents, sendAttendancePush } from "./clinicPush";
 import { isDeployedEnvironment } from "./env";
+import type { ClassKey } from "./types";
 import { dayLabelOf, kstTimeHHMM, mondayOf, nowKST, toISODate } from "./weeks";
 import {
   lectureRosterForDay,
@@ -10,14 +12,17 @@ import {
   missingMessage,
   missingStudents,
   statusForCheckIn,
+  needsMakeup,
+  shouldFillClinicFromKiosk,
   type LectureOverride,
   type LectureRosterEntry,
+  type LectureStatus,
 } from "./lectureRules";
 
 export interface LectureAttendanceRow {
   student_id: number;
   session_date: string;
-  status: "출석" | "지각" | "결석";
+  status: LectureStatus;
   checked_in_at: string | null;
   source: "macgai7" | "manual";
 }
@@ -171,11 +176,59 @@ export async function syncLectureAttendance(
       );
   }
 
-  // 3) 이번에 새로 결석이 된 학생에게만 알린다.
+  // 3) 같은 날 클리닉도 있는 학생이면 그 출결까지 채운다 — 학생은 들어올 때
+  //    한 번만 찍고 강의·클리닉을 이어서 하기 때문에, 같은 사람을 조교가 또
+  //    체크할 이유가 없다.
+  await fillClinicFromKiosk(checkedInIds, today, dateISO);
+
+  // 4) 이번에 새로 결석이 된 학생에게만 알린다.
   const freshlyMissing = missing.filter((e) => !alreadyAbsent.has(e.studentId));
   await notifyMissing(freshlyMissing);
 
   return { recorded: rows.length, unknownCodes, markedMissing: freshlyMissing.length };
+}
+
+/**
+ * 키오스크에 찍힌 학생 중 그날 클리닉도 있는 사람의 클리닉 출결을 출석으로
+ * 채운다.
+ *
+ * "지각"으로 계산하지 않고 그냥 출석으로 둔다 — 강의 때문에 온 시각이라
+ * 클리닉 시작 시각과 비교하는 게 의미가 없다. 늦게 온 사정은 조교가 보고
+ * 고치면 되고, 그렇게 고친 것은 이후 동기화가 덮지 않는다.
+ *
+ * 자동 지각(auto_marked)으로 찍혀 있던 학생은 키오스크 기록이 더 정확하므로
+ * 덮어쓰고, 그 과정에서 auto_marked도 꺼진다 — 밤 10시 자동 결석 전환
+ * 대상에서도 빠진다.
+ */
+async function fillClinicFromKiosk(checkedInIds: Set<number>, date: Date, dateISO: string) {
+  if (checkedInIds.size === 0) return;
+
+  const clinicRoster = await getRosterForDate(date);
+  const clinicToday = clinicRoster.filter((r) => checkedInIds.has(r.student.id));
+  if (clinicToday.length === 0) return;
+
+  const [existing, autoMarked] = await Promise.all([
+    getAttendanceMapForDate(date),
+    getAutoMarkedSetForDate(date),
+  ]);
+
+  const rows = clinicToday
+    .filter((r) =>
+      shouldFillClinicFromKiosk(existing.has(r.student.id), autoMarked.has(r.student.id))
+    )
+    .map((r) => ({
+      student_id: r.student.id,
+      session_date: dateISO,
+      status: "출석",
+      marked_by: null,
+      auto_marked: false,
+      created_at: new Date().toISOString(),
+    }));
+  if (rows.length === 0) return;
+
+  await supabase
+    .from("attendance_records")
+    .upsert(rows, { onConflict: "student_id,session_date" });
 }
 
 function checkInToISO(dateISO: string, hhmm: string): string | null {
@@ -222,11 +275,69 @@ export async function getLectureRosterForDate(date: Date): Promise<LectureRoster
   );
 }
 
+/** 그날 강의 명단 + 출결 + 보강 필요 여부를 반별로 묶은 것 — 화면이 쓰는 형태. */
+export interface LectureAttendanceEntry {
+  studentId: number;
+  studentCode: string;
+  name: string;
+  classKey: ClassKey | null;
+  time: string;
+  /** 그 주만 시간을 옮겨 이 날짜로 온 학생 */
+  moved: boolean;
+  status: LectureStatus | null;
+  /** 맥가이7에서 자동으로 들어온 값인지 — 사람이 고쳤으면 false */
+  auto: boolean;
+  checkedInAt: string | null;
+  /** 옮겨둔(또는 보강으로 잡아둔) 일정 */
+  makeupDay: string | null;
+  makeupTime: string | null;
+  /** 결석인데 보강 일정이 아직 없음 */
+  needsMakeup: boolean;
+}
+
+/**
+ * 강의 출결 화면 한 판 — 그날 와야 하는 학생, 찍힌 출결, 보강 필요 여부까지.
+ * 조교 화면과 종주T 화면이 같은 것을 본다(권한 차이는 화면에서 다룬다).
+ */
+export async function getLectureAttendanceBoard(date: Date): Promise<LectureAttendanceEntry[]> {
+  const dateISO = toISODate(date);
+  const [students, overrides, records] = await Promise.all([
+    listStudents({ enrolledOnly: true }),
+    getOverridesForWeekOf(date),
+    getLectureAttendanceForDate(dateISO),
+  ]);
+  const roster = studentsToRoster(dayLabelOf(date), students, overrides);
+  const byId = new Map(students.map((s) => [s.id, s]));
+  const recordByStudent = new Map(records.map((r) => [r.student_id, r]));
+
+  return roster
+    .map((entry) => {
+      const record = recordByStudent.get(entry.studentId);
+      const override = overrides.get(entry.studentId);
+      const status = (record?.status as LectureStatus | undefined) ?? null;
+      return {
+        studentId: entry.studentId,
+        studentCode: entry.studentCode,
+        name: entry.name,
+        classKey: byId.get(entry.studentId)?.class_key ?? null,
+        time: entry.time,
+        moved: entry.moved,
+        status,
+        auto: record?.source === "macgai7",
+        checkedInAt: record?.checked_in_at ?? null,
+        makeupDay: override?.movedDay ?? null,
+        makeupTime: override?.movedTime ?? null,
+        needsMakeup: status ? needsMakeup(status, !!override) : false,
+      };
+    })
+    .sort((a, b) => (a.time === b.time ? a.name.localeCompare(b.name) : a.time.localeCompare(b.time)));
+}
+
 /** 조교·종주T가 직접 고친 강의 출결 — 다음 동기화가 덮어쓰지 않게 manual로 남긴다. */
 export async function setLectureAttendanceManually(
   studentId: number,
   dateISO: string,
-  status: "출석" | "지각" | "결석"
+  status: LectureStatus
 ) {
   await supabase.from("lecture_attendance").upsert(
     {

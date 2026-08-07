@@ -9,7 +9,6 @@ import {
   getRosterForDay,
   getStaffById,
   listDutyItems,
-  listNoticesForClass,
   listStudents,
 } from "@/lib/data";
 import { isClinicComplete } from "@/lib/clinicProgress";
@@ -17,15 +16,18 @@ import { getUnseenStaffFeedback } from "@/lib/staffFeedback";
 import { getTodayActiveReminders } from "@/lib/reminders";
 import { listOpenOnboardings } from "@/lib/newStudents";
 import { toISODate } from "@/lib/weeks";
-import { CLASSES } from "@/lib/types";
 import { Card } from "@/components/ui";
 import { StaffHomeModals } from "@/components/StaffHomeModals";
 import { ReminderBadges } from "@/components/ReminderBadges";
 import { NewStudentChecklist } from "@/components/NewStudentChecklist";
 import { ExamTimerBoard } from "@/components/staff/ExamTimerBoard";
 import { StaffQuestBanner } from "@/components/staff/StaffQuestBanner";
+import { DutyChecklist } from "@/components/staff/DutyChecklist";
+import { DutyNagModal } from "@/components/staff/DutyNagModal";
 import { listTodayExamTimers } from "@/lib/examTimers";
 import { getStaffQuests } from "@/lib/quests";
+import { isDutyNagTime } from "@/lib/lectureRules";
+import { nowKST } from "@/lib/weeks";
 import { logoutAction } from "@/app/login/actions";
 import { markStaffFeedbackSeenAction } from "@/app/staff/actions";
 
@@ -33,14 +35,13 @@ export default async function StaffHomePage() {
   const session = await requireStaffSession();
   const { today, weekStart, weekEnd, clinicWeekStart, dayLabel } = getToday();
 
-  const [staff, roster, attendanceMap, dutyItems, dutyChecks, noticeLists, unseenFeedback, reminders] =
+  const [staff, roster, attendanceMap, dutyItems, dutyChecks, unseenFeedback, reminders] =
     await Promise.all([
       getStaffById(session.staffId),
       getRosterForDay(dayLabel, weekStart, weekEnd),
       getAttendanceMapForDate(today),
       listDutyItems(),
       getDutyChecksForStaffDate(session.staffId, today),
-      Promise.all(CLASSES.map((c) => listNoticesForClass(c, 2))),
       getUnseenStaffFeedback(session.staffId),
       getTodayActiveReminders(toISODate(today)),
     ]);
@@ -61,10 +62,13 @@ export default async function StaffHomePage() {
   // 실제로 온 학생 수만 — 조정·지각은 아직 안 온 상태다(출결 화면과 동일 기준).
   const attendedCount = roster.filter((r) => attendanceMap.get(r.student.id) === "출석").length;
   const dutyDone = dutyItems.filter((i) => dutyChecks.get(i.id)).length;
-  const notices = noticeLists
-    .flat()
-    .sort((a, b) => (a.notice_date < b.notice_date ? 1 : -1))
-    .slice(0, 2);
+  const initialChecked = Object.fromEntries(
+    dutyItems.map((i) => [i.id, dutyChecks.get(i.id) ?? false])
+  );
+  // 밤 9시 30분이 지났는데 아직 남아 있으면 알림창을 띄운다.
+  const kst = nowKST();
+  const nagging =
+    isDutyNagTime(kst.getUTCHours() * 60 + kst.getUTCMinutes()) && dutyDone < dutyItems.length;
 
   const [checksMap, templatesMap] = await Promise.all([
     getClinicChecksForStudents(
@@ -104,6 +108,10 @@ export default async function StaffHomePage() {
         </form>
       </div>
 
+      {nagging && (
+        <DutyNagModal dateISO={toISODate(today)} remaining={dutyItems.length - dutyDone} />
+      )}
+
       <StaffHomeModals feedback={unseenFeedback} markSeenAction={markStaffFeedbackSeenAction} />
 
       <NewStudentChecklist onboardings={onboardings} />
@@ -111,7 +119,7 @@ export default async function StaffHomePage() {
       <div className="mt-[22px] flex flex-col gap-3">
         <Link href="/staff/attendance">
           <Card clickable>
-            <div className="text-[13px] font-semibold text-ink-muted">{dayLabel}요일 출결</div>
+            <div className="text-[13px] font-semibold text-ink-muted">{dayLabel}요일 클리닉 출결</div>
             <div className="mt-1 text-[22px] font-extrabold text-ink">
               {attendedCount}/{roster.length}명 체크됨
             </div>
@@ -124,29 +132,30 @@ export default async function StaffHomePage() {
               <div className="mt-1 text-[22px] font-extrabold text-ink">{incompleteCount}명</div>
             </Card>
           </Link>
-          <Link href="/staff/checklist" className="flex-1">
+          <Link href="/staff/lecture-attendance" className="flex-1">
             <Card clickable>
-              <div className="text-[13px] font-semibold text-ink-muted">업무 체크리스트</div>
-              <div className="mt-1 text-[22px] font-extrabold text-ink">
-                {dutyDone}/{dutyItems.length}
-              </div>
+              <div className="text-[13px] font-semibold text-ink-muted">강의 출결</div>
+              <div className="mt-1 text-[22px] font-extrabold text-ink">보러가기 →</div>
             </Card>
           </Link>
         </div>
 
         <ExamTimerBoard timers={examTimers} students={timerStudents} />
 
+        {/* 공지사항은 학생·학부모용이라 조교 홈에서 뺐다. 그 자리에 매일 쓰는
+            업무 체크리스트를 바로 체크할 수 있게 넣는다. */}
         <div className="mt-3.5">
-          <div className="mb-2.5 text-sm font-bold text-ink">공지사항</div>
-          {notices.length === 0 && (
-            <div className="text-[13px] text-ink-muted/70">등록된 공지가 없어요.</div>
-          )}
-          {notices.map((n) => (
-            <Card key={n.id} className="mb-2 flex items-center justify-between">
-              <div className="text-sm font-semibold text-ink">{n.title}</div>
-              <div className="text-xs text-ink-muted">{n.notice_date}</div>
-            </Card>
-          ))}
+          <div className="mb-2.5 flex items-baseline justify-between">
+            <div className="text-sm font-bold text-ink">업무 체크리스트</div>
+            <div className="text-xs font-bold text-ink-muted">
+              {dutyDone}/{dutyItems.length}
+            </div>
+          </div>
+          <DutyChecklist
+            items={dutyItems}
+            initialChecked={initialChecked}
+            dateISO={toISODate(today)}
+          />
         </div>
       </div>
     </div>

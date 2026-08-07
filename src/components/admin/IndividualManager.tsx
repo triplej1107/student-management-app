@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CLASSES, DAY_ORDER, SCHOOL_EXAMS, MOCK_EXAMS, type Student } from "@/lib/types";
+import { activeClasses, DAY_ORDER, SCHOOL_EXAMS, MOCK_EXAMS, type Student } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import {
   searchStudentsAction,
@@ -306,7 +306,7 @@ function IndividualEditForm({
 }) {
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
-  const [classKey, setClassKey] = useState(student.class_key ?? CLASSES[0]);
+  const [classKey, setClassKey] = useState(student.class_key ?? activeClasses()[0]);
 
   const [nickname, setNickname] = useState(student.nickname ?? "");
   const [school, setSchool] = useState(student.school ?? "");
@@ -529,7 +529,7 @@ function IndividualEditForm({
           }}
           className="w-full box-border rounded-lg border border-line bg-white px-2.5 py-2 text-xs"
         >
-          {CLASSES.map((c) => (
+          {activeClasses().map((c) => (
             <option key={c} value={c}>
               {c}
             </option>

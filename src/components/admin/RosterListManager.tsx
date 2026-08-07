@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CLASSES, type ClassKey, type Student } from "@/lib/types";
+import { activeClasses, type ClassKey, type Student } from "@/lib/types";
 import { IMPORT_COLUMNS } from "@/lib/parseRoster";
 import type { BulkImportResult } from "@/lib/data";
 import { useToast } from "@/components/Toast";
@@ -41,7 +41,7 @@ export function RosterListManager({ students }: { students: Student[] }) {
   const [filter, setFilter] = useState("");
   const [classFilter, setClassFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [bulkClassKey, setBulkClassKey] = useState<ClassKey>(CLASSES[0]);
+  const [bulkClassKey, setBulkClassKey] = useState<ClassKey>(activeClasses()[0]);
 
   // Derived from the actual data (not the CLASSES constant) so old class
   // names still on students remain filterable/selectable even after the
@@ -172,7 +172,7 @@ export function RosterListManager({ students }: { students: Student[] }) {
               onChange={(e) => setBulkClassKey(e.target.value as ClassKey)}
               className="rounded-lg border border-line bg-white px-2 py-1.5 text-xs"
             >
-              {CLASSES.map((c) => (
+              {activeClasses().map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>

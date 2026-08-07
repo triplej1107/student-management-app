@@ -4,7 +4,7 @@ import { Resend } from "resend";
 import { supabase } from "./supabase";
 import { listStudents, getClinicTemplatesForWeek, getStaffNameMap } from "./data";
 import { toISODate, monthStart, monthEnd } from "./weeks";
-import { CLASSES } from "./types";
+import { activeClasses } from "./types";
 import type {
   Student,
   AttendanceRecord,
@@ -228,7 +228,7 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
     studentsByClass.set(key, list);
   }
   const classOrder = [
-    ...CLASSES.filter((c: string) => studentsByClass.has(c)),
+    ...activeClasses().filter((c: string) => studentsByClass.has(c)),
     ...(studentsByClass.has(UNASSIGNED_SHEET) ? [UNASSIGNED_SHEET] : []),
   ];
 

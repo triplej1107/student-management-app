@@ -253,4 +253,10 @@ describe("makeupSlotsFor", () => {
   it("반이 없으면 빈 목록 — 화면은 직접 입력으로 넘어간다", () => {
     expect(makeupSlotsFor(null, "토", "09:00")).toEqual([]);
   });
+
+  it("2학기 반도 자기 타임표를 그대로 쓴다", () => {
+    expect(makeupSlotsFor("가락고1", "토", "09:00").map((s) => `${s.day}${s.time}`)).toEqual(["일10:00"]);
+    expect(makeupSlotsFor("배명고1", "일", "19:00").map((s) => `${s.day}${s.time}`)).toEqual(["토16:00"]);
+    expect(makeupSlotsFor("배명고2", "토", "19:00").map((s) => `${s.day}${s.time}`)).toEqual(["일13:00"]);
+  });
 });

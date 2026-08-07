@@ -10,7 +10,7 @@ import {
   kstTimeHHMM,
   makeupDateISO,
 } from "./weeks";
-import { classKeyFor } from "./classKey";
+import { classKeyFor, isStaleClassKey } from "./classKey";
 import { syncSlimeWeek } from "./slimeXp";
 import { SCHOOL_EXAMS } from "./types";
 import type {
@@ -211,8 +211,20 @@ export async function bulkImportStudents(rows: BulkImportRow[]): Promise<BulkImp
   const result: BulkImportResult = { inserted: 0, updated: 0, errors: [] };
   if (rows.length === 0) return result;
 
-  const { data: existingRows } = await supabase.from("students").select("id, student_code");
+  const { data: existingRows } = await supabase
+    .from("students")
+    .select("id, student_code, class_key, class_day, class_time");
   const existingCodes = new Map((existingRows ?? []).map((r) => [r.student_code, r.id]));
+  const existing = new Map(
+    (existingRows ?? []).map((r) => [
+      r.student_code,
+      {
+        classKey: r.class_key as string | null,
+        classDay: r.class_day as string | null,
+        classTime: r.class_time as string | null,
+      },
+    ])
+  );
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -234,9 +246,29 @@ export async function bulkImportStudents(rows: BulkImportRow[]): Promise<BulkImp
       const nonBlankFields = Object.fromEntries(
         Object.entries(rosterFields).filter(([, v]) => v !== null)
       );
+      // 반 배정은 원래 손대지 않는다(종주T가 개별로 고쳐둘 수 있으므로).
+      // 다만 **지난 학기 반 이름이 그대로 남아 있으면** 새 학기 타임표로
+      // 다시 정해준다 — 학기가 바뀔 때 원장님이 엑셀 한 번 올리는 것으로
+      // 전교생 반 배정이 따라 옮겨가게 하려는 것. 이미 이번 학기 반에
+      // 들어가 있는 학생은 건드리지 않는다.
+      const prev = existing.get(student_code);
+      const reassigned = isStaleClassKey(prev?.classKey ?? null)
+        ? {
+            class_key: classKeyFor({
+              level: rosterFields.level ?? null,
+              school: rosterFields.school ?? null,
+              grade: rosterFields.grade ?? null,
+              // 붙여넣은 칸이 비어 있으면 이미 저장돼 있던 타임을 쓴다 —
+              // 일부만 붙여넣은 엑셀 때문에 타임표 대신 학년 짐작으로
+              // 반이 정해지는 일을 막는다.
+              class_day: rosterFields.class_day ?? prev?.classDay ?? null,
+              class_time: rosterFields.class_time ?? prev?.classTime ?? null,
+            }),
+          }
+        : {};
       const { error } = await supabase
         .from("students")
-        .update({ name, ...nonBlankFields, updated_at: new Date().toISOString() })
+        .update({ name, ...nonBlankFields, ...reassigned, updated_at: new Date().toISOString() })
         .eq("id", existingId);
       if (error) {
         result.errors.push({ row: i + 1, message: error.message });
@@ -252,6 +284,8 @@ export async function bulkImportStudents(rows: BulkImportRow[]): Promise<BulkImp
           level: rosterFields.level ?? null,
           school: rosterFields.school ?? null,
           grade: rosterFields.grade ?? null,
+          class_day: rosterFields.class_day ?? null,
+          class_time: rosterFields.class_time ?? null,
         }),
         enrolled: rosterFields.enrolled ?? true,
         main_book: false,

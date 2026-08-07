@@ -1,7 +1,7 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { getClinicTemplate } from "@/lib/data";
 import { getAnswerKeysForClassWeek, getOmrQuestionAnalysis } from "@/lib/clinicOmr";
-import { CLASSES, type ClassKey } from "@/lib/types";
+import { activeClasses, type ClassKey } from "@/lib/types";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink } from "@/components/ui";
 import { AnswerKeyEditor } from "@/components/admin/AnswerKeyEditor";
@@ -15,9 +15,9 @@ export default async function AdminExamsPage({
   await requireZongjuSession();
   const { class: classParam, week: weekParam } = await searchParams;
 
-  const classKey: ClassKey = CLASSES.includes(classParam as ClassKey)
+  const classKey: ClassKey = activeClasses().includes(classParam as ClassKey)
     ? (classParam as ClassKey)
-    : CLASSES[0];
+    : activeClasses()[0];
   const weeks = rollingClinicWeeks(8);
   const selectedWeekStart = weekParam ? parseISODate(weekParam) : weeks[0];
   const selectedWeekISO = toISODate(selectedWeekStart);
@@ -44,7 +44,7 @@ export default async function AdminExamsPage({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 border-b border-line-soft pb-4">
-        {CLASSES.map((c) => (
+        {activeClasses().map((c) => (
           <PillLink key={c} href={`/admin/exams?class=${c}&week=${selectedWeekISO}`} active={c === classKey}>
             {c}
           </PillLink>

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CLASSES, type CalendarNote, type ClassKey } from "@/lib/types";
+import { activeClasses, type CalendarNote, type ClassKey } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 import {
   updateCalendarNoteContentAction,
@@ -28,7 +28,7 @@ export function CalendarNoteEditorRow({ note }: { note: CalendarNote }) {
     });
   }
 
-  function toggleClass(c: (typeof CLASSES)[number]) {
+  function toggleClass(c: ClassKey) {
     const next = classKeys.includes(c) ? classKeys.filter((k) => k !== c) : [...classKeys, c];
     setClassKeys(next);
     startTransition(async () => {
@@ -98,7 +98,7 @@ export function CalendarNoteEditorRow({ note }: { note: CalendarNote }) {
         >
           전체 반
         </button>
-        {CLASSES.map((c) => (
+        {activeClasses().map((c) => (
           <button
             key={c}
             onClick={() => toggleClass(c)}

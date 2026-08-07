@@ -10,6 +10,7 @@ import {
   needsMakeup,
   isDutyNagTime,
   shouldFillClinicFromKiosk,
+  lectureSlotLabel,
   statusForCheckIn,
   type LectureRosterEntry,
 } from "./lectureRules";
@@ -209,5 +210,27 @@ describe("shouldFillClinicFromKiosk", () => {
 
   it("사람이 눌러둔 건 건드리지 않는다 — 사정을 알고 바꾼 것이다", () => {
     expect(shouldFillClinicFromKiosk(true, false)).toBe(false);
+  });
+});
+
+describe("lectureSlotLabel", () => {
+  it("원장님이 부르는 대로 12시간제로", () => {
+    expect(lectureSlotLabel("토", "09:00")).toBe("토요일 9시");
+    expect(lectureSlotLabel("토", "16:00")).toBe("토요일 4시");
+    expect(lectureSlotLabel("일", "19:00")).toBe("일요일 7시");
+    expect(lectureSlotLabel("일", "13:00")).toBe("일요일 1시");
+  });
+
+  it("분이 있으면 붙인다", () => {
+    expect(lectureSlotLabel("토", "09:30")).toBe("토요일 9시 30분");
+  });
+
+  it("정오·자정도 12시로", () => {
+    expect(lectureSlotLabel("토", "12:00")).toBe("토요일 12시");
+    expect(lectureSlotLabel("토", "00:00")).toBe("토요일 12시");
+  });
+
+  it("시각을 못 읽으면 원문 그대로 — 조용히 틀린 라벨을 보여주지 않는다", () => {
+    expect(lectureSlotLabel("토", "아침")).toBe("토요일 아침");
   });
 });

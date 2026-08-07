@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DAY_ORDER } from "@/lib/types";
 import type { ClassKey } from "@/lib/types";
-import type { LectureStatus } from "@/lib/lectureRules";
+import { lectureSlotLabel, type LectureStatus } from "@/lib/lectureRules";
 import type { LectureAttendanceEntry } from "@/lib/lectureAttendance";
 import { useToast } from "@/components/Toast";
 import {
@@ -35,17 +35,22 @@ const UNSET_STYLE = { border: "border-line", bg: "bg-white", color: "text-ink-mu
  */
 export function LectureAttendanceBoard({
   dateISO,
+  dayLabel,
   entries,
 }: {
   dateISO: string;
+  /** "토" — 묶음 이름에 쓴다. 화면이 하루치만 보여주므로 하나로 충분하다. */
+  dayLabel: string;
   entries: LectureAttendanceEntry[];
 }) {
-  const byClass = new Map<string, LectureAttendanceEntry[]>();
+  // 반이 아니라 **타임**으로 묶는다. 같은 반이 여러 시간대에 흩어져 있어서
+  // 반으로 묶으면 지금 눈앞의 타임을 체크하는 데 도움이 안 된다.
+  // entries는 서버에서 이미 시각 순으로 정렬돼 온다.
+  const bySlot = new Map<string, LectureAttendanceEntry[]>();
   for (const e of entries) {
-    const key = e.classKey ?? "반 미배정";
-    const list = byClass.get(key) ?? [];
+    const list = bySlot.get(e.time) ?? [];
     list.push(e);
-    byClass.set(key, list);
+    bySlot.set(e.time, list);
   }
 
   const checked = entries.filter((e) => e.status).length;
@@ -74,10 +79,10 @@ export function LectureAttendanceBoard({
         </div>
       </div>
 
-      {Array.from(byClass.entries()).map(([classKey, list]) => (
-        <div key={classKey} className="mt-5">
+      {Array.from(bySlot.entries()).map(([time, list]) => (
+        <div key={time} className="mt-5">
           <div className="mb-2 text-sm font-extrabold text-ink">
-            {classKey}
+            {lectureSlotLabel(dayLabel, time)}
             <span className="ml-1.5 text-xs font-normal text-ink-muted">
               {list.filter((e) => e.status).length}/{list.length}
             </span>
@@ -142,7 +147,9 @@ function LectureRow({ dateISO, entry }: { dateISO: string; entry: LectureAttenda
         <div className="min-w-0">
           <div className="text-[15px] font-bold text-ink">
             {entry.name}
-            <span className="ml-1 text-xs font-normal text-ink-muted">{entry.time}</span>
+            {entry.classKey && (
+              <span className="ml-1 text-xs font-normal text-ink-muted">{entry.classKey}</span>
+            )}
           </div>
           {entry.moved && (
             <div className="mt-0.5 text-[11px] font-bold text-accent">이 주만 옮겨온 학생</div>

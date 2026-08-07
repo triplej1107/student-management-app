@@ -127,6 +127,24 @@ export function missingMessage(time: string): string {
 export type LectureStatus = "출석" | "지각" | "조정" | "결석";
 
 /**
+ * 강의 출결 화면의 묶음 이름 — "토요일 9시" / "일요일 4시".
+ *
+ * 반 이름("1학년정규")으로 묶으면 같은 반이 여러 시간대로 흩어져 있어
+ * 체크할 때 도움이 안 된다. 조교는 지금 눈앞의 그 타임을 보고 있으므로
+ * 요일+시각이 곧 묶음 단위다.
+ *
+ * 시각은 원장님이 부르는 대로 12시간제("16:00" → "4시"). 분이 있으면 붙인다.
+ */
+export function lectureSlotLabel(dayLabel: string, time: string): string {
+  const minutes = minutesOfTime(time);
+  if (minutes === null) return `${dayLabel}요일 ${time}`;
+  const h24 = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${dayLabel}요일 ${h12}시${m > 0 ? ` ${m}분` : ""}`;
+}
+
+/**
  * 키오스크 기록으로 그날 **클리닉** 출결까지 채울지.
  *
  * 학생은 학원에 들어올 때 한 번만 찍는다. 같은 날 강의와 클리닉을 이어서

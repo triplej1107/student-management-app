@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { supabase } from "./supabase";
 import { listStudents, getClinicTemplatesForWeek, getStaffNameMap } from "./data";
 import { toISODate, monthStart, monthEnd } from "./weeks";
+import { CLASSES } from "./types";
 import type {
   Student,
   AttendanceRecord,
@@ -33,29 +34,13 @@ interface UjcTransactionRow {
   created_at: string;
 }
 
-// ── 학생 시트를 'ㄱㄴㄷ'순으로 정렬 + 초성별로 묶어보기 위한 헬퍼들 ──────
+// ── 반별 시트 정렬/색 헬퍼 ────────────────────────────────────────────
 const koreanCollator = new Intl.Collator("ko");
-const CHOSEONG_LIST = [
-  "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ",
-  "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ",
-];
-const CHOSEONG_GROUP: Record<string, string> = { "ㄲ": "ㄱ", "ㄸ": "ㄷ", "ㅃ": "ㅂ", "ㅆ": "ㅅ", "ㅉ": "ㅈ" };
-const GROUP_ORDER = ["ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ", "기타"];
-const TAB_COLOR_PALETTE = ["FF4472C4", "FFED7D31", "FFA5A5A5", "FF70AD47", "FF264478", "FF9E480E", "FF636363"];
+const TAB_COLOR_PALETTE = ["FF4472C4", "FFED7D31", "FF70AD47", "FF9E480E", "FF636363"];
+const UNASSIGNED_SHEET = "반 미배정";
 
-/** 이름 첫 글자의 초성 그룹(쌍자음은 기본자음으로 묶음). 한글이 아니면 "기타". */
-function nameGroup(name: string): string {
-  const code = name.trim().charCodeAt(0);
-  if (code >= 0xac00 && code <= 0xd7a3) {
-    const choseong = CHOSEONG_LIST[Math.floor((code - 0xac00) / (21 * 28))];
-    return CHOSEONG_GROUP[choseong] ?? choseong;
-  }
-  return "기타";
-}
-
-function tabColorForGroup(group: string): string {
-  const idx = GROUP_ORDER.indexOf(group);
-  return TAB_COLOR_PALETTE[(idx < 0 ? GROUP_ORDER.length - 1 : idx) % TAB_COLOR_PALETTE.length];
+function tabColorForIndex(idx: number): string {
+  return TAB_COLOR_PALETTE[idx % TAB_COLOR_PALETTE.length];
 }
 
 // ── 상담 시 눈에 띄어야 할 항목(결석/조정/60%이하 성적) 강조 스타일 ──────
@@ -229,21 +214,27 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
       (ujcThisMonthByStudent.get(s.id)?.length ?? 0) > 0
   );
 
-  // 재원생 200명을 향해가는 규모라 탭을 무작정 나열하면 찾기 힘들다 —
-  // 'ㄱㄴㄷ'순 정렬 + 초성 그룹으로 묶어 탭 색상을 준다.
+  // 재원생이 200명을 넘어가는 규모라 학생 한 명당 시트를 만들면 탭이 200개가
+  // 넘어 아무것도 못 찾는다. **반별로 시트 하나**를 만들고 그 안에 학생 기록을
+  // 차례로 쌓는다 — 탭은 "전체 요약 + 반 수"로 줄고, 상담 때 그 반만 열면 된다.
   const sortedStudents = includedStudents.slice().sort((a, b) => koreanCollator.compare(a.name, b.name));
+
+  // 반 순서는 CLASSES 정의 순서를 따르고, 반이 없는 학생은 맨 뒤 별도 시트로.
+  const studentsByClass = new Map<string, typeof sortedStudents>();
+  for (const s of sortedStudents) {
+    const key = s.class_key ?? UNASSIGNED_SHEET;
+    const list = studentsByClass.get(key) ?? [];
+    list.push(s);
+    studentsByClass.set(key, list);
+  }
+  const classOrder = [
+    ...CLASSES.filter((c: string) => studentsByClass.has(c)),
+    ...(studentsByClass.has(UNASSIGNED_SHEET) ? [UNASSIGNED_SHEET] : []),
+  ];
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "유종의미 국어학원 학생관리 앱";
   wb.created = new Date();
-
-  // 학생별 시트 이름을 먼저 확정해둔다 — 전체 요약의 하이퍼링크와 실제
-  // 상세 시트 생성이 같은 이름을 가리켜야 하기 때문.
-  const usedNames = new Set<string>(["전체 요약"]);
-  const sheetNameByStudent = new Map<number, string>();
-  for (const s of sortedStudents) {
-    sheetNameByStudent.set(s.id, makeSheetName(`${s.name}_${s.student_code}`, usedNames));
-  }
 
   // ── 1. 전체 요약: 한눈에 훑어보는 학생별 요약표 ──────────────────────
   const wsSummary = wb.addWorksheet("전체 요약");
@@ -252,59 +243,26 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
     ["이름", "학번", "반", "재원상태", "출석", "지각", "조정", "결석", "클리닉완료", "클리닉대상", "UJC적립", "UJC사용", "UJC월말잔액", "성적경고"],
     [10, 10, 10, 8, 6, 6, 6, 6, 10, 10, 8, 8, 10, 8]
   );
-  for (const s of sortedStudents) {
-    const att = attByStudent.get(s.id) ?? [];
-    const countBy = (status: string) => att.filter((a) => a.status === status).length;
-    const clinics = clinicByStudent.get(s.id) ?? [];
-    const doneCount = clinics.filter((c) => c.zongju_approved).length;
-    const ujc = ujcThisMonthByStudent.get(s.id) ?? [];
-    const earned = ujc.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
-    const spent = ujc.filter((t) => t.amount < 0).reduce((sum, t) => sum + -t.amount, 0);
-    const absentCount = countBy("결석");
-    const adjustedCount = countBy("조정");
-    const hasLowGrade =
-      clinics.some(clinicHasLowScore) ||
-      (schoolExamsByStudent.get(s.id) ?? []).some((e) => e.score !== null && e.score <= 60) ||
-      (mockExamsByStudent.get(s.id) ?? []).some((e) => e.score !== null && e.score <= 60);
-    const sheetName = sheetNameByStudent.get(s.id)!;
-    const row = wsSummary.addRow([
-      { text: s.name, hyperlink: `#'${sheetName}'!A1` },
-      s.student_code,
-      s.class_key ?? "",
-      s.enrolled ? "재원" : "퇴원",
-      countBy("출석"),
-      countBy("지각"),
-      adjustedCount,
-      absentCount,
-      doneCount,
-      clinics.length,
-      earned,
-      spent,
-      ujcBalanceAtEndByStudent.get(s.id) ?? 0,
-      hasLowGrade ? "⚠" : "",
-    ]);
-    row.getCell(1).font = { color: { argb: "FF1155CC" }, underline: true };
-    if (absentCount > 0) {
-      row.getCell(8).fill = FILL_BAD;
-      row.getCell(8).font = FONT_BAD;
-    }
-    if (adjustedCount > 0) {
-      row.getCell(7).fill = FILL_WARN;
-      row.getCell(7).font = FONT_WARN;
-    }
-    if (hasLowGrade) {
-      row.getCell(14).fill = FILL_BAD;
-      row.getCell(14).font = { ...FONT_BAD, bold: true };
-    }
-  }
-  wsSummary.views = [{ state: "frozen", ySplit: 1 }];
 
-  // ── 2. 학생별 상세 시트 ──────────────────────────────────────────────
-  for (const s of sortedStudents) {
-    const ws = wb.addWorksheet(sheetNameByStudent.get(s.id)!);
-    ws.properties.tabColor = { argb: tabColorForGroup(nameGroup(s.name)) };
+  // ── 2. 반별 시트 — 그 반 학생 기록을 차례로 쌓는다 ────────────────────
+  //
+  // 예전에는 학생 한 명당 시트였는데, 200명이 넘어가면 탭만 200개라 정작
+  // 찾고 싶은 학생을 못 찾는다. 반별로 묶으면 탭은 대여섯 개로 줄고,
+  // 상담할 때도 그 반 시트 하나만 열면 된다. 전체 요약의 이름을 누르면
+  // 그 학생 기록 위치로 바로 뛴다.
+  const usedNames = new Set<string>(["전체 요약"]);
+  const anchorByStudent = new Map<number, { sheet: string; row: number }>();
+
+  classOrder.forEach((classKey, classIdx) => {
+    const ws = wb.addWorksheet(makeSheetName(classKey, usedNames));
+    ws.properties.tabColor = { argb: tabColorForIndex(classIdx) };
     ws.getColumn(1).width = 14;
     for (let c = 2; c <= 8; c++) ws.getColumn(c).width = 18;
+
+    const classStudents = studentsByClass.get(classKey) ?? [];
+    for (const s of classStudents) {
+      // 전체 요약에서 이 학생으로 뛰어올 위치. 블록을 쓰기 직전 행 번호다.
+      anchorByStudent.set(s.id, { sheet: ws.name, row: ws.rowCount + 1 });
 
     const backRow = ws.addRow([{ text: "◀ 전체 요약으로", hyperlink: "#'전체 요약'!A1" }]);
     backRow.getCell(1).font = { color: { argb: "FF1155CC" }, underline: true, bold: true };
@@ -464,7 +422,68 @@ export async function buildMonthlyReportWorkbook(year: number, month1to12: numbe
         }
       }
     }
+
+      // 학생과 학생 사이 구분선 — 한 시트에 여러 명이 이어지므로 경계가 없으면
+      // 어디서 끊기는지 알 수 없다.
+      const dividerRow = ws.addRow([]);
+      ws.mergeCells(dividerRow.number, 1, dividerRow.number, 8);
+      dividerRow.getCell(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFD9D9D9" },
+      };
+      ws.addRow([]);
+    }
+  });
+
+
+  // ── 3. 전체 요약 채우기 — 반별 시트의 위치를 알아야 링크가 걸리므로 마지막에.
+  for (const s of sortedStudents) {
+    const att = attByStudent.get(s.id) ?? [];
+    const countBy = (status: string) => att.filter((a) => a.status === status).length;
+    const clinics = clinicByStudent.get(s.id) ?? [];
+    const doneCount = clinics.filter((c) => c.zongju_approved).length;
+    const ujc = ujcThisMonthByStudent.get(s.id) ?? [];
+    const earned = ujc.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+    const spent = ujc.filter((t) => t.amount < 0).reduce((sum, t) => sum + -t.amount, 0);
+    const absentCount = countBy("결석");
+    const adjustedCount = countBy("조정");
+    const hasLowGrade =
+      clinics.some(clinicHasLowScore) ||
+      (schoolExamsByStudent.get(s.id) ?? []).some((e) => e.score !== null && e.score <= 60) ||
+      (mockExamsByStudent.get(s.id) ?? []).some((e) => e.score !== null && e.score <= 60);
+    const anchor = anchorByStudent.get(s.id);
+    const row = wsSummary.addRow([
+      anchor ? { text: s.name, hyperlink: `#'${anchor.sheet}'!A${anchor.row}` } : s.name,
+      s.student_code,
+      s.class_key ?? "",
+      s.enrolled ? "재원" : "퇴원",
+      countBy("출석"),
+      countBy("지각"),
+      adjustedCount,
+      absentCount,
+      doneCount,
+      clinics.length,
+      earned,
+      spent,
+      ujcBalanceAtEndByStudent.get(s.id) ?? 0,
+      hasLowGrade ? "⚠" : "",
+    ]);
+    row.getCell(1).font = { color: { argb: "FF1155CC" }, underline: true };
+    if (absentCount > 0) {
+      row.getCell(8).fill = FILL_BAD;
+      row.getCell(8).font = FONT_BAD;
+    }
+    if (adjustedCount > 0) {
+      row.getCell(7).fill = FILL_WARN;
+      row.getCell(7).font = FONT_WARN;
+    }
+    if (hasLowGrade) {
+      row.getCell(14).fill = FILL_BAD;
+      row.getCell(14).font = { ...FONT_BAD, bold: true };
+    }
   }
+  wsSummary.views = [{ state: "frozen", ySplit: 1 }];
 
   const buf = await wb.xlsx.writeBuffer();
   return Buffer.from(buf);

@@ -31,6 +31,28 @@ import { nowKST } from "@/lib/weeks";
 import { logoutAction } from "@/app/login/actions";
 import { markStaffFeedbackSeenAction } from "@/app/staff/actions";
 
+/** 하단 탭과 같은 모양 — 조교가 카드와 탭을 같은 것으로 인식하게. */
+function ClinicAttendanceIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+      <rect x="4" y="5" width="16" height="15" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 9.5h16M8 3v3.5M16 3v3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m9 14 2 2 4-4.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** 칠판 — 주말 강의 수업. */
+function LectureIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+      <rect x="3" y="4" width="18" height="12" rx="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 8.5h8M7 12h5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 16v2M8.5 21l3.5-3 3.5 3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default async function StaffHomePage() {
   const session = await requireStaffSession();
   const { today, weekStart, weekEnd, clinicWeekStart, dayLabel } = getToday();
@@ -119,7 +141,10 @@ export default async function StaffHomePage() {
       <div className="mt-[22px] flex flex-col gap-3">
         <Link href="/staff/attendance">
           <Card clickable>
-            <div className="text-[13px] font-semibold text-ink-muted">{dayLabel}요일 클리닉 출결</div>
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-muted">
+              <ClinicAttendanceIcon />
+              {dayLabel}요일 클리닉 출결
+            </div>
             <div className="mt-1 text-[22px] font-extrabold text-ink">
               {attendedCount}/{roster.length}명 체크됨
             </div>
@@ -134,7 +159,10 @@ export default async function StaffHomePage() {
           </Link>
           <Link href="/staff/lecture-attendance" className="flex-1">
             <Card clickable>
-              <div className="text-[13px] font-semibold text-ink-muted">강의 출결</div>
+              <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-muted">
+                <LectureIcon />
+                강의 출결
+              </div>
               <div className="mt-1 text-[22px] font-extrabold text-ink">보러가기 →</div>
             </Card>
           </Link>

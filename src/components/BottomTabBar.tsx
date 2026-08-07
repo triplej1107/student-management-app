@@ -5,6 +5,24 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { NavTab } from "@/lib/navTabs";
 
+/** 달력에 체크 — 예전부터 쓰던 출결 아이콘. 클리닉 출결이 그대로 물려받는다. */
+const attendanceIcon = (active: boolean): ReactNode => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
+    <rect x="4" y="5" width="16" height="15" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M4 9.5h16M8 3v3.5M16 3v3.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m9 14 2 2 4-4.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/** 칠판 — 주말 강의 수업. */
+const lectureIcon = (active: boolean): ReactNode => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
+    <rect x="3" y="4" width="18" height="12" rx="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 8.5h8M7 12h5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 16v2M8.5 21l3.5-3 3.5 3" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const ICONS: Record<string, (active: boolean) => ReactNode> = {
   홈: (active) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
@@ -40,13 +58,11 @@ const ICONS: Record<string, (active: boolean) => ReactNode> = {
       <path d="M17.8 6.5a7 7 0 0 1 0 11" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
-  출결: (active) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
-      <rect x="4" y="5" width="16" height="15" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4 9.5h16M8 3v3.5M16 3v3.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m9 14 2 2 4-4.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
+  출결: attendanceIcon,
+  // 탭 이름을 "강의 출결 / 클리닉 출결"로 나누면서 아이콘도 나눴다.
+  // 클리닉 쪽은 원래 쓰던 출결 아이콘 그대로, 강의 쪽은 칠판.
+  "클리닉 출결": attendanceIcon,
+  "강의 출결": lectureIcon,
   체크리스트: (active) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} className="h-[22px] w-[22px]">
       <path d="m4.5 6.5 1.5 1.5 2.5-2.5" strokeLinecap="round" strokeLinejoin="round" />

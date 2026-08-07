@@ -36,7 +36,11 @@ export default async function StaffLectureAttendancePage({
         {syncedAt ? `마지막 자동 동기화 ${syncedAt}` : "아직 자동 동기화 기록이 없어요"}
       </div>
 
-      <LectureAttendanceBoard dateISO={dateISO} entries={entries} />
+      <LectureAttendanceBoard
+        dateISO={dateISO}
+        dayLabel={dayLabelOf(selected)}
+        entries={entries}
+      />
     </div>
   );
 }

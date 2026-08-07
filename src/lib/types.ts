@@ -1,11 +1,34 @@
 export type Role = "student" | "parent" | "staff" | "zongju";
 
-// Current (방학 기간) class names. 학기 중에는 "배명고1"/"배명고2"/"가락고1"/"예비고1"
-// 4개 반이었고, 방학 동안은 "1학년정규"(舊 배명고1+가락고1)/"2학년정규"(舊 배명고2)/
-// "예비고1" 3개 반으로 합쳐 운영 중 — 2학기 시작하면 다시 4개 반으로 되돌려야 함
-// (그때는 students.school 필드로 배명고/가락고를 구분해 되돌릴 수 있음).
-export const CLASSES = ["1학년정규", "2학년정규", "예비고1"] as const;
-export type ClassKey = (typeof CLASSES)[number];
+/** 여름방학 동안 합쳐 운영한 3개 반. */
+export const VACATION_CLASSES = ["1학년정규", "2학년정규", "예비고1"] as const;
+
+/** 2학기 반 — 2026-08-22부터. 학교별로 다시 나뉜다. */
+export const SEMESTER_CLASSES = ["가락고1", "배명고1", "배명고2", "예비고1"] as const;
+
+export const SEMESTER2_START_ISO = "2026-08-22";
+
+/**
+ * 지금까지 쓴 반 이름 전부.
+ *
+ * ClassKey를 여기서 뽑는 이유 — DB에는 학기가 바뀐 뒤에도 **지난 학기 반
+ * 이름이 그대로 남아 있는 행**(옛 출결·점검표·공지)이 많다. 새 이름만
+ * 타입에 넣으면 그 기록들을 못 읽는다.
+ */
+export const ALL_CLASSES = ["1학년정규", "2학년정규", "가락고1", "배명고1", "배명고2", "예비고1"] as const;
+export type ClassKey = (typeof ALL_CLASSES)[number];
+
+/**
+ * 지금 쓰는 반 목록 — 화면의 반 선택 칸이 쓴다.
+ *
+ * 날짜를 인자로 받지 않는다: 호출부가 전부 "지금 기준"만 필요하고, 여기서
+ * weeks.ts(kstToday)를 부르면 types.ts ↔ weeks.ts 순환 import가 생긴다.
+ */
+export function activeClasses(): readonly ClassKey[] {
+  const k = new Date(Date.now() + 9 * 60 * 60 * 1000); // KST 벽시계
+  const iso = `${k.getUTCFullYear()}-${String(k.getUTCMonth() + 1).padStart(2, "0")}-${String(k.getUTCDate()).padStart(2, "0")}`;
+  return iso >= SEMESTER2_START_ISO ? SEMESTER_CLASSES : VACATION_CLASSES;
+}
 
 export const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"] as const;
 export type DayOfWeek = (typeof DAY_ORDER)[number];

@@ -135,15 +135,20 @@ export interface LectureSlot {
 }
 
 /**
- * 반별 강의 타임표.
+ * 반별 강의 타임표 — 방학 반과 2학기 반을 **한 표에** 담는다.
+ *
+ * 학기가 바뀌어도 날짜로 표를 갈아끼울 필요가 없다: 반 이름이 학기마다 달라
+ * 서로 겹치지 않기 때문이다(예비고1만 양쪽에 있는데 타임이 일 4시로 같다).
+ * 그래서 학생의 반만 보면 그 학기의 타임이 자동으로 나온다.
  *
  * 조정·보강은 결국 **그 반의 다른 타임**으로 옮기는 것이라, 조교가 요일과
  * 시각을 손으로 칠 이유가 없다. 버튼으로 바로 고르게 하려고 여기에 둔다.
  *
- * ClassKey를 키로 쓰므로 학기가 바뀌어 반 구성이 달라지면(types.ts의 CLASSES)
- * 타입 검사가 바로 걸린다 — 표를 같이 고치라는 뜻이다.
+ * ClassKey를 키로 쓰므로 반이 새로 생기면 타입 검사가 바로 걸린다 —
+ * 표를 같이 채우라는 뜻이다.
  */
 export const LECTURE_SLOTS: Record<ClassKey, LectureSlot[]> = {
+  // ── 여름방학 (~2026-08-21) ──
   "1학년정규": [
     { day: "토", time: "09:00" },
     { day: "토", time: "16:00" },
@@ -153,8 +158,42 @@ export const LECTURE_SLOTS: Record<ClassKey, LectureSlot[]> = {
     { day: "토", time: "19:00" },
     { day: "일", time: "13:00" },
   ],
+  // ── 2학기 (2026-08-22~) ──
+  가락고1: [
+    { day: "토", time: "09:00" },
+    { day: "일", time: "10:00" },
+  ],
+  배명고1: [
+    { day: "토", time: "16:00" },
+    { day: "일", time: "19:00" },
+  ],
+  배명고2: [
+    { day: "토", time: "19:00" },
+    { day: "일", time: "13:00" },
+  ],
+  // 양쪽 학기에 다 있고 타임도 같다.
   예비고1: [{ day: "일", time: "16:00" }],
 };
+
+/**
+ * 그 타임에 해당하는 반 — 2학기에는 타임 하나가 반 하나를 정한다.
+ *
+ * 회원명단 엑셀이 학생의 수업 요일·시각을 갱신해주므로, 이걸로 반 배정까지
+ * 자동으로 맞출 수 있다(classKeyFor 참고). 방학 반과 2학기 반이 같은 타임을
+ * 공유하는 경우가 있어서(토9 = 1학년정규 & 가락고1) **찾는 범위를 지금 쓰는
+ * 반으로 좁혀서** 부른다.
+ */
+export function classForSlot(
+  day: string | null,
+  time: string | null,
+  candidates: readonly ClassKey[]
+): ClassKey | null {
+  if (!day || !time) return null;
+  const hits = candidates.filter((c) =>
+    (LECTURE_SLOTS[c] ?? []).some((s) => s.day === day && s.time === time)
+  );
+  return hits.length === 1 ? hits[0] : null;
+}
 
 /**
  * 그 학생이 옮겨갈 수 있는 타임 — 자기 반의 다른 타임들.

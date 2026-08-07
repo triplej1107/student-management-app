@@ -1,6 +1,6 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { listNoticesForClass } from "@/lib/data";
-import { CLASSES, NOTICE_AUDIENCES, type ClassKey } from "@/lib/types";
+import { activeClasses, NOTICE_AUDIENCES, type ClassKey } from "@/lib/types";
 import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { PillLink } from "@/components/ui";
 import { NoticeEditorRow } from "@/components/admin/NoticeEditorRow";
@@ -14,9 +14,9 @@ export default async function AdminNoticesPage({
 }) {
   await requireZongjuSession();
   const { class: classParam } = await searchParams;
-  const classKey: ClassKey = CLASSES.includes(classParam as ClassKey)
+  const classKey: ClassKey = activeClasses().includes(classParam as ClassKey)
     ? (classParam as ClassKey)
-    : CLASSES[0];
+    : activeClasses()[0];
 
   const notices = await listNoticesForClass(classKey);
 
@@ -25,7 +25,7 @@ export default async function AdminNoticesPage({
       <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {CLASSES.map((c) => (
+        {activeClasses().map((c) => (
           <PillLink key={c} href={`/admin/students/notices?class=${c}`} active={c === classKey}>
             {c}
           </PillLink>

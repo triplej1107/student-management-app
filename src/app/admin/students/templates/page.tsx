@@ -1,6 +1,6 @@
 import { requireZongjuSession } from "@/lib/authz";
 import { getClinicTemplate } from "@/lib/data";
-import { CLASSES, type ClassKey } from "@/lib/types";
+import { activeClasses, type ClassKey } from "@/lib/types";
 import { rollingLessonWeeks, weekLabel, toISODate, parseISODate, kstToday, nowKST } from "@/lib/weeks";
 import { isWeeklyContentPublished, publishDateISO } from "@/lib/weeklyContentVisibility";
 import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
@@ -16,9 +16,9 @@ export default async function AdminTemplatesPage({
   await requireZongjuSession();
   const { class: classParam, week: weekParam } = await searchParams;
 
-  const classKey: ClassKey = CLASSES.includes(classParam as ClassKey)
+  const classKey: ClassKey = activeClasses().includes(classParam as ClassKey)
     ? (classParam as ClassKey)
-    : CLASSES[0];
+    : activeClasses()[0];
   // 수업 내용과 같은 주차 목록 — 토요일 수업을 마치고 그 주 수업 내용과
   // 점검표를 한자리에서 같이 정리할 수 있어야 한다.
   const weeks = rollingLessonWeeks(9);
@@ -37,7 +37,7 @@ export default async function AdminTemplatesPage({
       <AdminGroupedSubNav groups={STUDENT_TAB_GROUPS} />
 
       <div className="mt-4 flex flex-wrap gap-2 border-b border-line-soft pb-4">
-        {CLASSES.map((c) => (
+        {activeClasses().map((c) => (
           <PillLink key={c} href={`/admin/students/templates?class=${c}&week=${selectedWeekISO}`} active={c === classKey}>
             {c}
           </PillLink>

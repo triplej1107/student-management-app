@@ -8,16 +8,17 @@ import {
   getClinicTemplate,
   getClinicCheck,
 } from "./data";
-import { isClinicFullyDone, filledHwSlots, filledTestSlots } from "./clinicProgress";
+import { isWeekSettled, isClinicFullyDone, filledHwSlots, filledTestSlots } from "./clinicProgress";
 import { isWeekOnOrAfterEnrollment } from "./enrollmentWeek";
 import { rollingClinicWeeks, toISODate, weekLabel } from "./weeks";
-import type { ClassKey, ClinicCheck, ClinicTemplate } from "./types";
+import type { ClassKey } from "./types";
 
-/** 밀림 관리 전용 "그 주가 정말 끝났는지" 판정 — 조교결재(staff_approved)만으로는
- * 밀림에서 빠지지 않고, 종주T 최종결재(zongju_approved)까지 나야 빠진다. */
-function isBacklogResolved(template: ClinicTemplate | undefined, check: ClinicCheck | undefined): boolean {
-  return isClinicFullyDone(template, check) && !!check?.zongju_approved;
-}
+/** "그 주가 정말 끝났는지" 판정 — 조교결재(staff_approved)만으로는 밀림에서
+ * 빠지지 않고, 종주T 최종결재(zongju_approved)까지 나야 빠진다.
+ *
+ * 점검표 주차 알약의 초록/빨강도 같은 함수를 쓴다(clinicProgress.isWeekSettled)
+ * — 두 곳이 갈라지면 "카드는 빨간데 주차는 초록"이 된다. */
+const isBacklogResolved = isWeekSettled;
 
 export interface ClinicBacklogEntry {
   studentId: number;

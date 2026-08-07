@@ -711,6 +711,35 @@ export async function getClinicTemplatesForWeek(
   return map;
 }
 
+/** 한 반의 여러 주차 원본을 한 번에 — 점검표 화면의 주차 알약이 8주치
+ * 상태를 동시에 알아야 해서, 주마다 따로 조회하면 8번 왕복하게 된다. */
+export async function getClinicTemplatesForClassWeeks(
+  classKey: ClassKey,
+  weekISOs: string[]
+): Promise<Map<string, ClinicTemplate>> {
+  if (weekISOs.length === 0) return new Map();
+  const { data } = await supabase
+    .from("clinic_templates")
+    .select("*")
+    .eq("class_key", classKey)
+    .in("week_start", weekISOs);
+  return new Map(((data as ClinicTemplate[]) ?? []).map((r) => [r.week_start, r]));
+}
+
+/** 한 학생의 여러 주차 점검 기록을 한 번에. */
+export async function getClinicChecksForStudentWeeks(
+  studentId: number,
+  weekISOs: string[]
+): Promise<Map<string, ClinicCheck>> {
+  if (weekISOs.length === 0) return new Map();
+  const { data } = await supabase
+    .from("clinic_checks")
+    .select("*")
+    .eq("student_id", studentId)
+    .in("week_start", weekISOs);
+  return new Map(((data as ClinicCheck[]) ?? []).map((r) => [r.week_start, r]));
+}
+
 export async function upsertClinicTemplate(
   classKey: ClassKey,
   weekStart: Date,

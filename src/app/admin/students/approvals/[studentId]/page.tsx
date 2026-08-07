@@ -4,10 +4,15 @@ import { requireZongjuSession } from "@/lib/authz";
 import {
   getClinicCheck,
   getClinicTemplate,
+  getClinicTemplatesForClassWeeks,
+  getClinicChecksForStudentWeeks,
   getMakeupForClinicWeek,
   getStaffById,
   getStudentById,
 } from "@/lib/data";
+import { weekStatus } from "@/lib/clinicProgress";
+import { isWeekOnOrAfterEnrollment } from "@/lib/enrollmentWeek";
+import type { ClinicTemplate } from "@/lib/types";
 import { getOmrSubmissionsForStudentWeek } from "@/lib/clinicOmr";
 import { rollingClinicWeeks, weekLabel, toISODate, parseISODate } from "@/lib/weeks";
 import { PillLink, EmptyState } from "@/components/ui";
@@ -35,6 +40,15 @@ export default async function AdminApprovalDetailPage({
   const weeks = rollingClinicWeeks(8);
   const selectedWeekStart = week ? parseISODate(week) : weeks[0];
   const selectedWeekISO = toISODate(selectedWeekStart);
+
+  // 주차 알약을 초록(끝남)/빨강(안 끝남)으로 칠하려면 8주치 상태가 다 필요하다.
+  const weekISOs = weeks.map(toISODate);
+  const [weekTemplates, weekChecks] = await Promise.all([
+    student.class_key
+      ? getClinicTemplatesForClassWeeks(student.class_key, weekISOs)
+      : new Map<string, ClinicTemplate>(),
+    getClinicChecksForStudentWeeks(student.id, weekISOs),
+  ]);
 
   const classKey = student.class_key;
   const [template, check, omrSubmissions, makeup] = await Promise.all([
@@ -80,6 +94,9 @@ export default async function AdminApprovalDetailPage({
               key={iso}
               href={`/admin/students/approvals/${studentId}?week=${iso}${fromQuery(from, backCtx)}`}
               active={iso === selectedWeekISO}
+              tone={weekStatus(weekTemplates.get(iso), weekChecks.get(iso), {
+                enrolled: isWeekOnOrAfterEnrollment(w, student.first_lesson_date),
+              })}
             >
               {weekLabel(w)}
             </PillLink>

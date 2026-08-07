@@ -26,6 +26,7 @@ import { ParentQuestionCard } from "@/components/ParentQuestionCard";
 import { HomeModals } from "@/components/HomeModals";
 import { StudentReminderCard } from "@/components/StudentReminderCard";
 import { ParentAttendanceLogCard } from "@/components/ParentAttendanceLogCard";
+import { TierBadge } from "@/components/TierBadge";
 import { InstallSeenBeacon } from "@/components/InstallSeenBeacon";
 import { logoutAction } from "@/app/login/actions";
 import { submitParentQuestionAction } from "./actions";
@@ -76,11 +77,23 @@ export default async function StudentHomePage() {
 
   return (
     <div className="box-border px-5 pt-2 pb-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-xl font-extrabold text-ink">
-            {isParent ? `안녕하세요, ${student.name}의 학부모님` : `안녕하세요, ${student.name}님`}
-          </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          {/* 학생은 이름 옆에 성실도 티어 배지가 붙는다. "안녕하세요,"까지 한 줄에
+              두면 폰 폭에서 배지가 밀려나므로 인사말만 윗줄로 뺐다. */}
+          {isStudent ? (
+            <>
+              <div className="text-[13px] font-semibold text-ink-muted">안녕하세요,</div>
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xl font-extrabold text-ink">
+                <span>{student.name}님</span>
+                <TierBadge grade={tier?.grade ?? null} />
+              </div>
+            </>
+          ) : (
+            <div className="text-xl font-extrabold text-ink">
+              안녕하세요, {student.name}의 학부모님
+            </div>
+          )}
           {isParent && (
             <div className="mt-0.5 text-[11px] text-ink-muted">
               학번 {student.student_code}
@@ -88,11 +101,11 @@ export default async function StudentHomePage() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-none items-center gap-2">
           {isStudent && (
             <Link
               href="/student/omr"
-              className="flex h-9 items-center rounded-full bg-accent px-3.5 text-xs font-bold text-white shadow-[0_1px_4px_rgba(20,30,60,0.10)]"
+              className="flex h-9 items-center whitespace-nowrap rounded-full bg-accent px-3.5 text-xs font-bold text-white shadow-[0_1px_4px_rgba(20,30,60,0.10)]"
             >
               OMR마킹
             </Link>

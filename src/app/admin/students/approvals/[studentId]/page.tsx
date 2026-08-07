@@ -21,12 +21,13 @@ export default async function AdminApprovalDetailPage({
   searchParams,
 }: {
   params: Promise<{ studentId: string }>;
-  searchParams: Promise<{ week?: string; from?: string; date?: string }>;
+  searchParams: Promise<{ week?: string; from?: string; date?: string; day?: string }>;
 }) {
   await requireZongjuSession();
   const { studentId } = await params;
-  // date는 강의 출결에서 들어왔을 때 그 날짜로 되돌아가기 위한 것.
-  const { week, from, date } = await searchParams;
+  // date/day는 출결 화면에서 들어왔을 때 보던 날짜·요일 탭으로 되돌아가기 위한 것.
+  const { week, from, date, day } = await searchParams;
+  const backCtx = { date, day, studentId: Number(studentId) };
 
   const student = await getStudentById(Number(studentId));
   if (!student) notFound();
@@ -58,7 +59,7 @@ export default async function AdminApprovalDetailPage({
             attendance: "/admin/students/attendance",
             lecture: "/admin/students/lecture-attendance",
           },
-          date
+          backCtx
         )}
       />
       <div className="border-b border-line pb-3 pt-1 text-center">
@@ -77,7 +78,7 @@ export default async function AdminApprovalDetailPage({
           return (
             <PillLink
               key={iso}
-              href={`/admin/students/approvals/${studentId}?week=${iso}${fromQuery(from, date)}`}
+              href={`/admin/students/approvals/${studentId}?week=${iso}${fromQuery(from, backCtx)}`}
               active={iso === selectedWeekISO}
             >
               {weekLabel(w)}

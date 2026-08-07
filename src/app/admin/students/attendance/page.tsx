@@ -107,6 +107,7 @@ export default async function AdminAttendancePage({
                       autoMarked
                       clinicHrefBase="/admin/students/approvals"
                       backlogWeeks={backlogMap.get(entry.student.id)}
+                      day={selectedDay}
                     />
                   ))}
                 </div>
@@ -134,6 +135,7 @@ export default async function AdminAttendancePage({
               autoMarked={autoMarkedIds.has(entry.student.id)}
               clinicHrefBase="/admin/students/approvals"
               backlogWeeks={backlogMap.get(entry.student.id)}
+              day={selectedDay}
             />
           ),
         }))}

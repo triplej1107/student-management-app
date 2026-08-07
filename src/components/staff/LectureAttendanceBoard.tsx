@@ -7,6 +7,7 @@ import { DAY_ORDER } from "@/lib/types";
 import type { ClassKey } from "@/lib/types";
 import { lectureSlotLabel, makeupSlotsFor, type LectureStatus } from "@/lib/lectureRules";
 import type { LectureAttendanceEntry } from "@/lib/lectureAttendance";
+import { studentAnchorId } from "@/lib/backTarget";
 import { useToast } from "@/components/Toast";
 import {
   markLectureAttendanceAction,
@@ -191,7 +192,11 @@ function LectureRow({
       : "border-warn/50 bg-warn-soft";
 
   return (
-    <div className={`rounded-2xl border p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)] ${tone}`}>
+    // id는 점검표에서 뒤로 돌아올 때 이 카드로 바로 내려오기 위한 앵커.
+    <div
+      id={studentAnchorId(entry.studentId)}
+      className={`scroll-mt-24 rounded-2xl border p-3.5 shadow-[0_3px_14px_rgba(20,30,60,0.12)] ${tone}`}
+    >
       <div className="flex items-start justify-between gap-2">
         {/* 이름 쪽을 누르면 점검표로 — 색만 보고 "뭐가 밀렸지" 궁금할 때
             바로 열어보라는 것. 출결 버튼까지 링크로 덮으면 체크가 안 되므로

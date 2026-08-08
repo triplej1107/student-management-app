@@ -1,5 +1,21 @@
 import { DAY_ORDER } from "./types";
 
+/** 검색어를 담는 주소 칸. 붙이는 쪽(명단 화면)과 읽는 쪽(뒤로가기 주소)이
+ * 어긋나면 조용히 안 되므로 한 곳에서 만든다. */
+export const SEARCH_QUERY_KEY = "q";
+
+/** 주소에서 받은 검색어를 그대로 믿지 않는다 — 길이를 자르고 공백을 다듬는다.
+ * 사람이 친 글자라 무엇이든 들어올 수 있고, 그대로 주소에 되붙이기 때문. */
+export function safeSearchQuery(q: string | undefined): string {
+  return (q ?? "").trim().slice(0, 60);
+}
+
+/** 이미 `?`로 시작하는 주소 뒤에 붙일 검색어 조각. 없으면 빈 문자열. */
+export function searchSuffixOf(q: string | undefined): string {
+  const v = safeSearchQuery(q);
+  return v ? `&${SEARCH_QUERY_KEY}=${encodeURIComponent(v)}` : "";
+}
+
 /** 클리닉 점검표 상세는 여러 화면(결재/클리닉 목록, 밀림 관리, 클리닉 출결,
  * 강의 출결)에서 들어온다. 뒤로가기가 항상 같은 곳으로 가면 엉뚱한 화면으로
  * 나가므로, 링크에 ?from=... 을 붙여 출처를 알려준다.
@@ -22,6 +38,8 @@ export interface BackContext {
   day?: string;
   /** 눌렀던 학생 — 돌아갔을 때 그 카드로 바로 내려가도록 앵커를 만든다. */
   studentId?: number;
+  /** 치고 있던 검색어 — 돌아갔을 때 명단이 처음으로 리셋되지 않도록. */
+  q?: string;
 }
 
 /** 강의 출결은 **날짜별** 화면이라, 그냥 돌아가면 보고 있던 날이 아니라
@@ -57,11 +75,31 @@ export function resolveBackHref(
   targets: Partial<Record<BackFrom, string>>,
   ctx?: BackContext
 ): string {
-  const target = isKnown(from) ? targets[from] : undefined;
-  if (!target) return fallback;
-  const d = safeDate(ctx?.date);
   const day = safeDay(ctx?.day);
-  const query = d ? `?date=${d}` : day ? `?day=${day}` : "";
+  const search = safeSearchQuery(ctx?.q);
+  const target = isKnown(from) ? targets[from] : undefined;
+
+  // 출처를 모르면 기본 화면으로 간다. 그래도 **보던 요일 탭과 검색어는 들고
+  // 간다** — 목록 화면에서 바로 들어온 경우가 이쪽이고, 여기서 검색이
+  // 리셋되는 게 조교들이 제일 자주 겪던 불편이었다.
+  //
+  // 날짜와 학생 앵커는 안 들고 간다. 그 둘은 "어느 출결 화면의 어느 날"을
+  // 가리키는 값이라, 어디로 가는지 모르는 채로 붙이면 엉뚱한 곳을 가리킨다.
+  if (!target) {
+    const parts = [
+      day ? `day=${day}` : "",
+      search ? `${SEARCH_QUERY_KEY}=${encodeURIComponent(search)}` : "",
+    ].filter(Boolean);
+    return `${fallback}${parts.length > 0 ? `?${parts.join("&")}` : ""}`;
+  }
+
+  const d = safeDate(ctx?.date);
+  // 날짜·요일이 없어도 검색어만으로 ?가 시작될 수 있어 조각을 순서대로 잇는다.
+  const parts = [
+    d ? `date=${d}` : day ? `day=${day}` : "",
+    search ? `${SEARCH_QUERY_KEY}=${encodeURIComponent(search)}` : "",
+  ].filter(Boolean);
+  const query = parts.length > 0 ? `?${parts.join("&")}` : "";
   return `${target}${query}${safeAnchor(ctx?.studentId)}`;
 }
 
@@ -72,5 +110,5 @@ export function fromQuery(from: string | undefined, ctx?: BackContext): string {
   if (!isKnown(from)) return "";
   const d = safeDate(ctx?.date);
   const day = safeDay(ctx?.day);
-  return `&from=${from}${d ? `&date=${d}` : ""}${day ? `&day=${day}` : ""}`;
+  return `&from=${from}${d ? `&date=${d}` : ""}${day ? `&day=${day}` : ""}${searchSuffixOf(ctx?.q)}`;
 }

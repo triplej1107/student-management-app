@@ -6,7 +6,7 @@ import Link from "next/link";
 import { DAY_ORDER } from "@/lib/types";
 import type { AttendanceStatus, MakeupSchedule, Student } from "@/lib/types";
 import { classDayTimeTag } from "@/lib/weeks";
-import { studentAnchorId } from "@/lib/backTarget";
+import { searchSuffixOf, studentAnchorId } from "@/lib/backTarget";
 import { useToast } from "@/components/Toast";
 import {
   markAttendanceAction,
@@ -37,6 +37,7 @@ export function AttendanceRow({
   clinicHrefBase,
   backlogWeeks,
   day,
+  searchQuery,
 }: {
   student: Student;
   effTime: string;
@@ -56,6 +57,8 @@ export function AttendanceRow({
   /** 지금 보고 있는 요일 탭. 점검표에서 뒤로 돌아올 때 이 탭으로 되돌리려고
    * 들고 다닌다 — 없으면 오늘 요일 탭으로 튄다. */
   day?: string;
+  /** 명단에서 치고 있던 검색어 — 상세에서 뒤로 나올 때 그대로 되살린다. */
+  searchQuery?: string;
   /** 이 status가 사람이 아니라 시스템이 자동으로 기록한 것 — 클리닉 시각이
    * 20분 넘도록 미출석이면 자동 "결석"으로 표시된다. 늦게라도 오면 키오스크
    * 기록이 들어와 "지각"으로 바뀌고, 버튼을 실제로 누르면 바로 꺼진다. */
@@ -136,7 +139,7 @@ export function AttendanceRow({
     >
       <div className="flex items-start justify-between">
         <Link
-          href={`${clinicHrefBase}/${student.id}?from=attendance${day ? `&day=${day}` : ""}`}
+          href={`${clinicHrefBase}/${student.id}?from=attendance${day ? `&day=${day}` : ""}${searchSuffixOf(searchQuery)}`}
           className="cursor-pointer"
         >
           <div className="text-[15px] font-bold text-ink">

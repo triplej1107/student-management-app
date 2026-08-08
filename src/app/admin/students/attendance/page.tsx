@@ -14,16 +14,21 @@ import { AdminGroupedSubNav } from "@/components/admin/AdminTopNav";
 import { ScrollPillRow, PillLink } from "@/components/ui";
 import { AttendanceRow } from "@/components/staff/AttendanceRow";
 import { SearchableRoster } from "@/components/SearchableRoster";
+import { safeSearchQuery, searchSuffixOf } from "@/lib/backTarget";
 import { STUDENT_TAB_GROUPS } from "../subTabs";
 
 export default async function AdminAttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string }>;
+  searchParams: Promise<{ day?: string; q?: string }>;
 }) {
   await requireZongjuSession();
   const { weekStart, weekEnd, dayLabel: todayLabel } = getToday();
-  const { day: dayParam } = await searchParams;
+  const { day: dayParam, q: queryParam } = await searchParams;
+  // 검색어를 주소에 실어 두면 학생 기록을 보고 뒤로 나와도 명단이
+  // 처음으로 리셋되지 않는다(SearchableRoster 참고).
+  const search = safeSearchQuery(queryParam);
+  const searchSuffix = searchSuffixOf(search);
 
   const weeklyRoster = await getWeeklyRoster(weekStart, weekEnd);
   const activeDays = activeClinicDaysFrom(weeklyRoster);
@@ -70,7 +75,7 @@ export default async function AdminAttendancePage({
 
       <ScrollPillRow>
         {activeDays.map((d) => (
-          <PillLink key={d} href={`/admin/students/attendance?day=${d}`} active={d === selectedDay}>
+          <PillLink key={d} href={`/admin/students/attendance?day=${d}${searchSuffix}`} active={d === selectedDay}>
             {d}요일
           </PillLink>
         ))}
@@ -108,6 +113,7 @@ export default async function AdminAttendancePage({
                       clinicHrefBase="/admin/students/approvals"
                       backlogWeeks={backlogMap.get(entry.student.id)}
                       day={selectedDay}
+                      searchQuery={search}
                     />
                   ))}
                 </div>
@@ -119,6 +125,7 @@ export default async function AdminAttendancePage({
       )}
 
       <SearchableRoster
+        initialQuery={search}
         placeholder="이름/학교로 검색"
         emptyLabel="이 요일에는 학생이 없어요."
         items={roster.map((entry) => ({
@@ -136,6 +143,7 @@ export default async function AdminAttendancePage({
               clinicHrefBase="/admin/students/approvals"
               backlogWeeks={backlogMap.get(entry.student.id)}
               day={selectedDay}
+                      searchQuery={search}
             />
           ),
         }))}

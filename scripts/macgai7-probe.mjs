@@ -490,6 +490,58 @@ async function jobCall(path, fields) {
   return { res: r, text: await r.text(), argString };
 }
 
+/**
+ * 스크립트에 적힌 조회를 **그대로 뽑아낸다**.
+ *
+ *   var progid = "/job/attend_report_S01.aspx";
+ *   var argString = "in_branch=" + M_BRANCH +
+ *     ",in_s_date=" + $("#in_s_date").val() + …;
+ *
+ * 이런 짝을 찾아 progid와 인자 이름들을 돌려준다. 함수 이름을 하나씩 찍어
+ * 물어보느라 왕복하지 않으려는 것 — 화면에 조회가 다섯 개면 다섯 개를 다
+ * 뽑아 한 번에 불러볼 수 있다.
+ */
+function extractQueries(js) {
+  const out = [];
+  const re = /progid\s*=\s*["'](\/job\/[\w./-]+\.aspx)["']([\s\S]{0,900}?)(?:dsCLASS|ds\w+|co\w+)\.Reset/g;
+  for (const m of js.matchAll(re)) {
+    const progid = m[1];
+    const chunk = m[2];
+    const argPart = chunk.slice(chunk.indexOf("argString"));
+    // ",in_x=" 또는 "in_x=" 꼴에서 인자 이름만 순서대로 모은다.
+    const names = [...argPart.matchAll(/["'],?\s*(in_[\w]+)\s*=/g)].map((x) => x[1]);
+    // 각 인자에 붙는 값 표현식 — $("#id").val() 이면 그 id를 기억해둔다.
+    const sources = [...argPart.matchAll(/(in_[\w]+)\s*=["']\s*\+\s*([^,\n]+)/g)].map((x) => ({
+      name: x[1],
+      expr: x[2].trim(),
+    }));
+    if (names.length) out.push({ progid, names: [...new Set(names)], sources });
+  }
+  // 같은 progid가 여러 번 나오면 인자가 제일 많은 것을 남긴다.
+  const best = new Map();
+  for (const q of out) {
+    const prev = best.get(q.progid);
+    if (!prev || q.names.length > prev.names.length) best.set(q.progid, q);
+  }
+  return [...best.values()];
+}
+
+/**
+ * 인자 값 채우기 — 화면의 입력칸에서 가져온다.
+ *
+ * `$("#in_s_date").val()` 이면 그 id의 value를, `M_BRANCH` 면 지점 번호를
+ * 쓴다. 모르면 빈 값 — 맥가이7은 **칸이 빠지면** 오류지만 빈 값은 받아준다.
+ */
+function resolveArg(expr, html, branch) {
+  if (/M_BRANCH/.test(expr)) return branch;
+  const id = expr.match(/\$\(\s*["']#([\w$]+)["']\s*\)/)?.[1];
+  if (!id) return "";
+  const input = html.match(new RegExp(`<input\\b[^>]*id\\s*=\\s*["']${id}["'][^>]*>`, "i"))?.[0];
+  if (input) return input.match(/value\s*=\s*["']([^"']*)["']/i)?.[1] ?? "";
+  // select면 첫 option 값을 쓰기보다 빈 값(=전체)이 안전하다.
+  return "";
+}
+
 /** 그 화면 스크립트가 정의한 fn_* 함수 이름들 — 조회 함수가 여기 있다. */
 function definedFunctions(js) {
   return [...new Set([...js.matchAll(/function\s+(fn_\w+)\s*\(/g)].map((m) => m[1]))];
@@ -826,6 +878,44 @@ if (targetPath) {
     if (!body) continue;
     console.log(`\n  ── [대상 화면] ${name}() 내용 ──`);
     for (const line of body.split("\n").slice(0, 400)) console.log(`    ${line.trim().slice(0, 170)}`);
+  }
+
+  // --calls : 이 화면이 정의한 조회를 **전부 실제로 불러본다**.
+  // 어느 탭이 어느 주소를 쓰는지 함수를 읽어 맞히느라 왕복하지 않으려는 것.
+  if (args.includes("--calls")) {
+    const branch = (tjs.match(/\bM_BRANCH\s*=\s*["']([^"']*)["']/) ?? [])[1] ?? "";
+    const queries = extractQueries(tjs);
+    console.log(`\n── 이 화면의 조회 ${queries.length}개를 실제로 불러봅니다 (지점 ${branch}) ──`);
+    for (const q of queries) {
+      const fields = {};
+      for (const name of q.names) {
+        const src = q.sources.find((s) => s.name === name);
+        fields[name] = src ? resolveArg(src.expr, html, branch) : "";
+      }
+      try {
+        const r = await jobCall(q.progid, fields);
+        const p = parseJobResponse(r.text);
+        console.log(`\n  [${q.progid}]  ${p.ok ? "OK" : p.desc || "?"} · ${p.rows.length}줄`);
+        console.log(`    보낸 인자: ${r.argString.slice(0, 200)}`);
+        if (p.cols.length) console.log(`    칸: ${p.cols.join(", ")}`);
+        const r0 = p.rows[0];
+        if (r0) {
+          // 등하원 로그인지 한눈에 보라고 시각·학번이 든 칸을 짚어준다.
+          const timeCols = Object.keys(r0).filter((k) =>
+            p.rows.some((x) => /^\d{1,2}:\d{2}$/.test(String(x[k] ?? "").trim()))
+          );
+          const codeCols = Object.keys(r0).filter((k) =>
+            p.rows.some((x) => /^\d{5}$/.test(String(x[k] ?? "").trim()))
+          );
+          console.log(`    시각이 든 칸: ${timeCols.join(", ") || "(없음)"}`);
+          console.log(`    5자리 숫자가 든 칸: ${codeCols.join(", ") || "(없음)"}`);
+          console.log(`    첫 줄: ${maskNames(JSON.stringify(r0)).slice(0, 400)}`);
+        }
+      } catch (e) {
+        console.log(`\n  [${q.progid}] 실패: ${String(e).slice(0, 140)}`);
+      }
+    }
+    console.log("\n  ↳ '시각이 든 칸'과 '5자리 숫자가 든 칸'이 함께 있는 조회가 등하원 로그입니다.");
   }
 
   // --find=글자 : 그 글자가 든 함수를 통째로. 함수 이름을 모를 때 쓴다.

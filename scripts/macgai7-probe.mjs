@@ -1015,6 +1015,21 @@ if (attendDate) {
         }
         console.log("    ↳ 몇 줄에만 한글이 든 칸이 '결석/지각사유'일 가능성이 큽니다.");
 
+        // shape()는 24자에서 자른다. SCHEINFO처럼 여러 값을 $로 이어붙인 칸은
+        // 뒤가 잘려 정작 찾는 값(사유)이 안 보인다 — 실제로 그래서 놓쳤다.
+        // 여기서는 **안 자르고** 보여준다(한글은 여전히 ●로 가린다).
+        const withIn = parsedAtt.rows.find((r) => String(r.IN_TIME ?? "").trim() !== "");
+        const withoutIn = parsedAtt.rows.find((r) => String(r.IN_TIME ?? "").trim() === "");
+        for (const [label, r] of [["등원한 줄", withIn], ["안 온 줄", withoutIn]]) {
+          if (!r) continue;
+          console.log(`\n  ── ${label}: 긴 칸 전문 (안 자름) ──`);
+          for (const k of Object.keys(r)) {
+            const v = String(r[k] ?? "");
+            if (v.length <= 12) continue; // 짧은 칸은 위에서 이미 봤다
+            console.log(`    ${k.padEnd(16)} = ${maskNames(v).slice(0, 300)}`);
+          }
+        }
+
         // 사유는 attend_S01 응답에 없다(ABS_EXPECTED가 66줄 전부 비었다).
         // 화면 코드의 trSCHE.KeyValue = "…,attend_T02=dsABSsv,…" 를 보면
         // dsABS(결석 관련)가 따로 있다. 후보 조회들을 **항상** 찔러본다.

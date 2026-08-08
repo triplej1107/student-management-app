@@ -146,6 +146,42 @@ export function toCheckIns(rows: Record<string, string>[]): MacgaiCheckIn[] {
   return out;
 }
 
+/**
+ * 결석/지각사유 뽑기 — `SCHEINFO` 칸에 $로 이어져 온다.
+ *
+ *   등원한 줄 : "09:00 장종주$Y$5350283$"
+ *   안 온 줄  : "09:00 장종주$$5350283$일요일"
+ *                └ 수업·강사   └ 출석여부  └ 수업번호  └ **사유**
+ *
+ * 조교가 맥가이7에 적어둔 값이라(예: "일요일", "가족여행") 앱에도 남겨두면
+ * "그때 뭐라고 했었지"를 되짚을 수 있다.
+ */
+export function absenceReasonFrom(scheInfo: string | undefined | null): string | null {
+  if (!scheInfo) return null;
+  const parts = String(scheInfo).split("$");
+  if (parts.length < 4) return null;
+  // 뒤쪽에 칸이 더 붙어도 사유는 네 번째다. 남는 건 사람이 적은 글이라
+  // 그대로 살려둔다($가 섞여 있을 수 있어 다시 이어 붙인다).
+  const reason = parts.slice(3).join("$").trim();
+  return reason || null;
+}
+
+/** 맥가이7이 그 줄을 출석으로 보는지 — SCHEINFO 두 번째 칸이 "Y". */
+export function macgaiMarkedPresent(scheInfo: string | undefined | null): boolean {
+  return String(scheInfo ?? "").split("$")[1]?.trim() === "Y";
+}
+
+/** 학번 → 결석사유. 사유가 적힌 줄만 담는다. */
+export function reasonsByStudentCode(rows: Record<string, string>[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const row of rows) {
+    const code = studentCodeFrom(row.M_GRADE_NAME);
+    const reason = absenceReasonFrom(row.SCHEINFO);
+    if (code && reason) out[code] = reason;
+  }
+  return out;
+}
+
 /** 학급 목록 줄들 → attend 조회에 넣을 C_IDX / T_TEMP 묶음. */
 export function classQueryParts(rows: Record<string, string>[]): { classIds: string; temps: string } {
   const ids = rows.map((r) => r.C_IDX).filter(Boolean);

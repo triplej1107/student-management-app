@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
+  absenceReasonFrom,
   buildArgString,
   classQueryParts,
+  macgaiMarkedPresent,
   normalizeCheckInTime,
   parseJobResponse,
+  reasonsByStudentCode,
   sanitizeMacgaiInput,
   studentCodeFrom,
   toCheckIns,
@@ -156,6 +159,50 @@ describe("toCheckIns", () => {
 
   it("학번을 못 읽는 줄은 건너뛴다", () => {
     expect(toCheckIns([row("고1", "09:02")])).toEqual([]);
+  });
+});
+
+describe("absenceReasonFrom", () => {
+  // 실제 응답에서 그대로 가져온 두 모양.
+  const 등원한줄 = "09:00 장종주$Y$5350283$";
+  const 안온줄 = "09:00 장종주$$5350283$일요일";
+
+  it("안 온 줄의 사유를 읽는다", () => {
+    expect(absenceReasonFrom(안온줄)).toBe("일요일");
+  });
+
+  it("등원한 줄은 사유가 없다", () => {
+    expect(absenceReasonFrom(등원한줄)).toBeNull();
+  });
+
+  it("사유에 $가 섞여 있어도 통째로 살린다 — 사람이 적은 글이다", () => {
+    expect(absenceReasonFrom("09:00 장종주$$5350283$가족여행 $ 다음주 복귀")).toBe("가족여행 $ 다음주 복귀");
+  });
+
+  it("모양이 다르면 null — 짐작해서 엉뚱한 조각을 넣지 않는다", () => {
+    expect(absenceReasonFrom("09:00 장종주")).toBeNull();
+    expect(absenceReasonFrom("")).toBeNull();
+    expect(absenceReasonFrom(null)).toBeNull();
+  });
+
+  it("맥가이7이 출석으로 본 줄인지 알 수 있다", () => {
+    expect(macgaiMarkedPresent(등원한줄)).toBe(true);
+    expect(macgaiMarkedPresent(안온줄)).toBe(false);
+  });
+});
+
+describe("reasonsByStudentCode", () => {
+  it("사유가 적힌 학생만 담는다", () => {
+    const rows = [
+      { M_GRADE_NAME: "고1<br>/51801", SCHEINFO: "09:00 장종주$$5350283$일요일" },
+      { M_GRADE_NAME: "고1<br>/17233", SCHEINFO: "09:00 장종주$Y$5350283$" },
+      { M_GRADE_NAME: "고1<br>/46261", SCHEINFO: "09:00 장종주$$5350283$가족여행" },
+    ];
+    expect(reasonsByStudentCode(rows)).toEqual({ "51801": "일요일", "46261": "가족여행" });
+  });
+
+  it("학번을 못 읽으면 건너뛴다", () => {
+    expect(reasonsByStudentCode([{ M_GRADE_NAME: "고1", SCHEINFO: "a$$b$일요일" }])).toEqual({});
   });
 });
 

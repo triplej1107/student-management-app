@@ -924,6 +924,38 @@ if (targetPath) {
           console.log(`    5자리 숫자가 든 칸: ${codeCols.join(", ") || "(없음)"}`);
           console.log(`    첫 줄: ${maskNames(JSON.stringify(r0)).slice(0, 400)}`);
         }
+        // 칸 구성은 멀쩡한데 줄이 0개면, 구분자 인자가 비어서인 경우가 많다.
+        // (등하원명단은 in_aopt로 전체/수업학생/무수업생/비원생을 가른다.)
+        // 값을 몇 개 돌려보고 줄이 나오는 조합을 찾아준다 — 이름을 맞히느라
+        // 다시 돌리게 하지 않으려는 것.
+        if (p.ok && p.rows.length === 0 && p.cols.length > 0) {
+          const optArg = q.names.find((n) => /opt|gubun|_gb$|type/i.test(n));
+          const attempts = [];
+          if (optArg) {
+            for (const v of ["T", "M", "MI", "N", "ALL", "A", "1", "2", "3"]) {
+              attempts.push({ label: `${optArg}=${v}`, fields: { ...fields, [optArg]: v } });
+            }
+          }
+          // 화면 오른쪽 명단은 하루치라 기간을 하루로 좁혀서도 해본다.
+          if (fields.in_s_date && fields.in_e_date && fields.in_s_date !== fields.in_e_date) {
+            attempts.push({
+              label: `하루치(${fields.in_e_date})`,
+              fields: { ...fields, in_s_date: fields.in_e_date },
+            });
+          }
+          for (const a of attempts) {
+            try {
+              const rr = await jobCall(q.progid, a.fields);
+              const pp = parseJobResponse(rr.text);
+              if (pp.rows.length === 0) continue;
+              console.log(`    🎯 ${a.label} 로 하니 ${pp.rows.length}줄 나옵니다.`);
+              console.log(`       첫 줄: ${maskNames(JSON.stringify(pp.rows[0])).slice(0, 400)}`);
+              break;
+            } catch {
+              // 조합 하나가 실패해도 나머지를 계속 해본다.
+            }
+          }
+        }
       } catch (e) {
         console.log(`\n  [${q.progid}] 실패: ${String(e).slice(0, 140)}`);
       }

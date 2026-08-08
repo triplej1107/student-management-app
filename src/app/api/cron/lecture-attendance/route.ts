@@ -10,10 +10,18 @@ import { shouldNotifyStale } from "@/lib/lectureRules";
 import { getPushSubscriptionsForZongju, sendReminderPush } from "@/lib/clinicPush";
 import { nowKST } from "@/lib/weeks";
 
+/** 맥가이7을 여러 번 왕복한다(로그인·세션·학급·출결·등하원 로그). 기본
+ * 제한시간 안에 못 끝내면 함수가 통째로 죽어서 **실패 기록조차 안 남는다.** */
+export const maxDuration = 60;
+
 /**
- * 맥가이7 등하원 명단을 읽어와 강의·클리닉 출결에 반영한다. GitHub Actions가
- * 학원이 도는 시간대에 5분마다 호출한다(Vercel Hobby는 크론이 하루 한 번뿐이라
- * "잊지마"와 같은 방식으로 우회한다).
+ * 맥가이7 등하원 명단을 읽어와 강의·클리닉 출결에 반영한다.
+ *
+ * Vercel Cron이 한국 시간 09:00~23:55에 5분마다 부른다(vercel.json).
+ * 한동안 GitHub Actions로 우회했었는데, "Hobby 요금제는 크론이 하루 한 번"이라는
+ * 잘못된 전제 때문이었다. 실제로는 Pro라 1분 단위까지 된다. GitHub의 예약은
+ * 부하가 걸리면 조용히 버려져서(2026-08-08에 하루 2번만 돌았다) 그 우회가
+ * 오히려 사고의 원인이었다.
  *
  * 성공/실패를 매번 macgai_sync_log에 남긴다 — 맥가이7이 화면을 개편하면
  * 긁어오기가 **조용히** 멈추기 때문에, 아무도 모르는 상태가 제일 위험하다.

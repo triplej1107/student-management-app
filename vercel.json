@@ -1,6 +1,14 @@
 {
   "crons": [
     {
+      "path": "/api/cron/lecture-attendance",
+      "schedule": "*/5 0-14 * * *"
+    },
+    {
+      "path": "/api/cron/reminder-check",
+      "schedule": "*/5 0-12 * * *"
+    },
+    {
       "path": "/api/cron/clinic-backlog-push",
       "schedule": "0 0 * * 1"
     },

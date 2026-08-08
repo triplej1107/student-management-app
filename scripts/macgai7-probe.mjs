@@ -173,9 +173,24 @@ function scriptSources(html) {
   return { inline, srcs };
 }
 
-/** 중괄호 짝을 맞춰 함수 하나를 통째로 잘라낸다. */
+/**
+ * 중괄호 짝을 맞춰 함수 하나를 통째로 잘라낸다.
+ *
+ * `function 이름(` 뿐 아니라 `이름 = function(`, `이름: function(`,
+ * `prototype.이름 = function(` 꼴도 찾는다 — 프레임워크 메서드(Reset 같은)는
+ * 대부분 이쪽이라, 앞의 한 가지만 보면 "못 찾음"으로 조용히 지나간다.
+ */
 function extractFunction(js, name) {
-  const start = js.search(new RegExp(`function\\s+${name}\\s*\\(`));
+  const patterns = [
+    `function\\s+${name}\\s*\\(`,
+    `\\b${name}\\s*[=:]\\s*function\\s*\\(`,
+    `\\.${name}\\s*=\\s*function\\s*\\(`,
+  ];
+  let start = -1;
+  for (const p of patterns) {
+    start = js.search(new RegExp(p));
+    if (start >= 0) break;
+  }
   if (start < 0) return null;
   const open = js.indexOf("{", start);
   if (open < 0) return null;
@@ -700,6 +715,67 @@ if (targetPath) {
     if (!body) continue;
     console.log(`\n  ── [대상 화면] ${name}() 내용 ──`);
     for (const line of body.split("\n").slice(0, 400)) console.log(`    ${line.trim().slice(0, 170)}`);
+  }
+}
+
+// ── 출결 목록 실제로 불러보기 ────────────────────────────────────
+// fn_query가 dsLST1.Reset("/job/attend_S01.aspx", "in_a=1,in_b=2…") 로 부르는데,
+// Reset이 그 문자열을 **어떤 모양으로** 서버에 보내는지는 코드만 봐선 모른다.
+// 그래서 그럴듯한 세 가지를 실제로 던져보고 어느 게 데이터를 주는지 본다.
+const attendDate = args.find((a) => a.startsWith("--attend="))?.slice("--attend=".length);
+if (attendDate) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(attendDate)) {
+    console.log(`\n⚠️ --attend= 는 2026-08-08 같은 모양이어야 해요 (받은 값: ${attendDate})`);
+  } else {
+    // 화면 스크립트에 박혀 있는 전역값. 없으면 빈 값으로 시도한다.
+    const pageJs = await gatherJs(html, `${BASE}/teacher/schedule/attend.aspx`);
+    const branch = (pageJs.match(/\bM_BRANCH\s*=\s*["']([^"']*)["']/) ?? [])[1] ?? "";
+    console.log(`\n── 출결 목록 불러오기 (${attendDate}) ──`);
+    console.log(`  M_BRANCH = ${branch || "(못 찾음 — 빈 값으로 시도)"}`);
+
+    const fields = {
+      in_m_branch: branch,
+      in_yyyymmdd: attendDate,
+      in_bigcategory: "",
+      in_category: "",
+      in_class: "",
+      in_inout: "",
+      in_m_grade: "",
+      in_teacher: "",
+      in_search: "",
+      in_temp: "",
+      in_su_time: "",
+    };
+    const argString = Object.entries(fields)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(",");
+    const target = `${BASE}/job/attend_S01.aspx`;
+
+    /** 응답이 쓸 만한지 — 길이와 앞부분 모양(값은 가림)으로 판단한다. */
+    const describe = async (label, r) => {
+      const body = await r.text();
+      const head = maskKorean(body.replace(/\s+/g, " ").slice(0, 220));
+      const rowish = (body.match(/56\d{3}|\d{5}/g) ?? []).length;
+      console.log(`  [${label}] → ${r.status} · ${body.length}자 · 5자리숫자 ${rowish}개`);
+      console.log(`     앞부분: ${head}`);
+      return body.length;
+    };
+
+    // ① 항목마다 form 필드로
+    await describe("① form 필드", await post(target, fields));
+    // ② argString을 통째로 (흔한 사내 프레임워크 방식)
+    await describe(
+      "② argString 통째로",
+      await fetch(target, {
+        method: "POST",
+        headers: { cookie: cookieHeader(), "content-type": "application/x-www-form-urlencoded" },
+        body: argString,
+      })
+    );
+    // ③ 쿼리스트링으로 GET
+    await describe("③ GET 쿼리스트링", await get(`${target}?${new URLSearchParams(fields)}`));
+
+    console.log("  ↳ 셋 중 길이가 길고 5자리 숫자(학번)가 여럿 보이는 것이 정답입니다.");
   }
 }
 

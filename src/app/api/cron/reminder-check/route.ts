@@ -26,8 +26,7 @@ function formatTimeKorean(time: string): string {
   return m === 0 ? `${displayHour}시` : `${displayHour}시 ${m}분`;
 }
 
-/** GitHub Actions가 5분마다 호출 — Vercel Hobby 요금제는 cron을 하루 한 번만
- * 돌릴 수 있어서 "1시간 전" 알림은 외부 스케줄러로 대체했다.
+/** Vercel Cron이 한국 시간 09:00~21:55에 5분마다 부른다(vercel.json).
  *
  * 후보를 널널하게 가져온 뒤 여기서 실제 시각차를 계산해 걸러낸다
  * (isHourBeforeDue). 한 번 보낸 건 pushed_at이 찍혀 다시 안 간다. */

@@ -13,6 +13,7 @@ import {
   markLectureAttendanceAction,
   saveLectureMakeupAction,
   cancelLectureMakeupAction,
+  saveLectureAbsenceReasonAction,
 } from "@/app/staff/lecture-attendance/actions";
 
 const STATUSES: LectureStatus[] = ["출석", "지각", "조정", "결석"];
@@ -139,6 +140,17 @@ function LectureRow({
   const [timeDraft, setTimeDraft] = useState(entry.makeupTime ?? "");
   // 타임표에 없는 곳으로 보내야 할 때만 여는 수동 입력.
   const [manual, setManual] = useState(false);
+  const [reasonDraft, setReasonDraft] = useState(entry.absenceReason ?? "");
+
+  /** 칸에서 손을 떼면 저장한다 — 안 바뀌었으면 서버를 부르지 않는다. */
+  function saveReason() {
+    if (reasonDraft === (entry.absenceReason ?? "")) return;
+    startTransition(async () => {
+      await saveLectureAbsenceReasonAction(entry.studentId, dateISO, reasonDraft);
+      showToast(reasonDraft.trim() ? "사유 저장됨" : "사유 지움");
+      router.refresh();
+    });
+  }
   const slots = makeupSlotsFor(entry.classKey, dayLabel, entry.time);
 
   /** 타임 버튼 — 한 번 누르면 바로 저장하고 칸을 닫는다. */
@@ -338,6 +350,33 @@ function LectureRow({
         >
           {entry.makeupDay ? "보강 일정 수정" : "보강 일정 잡기"}
         </button>
+      )}
+
+      {/* 결석·지각 사유. 맥가이7에 적어둔 게 있으면 저절로 들어와 있고, 여기서
+          고치면 그다음부터는 맥가이7이 덮지 않는다. 나중에 "그때 뭐라고
+          했었지"를 되짚을 수 있어야 반복해서 둘러대는 학생을 알아본다. */}
+      {(entry.status === "결석" || entry.status === "지각" || entry.absenceReason) && (
+        <div className="mt-2 border-t border-line-soft pt-2">
+          <label className="mb-1 block text-[11px] font-bold text-ink-muted">결석·지각 사유</label>
+          <div className="flex items-center gap-1.5">
+            <input
+              value={reasonDraft}
+              onChange={(e) => setReasonDraft(e.target.value)}
+              onBlur={saveReason}
+              placeholder="예: 가족여행"
+              className="min-w-0 flex-1 box-border rounded-lg border border-line px-2.5 py-1.5 text-[13px]"
+            />
+            {reasonDraft !== (entry.absenceReason ?? "") && (
+              <button
+                onClick={saveReason}
+                disabled={pending}
+                className="flex-none rounded-lg bg-accent px-2.5 py-1.5 text-[11px] font-bold text-white"
+              >
+                저장
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

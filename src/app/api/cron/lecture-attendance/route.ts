@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { fetchTodayCheckIns, isMacgaiConfigured } from "@/lib/macgai7";
+import { fetchTodayAttendance, isMacgaiConfigured } from "@/lib/macgai7";
 import {
   getLastSuccessfulSyncAt,
   recordSyncRun,
@@ -33,8 +33,8 @@ export async function GET(req: Request) {
   }
 
   try {
-    const checkIns = await fetchTodayCheckIns();
-    const result = await syncLectureAttendance(checkIns);
+    const { checkIns, reasons } = await fetchTodayAttendance();
+    const result = await syncLectureAttendance(checkIns, undefined, reasons);
     await recordSyncRun({ ok: true, fetchedCount: checkIns.length });
     return NextResponse.json({ ok: true, fetched: checkIns.length, ...result });
   } catch (e) {

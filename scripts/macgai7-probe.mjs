@@ -1218,6 +1218,48 @@ if (attendDate) {
   }
 }
 
+// ── 등하원명단 확인하기 ──────────────────────────────────────────
+// 앱이 실제로 쓰는 조회를 그대로 한 번 불러본다. 인자는 출결현황 화면의
+// tb_no_study_click를 옮긴 것이다. in_aopt에 칸 이름을 그대로 넘기는 게
+// 핵심 — T/M 같은 축약을 넣으면 오류 없이 0줄이 와서 원인을 못 찾는다.
+const logDate = args.find((a) => a.startsWith("--log="))?.slice("--log=".length);
+if (logDate) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(logDate)) {
+    console.log(`\n⚠️ --log= 는 2026-08-08 같은 모양이어야 해요 (받은 값: ${logDate})`);
+  } else {
+    const pageJs = await gatherJs(html, `${BASE}/teacher/schedule/attend_report.aspx`);
+    const branch = (pageJs.match(/\bM_BRANCH\s*=\s*["']([^"']*)["']/) ?? [])[1] ?? "";
+    console.log(`\n── 등하원명단 (${logDate}) ──`);
+    console.log(`  M_BRANCH = ${branch || "(못 찾음 — 빈 값으로 시도)"}`);
+
+    for (const aopt of ["T_CNT", "M_CNT", "MI_CNT", "N_CNT"]) {
+      try {
+        const r = await jobCall("/job/attend_report_S07.aspx", {
+          in_branch: branch,
+          in_s_date: logDate,
+          in_e_date: logDate,
+          in_aopt: aopt,
+          in_bigcategory: "",
+          in_category: "",
+          in_grade: "",
+          in_school: "",
+        });
+        const p = parseJobResponse(r.text);
+        console.log(`\n  [in_aopt=${aopt}] ${p.ok ? "OK" : p.desc || "?"} · ${p.rows.length}줄`);
+        const withIn = p.rows.filter((x) => /^\d{1,2}:\d{2}/.test(String(x.IN_TIME ?? "").trim()));
+        console.log(`    등원 시각이 찍힌 줄: ${withIn.length}개`);
+        if (p.rows[0]) {
+          console.log(`    학번 칸(STU_NO) 예: ${String(p.rows[0].STU_NO ?? "(없음)").replace(/\d/g, "9")}`);
+          console.log(`    첫 줄: ${maskNames(JSON.stringify(p.rows[0])).slice(0, 400)}`);
+        }
+      } catch (e) {
+        console.log(`\n  [in_aopt=${aopt}] 실패: ${String(e).slice(0, 140)}`);
+      }
+    }
+    console.log("\n  ↳ T_CNT에서 '등원 시각이 찍힌 줄'이 그날 실제로 온 사람 수와 같으면 정상입니다.");
+  }
+}
+
 if (saved.length) {
   console.log(`\n원본 HTML 저장됨: ${saved.join(", ")}`);
   console.log("⚠️ 이 파일에는 학생 이름·전화번호가 들어 있을 수 있어요. 공유하지 마세요.");

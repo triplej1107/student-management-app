@@ -23,16 +23,38 @@ const ATTEND_ROWS = [
   ["", "A", "종주(고1정규)-토9시[고등국어]", "고1<br>/11923", "366803", "가락고", "김우태", "010-0000-0000", "010-0000-0000", "09:00 장종주$Y$5350283$", "08:55", "", "2026-08-08"],
 ];
 
+/**
+ * 등하원명단(attend_report_S07) — 학급에 묶이지 않은 날것.
+ *
+ * 일부러 강의 명단에 **없는** 학생(88888)을 한 줄 넣었다. 클리닉만 하러 온
+ * 학생이 이렇게 들어오는데, 예전 방식(학급별 조회)으로는 안 보이던 줄이다.
+ */
+const LOG_COL =
+  "ROWNO:STRING(-1),M_IDX:DECIMAL(-1),M_GRADE:STRING(-1),M_GRADE_NAME:STRING(-1),M_NAME:STRING(-1)," +
+  "STU_NO:STRING(-1),STATUS_NAME:STRING(-1),CLASS_NAME:STRING(-1),IN_TIME:STRING(-1)," +
+  "IN_COUNT:DECIMAL(-1),OUT_TIME:STRING(-1),OUT_COUNT:DECIMAL(-1),S_DATE:STRING(-1)";
+
+const LOG_ROWS = [
+  ["1", "366802", "21", "고1", "김시후", "17233", "수업학생", "종주(고1정규)-토9시", "09:02", "1", "12:30", "1", "2026-08-08"],
+  ["2", "366803", "21", "고1", "김우태", "11923", "수업학생", "종주(고1정규)-토9시", "08:40", "2", "13:10", "2", "2026-08-08"],
+  ["3", "366804", "21", "고1", "박클리", "88888", "무수업생", "", "14:05", "1", "16:00", "1", "2026-08-08"],
+  // 같은 학생이 두 번 드나든 줄 — 등원은 제일 이른 때, 하원은 제일 늦은 때.
+  ["4", "366803", "21", "고1", "김우태", "11923", "수업학생", "", "13:40", "2", "17:20", "2", "2026-08-08"],
+];
+
 interface Seen {
   loginBody?: string;
   classBody?: string;
   attendBody?: string;
   attendCookie?: string;
+  logBodies: string[];
 }
 
 let server: http.Server;
 let baseUrl: string;
-const seen: Seen = {};
+const seen: Seen = { logBodies: [] };
+/** 등하원 로그만 고장 난 상황을 만들어 본다. */
+let logBroken = false;
 
 function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve) => {
@@ -95,6 +117,18 @@ beforeAll(async () => {
       ]);
     }
 
+    if (url === "/job/attend_report_S07.aspx") {
+      const body = await readBody(req);
+      if (logBroken) return json([{ STATUS: "ERROR", DESCRIPTION: "화면이 바뀌었습니다." }]);
+      seen.logBodies.push(body);
+      // 실제 서버는 in_aopt에 축약값을 주면 오류 없이 0줄을 준다.
+      // 칸 이름 그대로(T_CNT)일 때만 줄이 온다.
+      if (!/in_aopt=T_CNT(,|$)/.test(body)) {
+        return json([{ STATUS: "OK", DESCRIPTION: "" }, { COL: LOG_COL }]);
+      }
+      return json([{ STATUS: "OK", DESCRIPTION: "" }, { COL: LOG_COL }, LOG_ROWS]);
+    }
+
     if (url === "/job/attend_S01.aspx") {
       seen.attendBody = await readBody(req);
       seen.attendCookie = req.headers.cookie ?? "";
@@ -123,11 +157,45 @@ describe("fetchTodayCheckIns", () => {
     const { fetchTodayCheckIns } = await import("./macgai7");
     const out = await fetchTodayCheckIns("2026-08-08");
 
-    // 결석한 김다솔(IN_TIME 빈 값)은 빠지고 등원한 둘만.
+    // 결석한 김다솔(IN_TIME 빈 값)은 양쪽 어디에도 없다.
+    // 김우태는 로그의 08:40이 학급 조회의 08:55보다 일러 그쪽이 남는다.
+    // 88888은 강의 명단에 없는 학생 — 등하원 로그로만 들어온다.
     expect(out).toEqual([
       { studentCode: "17233", checkedInTime: "09:02" },
-      { studentCode: "11923", checkedInTime: "08:55" },
+      { studentCode: "11923", checkedInTime: "08:40" },
+      { studentCode: "88888", checkedInTime: "14:05" },
     ]);
+  });
+
+  it("등하원 로그를 하루치로, in_aopt는 칸 이름 그대로 부른다", () => {
+    const body = seen.logBodies[0];
+    expect(body).toContain("in_aopt=T_CNT");
+    expect(body).toContain("in_s_date=2026-08-08");
+    expect(body).toContain("in_e_date=2026-08-08");
+    expect(body).toContain("in_branch=375");
+  });
+
+  it("하원 시각은 마지막으로 나간 때를 준다", async () => {
+    const { fetchTodayAttendance } = await import("./macgai7");
+    const day = await fetchTodayAttendance("2026-08-08");
+    expect(day.checkOutTimes["11923"]).toBe("17:20");
+    expect(day.checkOutTimes["17233"]).toBe("12:30");
+    expect(day.logCount).toBe(4);
+    expect(day.logError).toBeUndefined();
+  });
+
+  it("등하원 로그가 막혀도 강의 출결은 그대로 들어온다", async () => {
+    logBroken = true;
+    try {
+      const { fetchTodayAttendance } = await import("./macgai7");
+      const day = await fetchTodayAttendance("2026-08-08");
+      expect(day.logCount).toBe(0);
+      expect(day.logError).toBeTruthy();
+      // 학급별 조회로 잡히는 둘은 살아 있다.
+      expect(day.checkIns.map((c) => c.studentCode)).toEqual(["17233", "11923"]);
+    } finally {
+      logBroken = false;
+    }
   });
 
   it("세션 쿠키를 들고 조회한다 — 안 그러면 로그인 화면이 돌아온다", () => {
@@ -166,7 +234,7 @@ describe("fetchTodayCheckIns", () => {
     const day = await fetchTodayAttendance("2026-08-08");
     // 안 온 김다솔에게만 사유가 있고, 등원한 학생은 없다.
     expect(day.reasons).toEqual({ "51801": "일요일" });
-    expect(day.checkIns.map((c) => c.studentCode)).toEqual(["17233", "11923"]);
+    expect(day.checkIns.map((c) => c.studentCode)).toEqual(["17233", "11923", "88888"]);
   });
 
   it("아이디·비밀번호가 틀리면 분명히 실패한다", async () => {

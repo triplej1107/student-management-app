@@ -125,7 +125,57 @@ export async function syncLectureAttendance(
     getOverridesForWeekOf(today),
   ]);
   const roster = studentsToRoster(dayLabel, students, overrides);
-  if (roster.length === 0) return { recorded: 0, unknownCodes: [], markedMissing: 0 };
+
+  // 찍고 온 사람은 **재원생 전체**와 맞춘다 — 그날 강의 명단이 아니라.
+  //
+  // 등하원 로그는 학급에 묶이지 않은 날것이라, 강의 없이 클리닉만 하러 온
+  // 학생도 그대로 들어온다. 예전처럼 강의 명단하고만 맞추면 그런 학생은
+  // "모르는 학번"으로 버려져서 클리닉 출결이 자동으로 안 채워졌다.
+  const idByCode = new Map(students.map((s) => [s.student_code, s.id]));
+  const unknownCodes: string[] = [];
+  /** 그날 문을 통과한 재원생 전부 — 클리닉 출결은 이걸로 채운다. */
+  const kioskIds = new Set<number>();
+  for (const c of checkIns) {
+    const id = idByCode.get(c.studentCode.trim());
+    if (id == null) {
+      unknownCodes.push(c.studentCode);
+      continue;
+    }
+    kioskIds.add(id);
+  }
+
+  // 강의가 없는 날(평일 클리닉만)은 강의 출결 계산을 통째로 건너뛴다.
+  // 예전에는 여기서 바로 돌아가버려서 클리닉까지 같이 멈췄다.
+  if (roster.length > 0) {
+    const lecture = await syncLectureRows({
+      roster,
+      checkIns,
+      reasons,
+      dateISO,
+      nowMinutes,
+    });
+    await fillClinicFromKiosk(kioskIds, today, dateISO);
+    return { recorded: lecture.recorded, unknownCodes, markedMissing: lecture.markedMissing };
+  }
+
+  await fillClinicFromKiosk(kioskIds, today, dateISO);
+  return { recorded: 0, unknownCodes, markedMissing: 0 };
+}
+
+/**
+ * 강의 출결 부분만 — 명단이 있는 날에만 돈다.
+ *
+ * syncLectureAttendance에서 떼어낸 것이다. 강의가 없는 날에도 클리닉은
+ * 채워야 해서, 둘을 한 덩어리로 두면 어느 한쪽을 건너뛸 수 없었다.
+ */
+async function syncLectureRows(args: {
+  roster: LectureRosterEntry[];
+  checkIns: MacgaiCheckIn[];
+  reasons: Record<string, string>;
+  dateISO: string;
+  nowMinutes: number;
+}): Promise<{ recorded: number; markedMissing: number }> {
+  const { roster, checkIns, reasons, dateISO, nowMinutes } = args;
 
   const byCode = new Map(roster.map((e) => [e.studentCode, e]));
   const existing = await getLectureAttendanceForDate(dateISO);
@@ -144,15 +194,12 @@ export async function syncLectureAttendance(
     existingReason.get(studentId) ?? reasons[code]?.trim() ?? null;
 
   // 1) 찍고 온 학생 — 출석/지각으로 기록.
-  const unknownCodes: string[] = [];
+  //    모르는 학번은 부르는 쪽에서 이미 걸러 모아뒀다.
   const checkedInIds = new Set<number>();
   const rows: LectureAttendanceRow[] = [];
   for (const c of checkIns) {
     const entry = byCode.get(c.studentCode.trim());
-    if (!entry) {
-      unknownCodes.push(c.studentCode);
-      continue;
-    }
+    if (!entry) continue;
     checkedInIds.add(entry.studentId);
     if (manualIds.has(entry.studentId)) continue; // 사람이 고쳐둔 건 그대로
     rows.push({
@@ -189,16 +236,11 @@ export async function syncLectureAttendance(
       );
   }
 
-  // 3) 같은 날 클리닉도 있는 학생이면 그 출결까지 채운다 — 학생은 들어올 때
-  //    한 번만 찍고 강의·클리닉을 이어서 하기 때문에, 같은 사람을 조교가 또
-  //    체크할 이유가 없다.
-  await fillClinicFromKiosk(checkedInIds, today, dateISO);
-
-  // 4) 이번에 새로 결석이 된 학생에게만 알린다.
+  // 3) 이번에 새로 결석이 된 학생에게만 알린다.
   const freshlyMissing = missing.filter((e) => !alreadyAbsent.has(e.studentId));
   await notifyMissing(freshlyMissing);
 
-  return { recorded: rows.length, unknownCodes, markedMissing: freshlyMissing.length };
+  return { recorded: rows.length, markedMissing: freshlyMissing.length };
 }
 
 /**

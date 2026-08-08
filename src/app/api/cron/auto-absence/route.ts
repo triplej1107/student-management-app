@@ -12,13 +12,19 @@ import { syncSlimeWeek } from "@/lib/slimeXp";
  * 클리닉이 있었는데 결국 오지 않은 학생을 자동으로 결석 처리한다
  * (auto_marked=true).
  *
- * 판정 기준은 "밤 10시 시점에 출석도 조정도 아닌 상태" 하나뿐이다:
- * - 출결이 아예 안 눌린 학생 → 결석
- * - "지각"인 학생 → 결석. 이 학원에서 지각은 "아직 안 왔음" 표시이고,
- *   오면 조교가 출석으로 바꾼다. 그러니 밤까지 지각으로 남아있다는 건
- *   끝내 오지 않았다는 뜻 — 조교가 직접 누른 지각이어도 마찬가지다.
- * - "출석"/"조정"은 그대로 둔다(왔거나, 다른 날로 옮겼거나).
+ * 판정 기준은 "밤 10시가 되도록 출결이 아예 안 눌린 학생" 하나뿐이다.
+ *
+ * **지각은 더 이상 결석으로 바꾸지 않는다.** 예전에는 지각이 "아직 안 왔음"
+ * 표시라서 밤까지 남아있으면 끝내 안 온 것으로 봤다. 지금은 안 온 학생을
+ * 처음부터 결석으로 찍으므로(attendanceAuto 참고), 지각은 말 그대로
+ * **늦게라도 온 학생**이다. 그걸 결석으로 바꾸면 온 학생을 안 왔다고
+ * 기록하게 된다.
+ *
+ * - "출석"/"지각"/"조정"은 그대로 둔다(왔거나, 늦게 왔거나, 다른 날로 옮겼거나).
  * - 이미 "결석"인 기록도 그대로 둔다 — 다시 덮어쓰면 알림만 중복된다.
+ *
+ * 그래서 이 크론은 이제 그물망이다. 출결 화면을 아무도 안 열어 자동 결석이
+ * 안 찍힌 날을 받아낸다.
  *
  * 자동 결석된 건은 다음 날부터 출결 화면 맨 위 "확인 필요" 목록에 떠서,
  * 조교가 출근해 연락·조정하고 버튼을 누르면 목록에서 사라진다. */
@@ -36,10 +42,7 @@ export async function GET(req: Request) {
     getAttendanceMapForDate(today),
   ]);
 
-  const toConvert = roster.filter((r) => {
-    const status = attendanceMap.get(r.student.id);
-    return status === undefined || status === "지각";
-  });
+  const toConvert = roster.filter((r) => attendanceMap.get(r.student.id) === undefined);
 
   if (toConvert.length === 0) {
     return NextResponse.json({ ok: true, autoMarked: 0 });

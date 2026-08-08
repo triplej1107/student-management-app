@@ -100,4 +100,20 @@ describe("isPastClinicTime / kstToday (KST wall-clock correctness)", () => {
   it("returns false for an empty clinic time", () => {
     expect(isPastClinicTime("")).toBe(false);
   });
+
+  it("여유를 주면 그만큼 더 지나야 한다 — 3분 늦은 학생을 결석으로 만들지 않으려고", () => {
+    // 2026-07-31T05:15:00Z == 14:15 KST. 14:00 클리닉이 15분 지났다.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-31T05:15:00Z"));
+
+    expect(isPastClinicTime("14:00")).toBe(true); // 여유 없이 보면 이미 지남
+    expect(isPastClinicTime("14:00", 20)).toBe(false); // 20분 여유로 보면 아직
+  });
+
+  it("여유 시간을 넘기면 true", () => {
+    // 14:25 KST — 14:00 클리닉이 25분 지났다.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-31T05:25:00Z"));
+    expect(isPastClinicTime("14:00", 20)).toBe(true);
+  });
 });

@@ -13,6 +13,8 @@ import {
   sendReminderPush,
 } from "@/lib/clinicPush";
 import { kstToday, toISODate, nowKST } from "@/lib/weeks";
+import { isQuietHour } from "@/lib/quietHours";
+import { isHourBeforeDue } from "@/lib/reminderRules";
 import { isDeployedEnvironment } from "@/lib/env";
 
 /** "6시" / "6시 30분" — event_time("HH:MM")을 구어체로. */
@@ -24,15 +26,25 @@ function formatTimeKorean(time: string): string {
   return m === 0 ? `${displayHour}시` : `${displayHour}시 ${m}분`;
 }
 
-/** GitHub Actions가 매시간 호출 — Vercel Hobby 요금제는 cron을 하루 한 번만
- * 돌릴 수 있어서 "1시간 전" 알림은 외부 스케줄러로 대체했다(reference:
- * README나 커밋 메시지 참고). 후보를 널널하게(최대 90분 전까지) 가져온
- * 뒤 여기서 실제 시각차를 계산해 걸러낸다 — 매시간 호출이 정확히 정시에
- * 오지 않아도 놓치지 않기 위한 여유분. */
+/** GitHub Actions가 5분마다 호출 — Vercel Hobby 요금제는 cron을 하루 한 번만
+ * 돌릴 수 있어서 "1시간 전" 알림은 외부 스케줄러로 대체했다.
+ *
+ * 후보를 널널하게 가져온 뒤 여기서 실제 시각차를 계산해 걸러낸다
+ * (isHourBeforeDue). 한 번 보낸 건 pushed_at이 찍혀 다시 안 간다. */
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  // 조용시간(밤 10시~아침 9시)에는 **아무것도 하지 않는다.**
+  //
+  // 이게 없으면 알림이 조용히 사라진다. sendReminderPush는 조용시간이면
+  // 말없이 안 보내는데, 그 아래에서 markDayBeforePushed로 "보냄" 도장을
+  // 찍어버린다. 새벽에 한 번 실행되면 그때 걸린 알림은 발송 없이 도장만
+  // 찍히고 영영 안 간다. 실제로 그렇게 새고 있었다(2026-08-08 확인).
+  if (isQuietHour(nowKST().getUTCHours())) {
+    return NextResponse.json({ ok: true, skipped: "조용시간" });
   }
 
   const today = kstToday();
@@ -48,11 +60,9 @@ export async function GET(req: Request) {
 
   const k = nowKST();
   const nowMinutes = k.getUTCHours() * 60 + k.getUTCMinutes();
-  const hourBeforeDue = hourBeforeCandidates.filter((r) => {
-    const [h, m] = r.event_time.split(":").map(Number);
-    const diff = h * 60 + m - nowMinutes;
-    return diff >= 0 && diff <= 90;
-  });
+  const hourBeforeDue = hourBeforeCandidates.filter((r) =>
+    isHourBeforeDue(r.event_time, nowMinutes)
+  );
 
   if (dayBeforeDue.length === 0 && hourBeforeDue.length === 0) {
     return NextResponse.json({ ok: true, dayBefore: 0, hourBefore: 0 });

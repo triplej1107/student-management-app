@@ -140,6 +140,50 @@ describe("missingStudents", () => {
   });
 });
 
+describe("조정해둔 학생에게는 결석 알림이 안 간다 (원장님 시나리오)", () => {
+  // 김연우가 토9시 반인데, 금요일에 "이번 주는 일요일 7시에 가겠다"고 연락이 와서
+  // 앱에서 조정을 눌러뒀다. 맥가이7에는 토요일 결석으로 뜨더라도, 앱 명단에
+  // 없으니 알림이 가면 안 된다.
+  const students = [
+    { id: 1, student_code: "77332", name: "김연우", class_day: "토", class_time: "09:00" },
+    { id: 2, student_code: "17233", name: "김시후", class_day: "토", class_time: "09:00" },
+  ];
+  const moved = new Map([[1, { studentId: 1, movedDay: "일", movedTime: "19:00" }]]);
+  const at = (hhmm: string) => minutesOfTime(hhmm)!;
+
+  it("토요일 명단에서 빠진다", () => {
+    const sat = lectureRosterForDay(students, "토", moved);
+    expect(sat.map((e) => e.name)).toEqual(["김시후"]);
+  });
+
+  it("아무도 안 찍혀도 조정한 학생은 결석으로 안 잡힌다", () => {
+    // 맥가이7 기준으로는 둘 다 결석이지만, 판정은 **앱 명단**으로만 한다.
+    const sat = lectureRosterForDay(students, "토", moved);
+    const missing = missingStudents(sat, new Set(), at("13:55"));
+    expect(missing.map((e) => e.name)).toEqual(["김시후"]);
+  });
+
+  it("옮겨간 일요일 명단에는 들어간다 — 조교가 화면에서 확인할 수 있게", () => {
+    const sun = lectureRosterForDay(students, "일", moved);
+    expect(sun.map((e) => e.name)).toEqual(["김연우"]);
+    expect(sun[0].moved).toBe(true);
+  });
+
+  it("옮긴 학생은 옮겨간 날에도 **자동 결석으로 안 잡는다**", () => {
+    // 맥가이7엔 일시 조정이 없어서, 김연우가 일요일에 와서 찍어도 그 기록이
+    // 일요일 명단에 안 잡힌다(일요일 반 소속이 아니라서). 자동 판정하면
+    // 정작 온 학생에게 "안 왔어요" 알림이 나간다.
+    const sun = lectureRosterForDay(students, "일", moved);
+    expect(missingStudents(sun, new Set(), at("23:00"))).toEqual([]);
+  });
+
+  it("아예 일요일 반인 학생은 토요일 명단에 처음부터 없다", () => {
+    const sundayOnly = [{ id: 3, student_code: "51801", name: "김다솔", class_day: "일", class_time: "19:00" }];
+    expect(lectureRosterForDay(sundayOnly, "토")).toEqual([]);
+    expect(missingStudents(lectureRosterForDay(sundayOnly, "토"), new Set(), at("13:55"))).toEqual([]);
+  });
+});
+
 describe("missingMessage", () => {
   it("몇 시 수업인지 넣어준다", () => {
     expect(missingMessage("19:00")).toBe("19:00 강의 수업인데 아직 등원하지 않았어요.");

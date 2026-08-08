@@ -4,6 +4,7 @@ import {
   buildArgString,
   classQueryParts,
   parseJobResponse,
+  reasonsByStudentCode,
   sanitizeMacgaiInput,
   toCheckIns,
 } from "./macgai7Parse";
@@ -133,12 +134,24 @@ async function readPageContext(session: Session): Promise<{ branch: string; teac
   return { branch, teacher };
 }
 
+/** 하루치 조회 결과 — 등원 기록과, 조교가 맥가이7에 적어둔 결석/지각 사유. */
+export interface MacgaiDay {
+  checkIns: MacgaiCheckIn[];
+  /** 학번 → 사유. 적혀 있는 학생만 담긴다. */
+  reasons: Record<string, string>;
+}
+
+/** 등원 명단만 필요할 때 — 시험과 옛 호출부가 쓴다. */
+export async function fetchTodayCheckIns(dateISO?: string): Promise<MacgaiCheckIn[]> {
+  return (await fetchTodayAttendance(dateISO)).checkIns;
+}
+
 /**
- * 오늘 등원한 학생들.
+ * 오늘 강의 출결 한 벌 — 등원 기록 + 결석/지각 사유.
  *
  * dateISO를 주면 그 날짜로 조회한다(시험용). 비우면 오늘(KST).
  */
-export async function fetchTodayCheckIns(dateISO?: string): Promise<MacgaiCheckIn[]> {
+export async function fetchTodayAttendance(dateISO?: string): Promise<MacgaiDay> {
   if (!isMacgaiConfigured()) {
     throw new Error("MACGAI7_ID / MACGAI7_PASSWORD 가 설정되지 않았습니다.");
   }
@@ -158,7 +171,8 @@ export async function fetchTodayCheckIns(dateISO?: string): Promise<MacgaiCheckI
     in_c_teacher: teacher,
   });
   const { classIds, temps } = classQueryParts(classes.rows);
-  if (!classIds) return []; // 그날 강의가 없는 날 — 정상이다.
+  // 그날 강의가 없는 날 — 정상이다.
+  if (!classIds) return { checkIns: [], reasons: {} };
 
   // ⑤ 학생별 등원 시각.
   const attend = await session.job("/job/attend_S01.aspx", {
@@ -175,7 +189,10 @@ export async function fetchTodayCheckIns(dateISO?: string): Promise<MacgaiCheckI
     in_su_time: "",
   });
 
-  return toCheckIns(attend.rows);
+  return {
+    checkIns: toCheckIns(attend.rows),
+    reasons: reasonsByStudentCode(attend.rows),
+  };
 }
 
 /** 오늘 날짜 "YYYY-MM-DD" (KST). nowKST는 UTC 게터로 읽어야 한국 시각이 된다. */

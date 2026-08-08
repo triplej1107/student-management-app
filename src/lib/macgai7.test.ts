@@ -14,13 +14,13 @@ import type { AddressInfo } from "node:net";
 const ATTEND_COL =
   "ROWNO:STRING(-1),CHK:STRING(-1),C_NAME:STRING(-1),M_GRADE_NAME:STRING(-1),M_IDX:DECIMAL(-1)," +
   "M_SCHOOL:STRING(-1),M_NAME:STRING(-1),M_PHONE:STRING(-1),M_PARENT_PHONE:STRING(-1)," +
-  "IN_TIME:STRING(-1),OUT_TIME:STRING(-1),S_DATE:STRING(-1)";
+  "SCHEINFO:STRING(-1),IN_TIME:STRING(-1),OUT_TIME:STRING(-1),S_DATE:STRING(-1)";
 
 /** 실제 응답과 같은 모양: 결석은 IN_TIME이 빈 값. */
 const ATTEND_ROWS = [
-  ["", "A", "종주(고1정규)-토9시[고등국어]", "고1<br>/51801", "366801", "배명고", "김다솔", "010-0000-0000", "010-0000-0000", "", "", "2026-08-08"],
-  ["", "A", "종주(고1정규)-토9시[고등국어]", "고1<br>/17233", "366802", "가락고", "김시후", "010-0000-0000", "010-0000-0000", "09:02", "", "2026-08-08"],
-  ["", "A", "종주(고1정규)-토9시[고등국어]", "고1<br>/11923", "366803", "가락고", "김우태", "010-0000-0000", "010-0000-0000", "08:55", "", "2026-08-08"],
+  ["", "A", "종주(고1정규)-토9시[고등국어]", "고1<br>/51801", "366801", "배명고", "김다솔", "010-0000-0000", "010-0000-0000", "09:00 장종주$$5350283$일요일", "", "", "2026-08-08"],
+  ["", "A", "종주(고1정규)-토9시[고등국어]", "고1<br>/17233", "366802", "가락고", "김시후", "010-0000-0000", "010-0000-0000", "09:00 장종주$Y$5350283$", "09:02", "", "2026-08-08"],
+  ["", "A", "종주(고1정규)-토9시[고등국어]", "고1<br>/11923", "366803", "가락고", "김우태", "010-0000-0000", "010-0000-0000", "09:00 장종주$Y$5350283$", "08:55", "", "2026-08-08"],
 ];
 
 interface Seen {
@@ -159,6 +159,14 @@ describe("fetchTodayCheckIns", () => {
     // 하이픈이 지워진 뒤 보내져서 로그인이 통과해야 한다.
     expect(new URLSearchParams(seen.loginBody).get("IN_M_PASSWORD")).toBe("pw1004");
     process.env.MACGAI7_PASSWORD = "pw1004";
+  });
+
+  it("결석/지각 사유를 SCHEINFO에서 뽑아 학번별로 준다", async () => {
+    const { fetchTodayAttendance } = await import("./macgai7");
+    const day = await fetchTodayAttendance("2026-08-08");
+    // 안 온 김다솔에게만 사유가 있고, 등원한 학생은 없다.
+    expect(day.reasons).toEqual({ "51801": "일요일" });
+    expect(day.checkIns.map((c) => c.studentCode)).toEqual(["17233", "11923"]);
   });
 
   it("아이디·비밀번호가 틀리면 분명히 실패한다", async () => {

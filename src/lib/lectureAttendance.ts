@@ -25,6 +25,8 @@ export interface LectureAttendanceRow {
   status: LectureStatus;
   checked_in_at: string | null;
   source: "macgai7" | "manual";
+  /** 결석/지각 사유 — 맥가이7에서 들어오거나 조교가 앱에서 직접 적는다. */
+  absence_reason?: string | null;
 }
 
 /**
@@ -108,7 +110,9 @@ async function getOverridesForWeekOf(date: Date): Promise<Map<number, LectureOve
  */
 export async function syncLectureAttendance(
   checkIns: MacgaiCheckIn[],
-  now: Date = nowKST()
+  now: Date = nowKST(),
+  /** 학번 → 맥가이7에 적힌 결석/지각 사유. 앱이 비어 있을 때만 채운다. */
+  reasons: Record<string, string> = {}
 ): Promise<SyncResult> {
   // nowKST()는 UTC 게터로 읽어야 한국 시각이 된다(weeks.ts 참고).
   const dateISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
@@ -131,6 +135,13 @@ export async function syncLectureAttendance(
   const alreadyAbsent = new Set(
     existing.filter((r) => r.status === "결석").map((r) => r.student_id)
   );
+  // 이미 적혀 있는 사유는 그대로 둔다 — 조교가 앱에 더 자세히 적어둔 사정이
+  // 맥가이7의 짧은 메모로 지워지면 안 된다.
+  const existingReason = new Map(
+    existing.filter((r) => r.absence_reason).map((r) => [r.student_id, r.absence_reason as string])
+  );
+  const reasonFor = (studentId: number, code: string) =>
+    existingReason.get(studentId) ?? reasons[code]?.trim() ?? null;
 
   // 1) 찍고 온 학생 — 출석/지각으로 기록.
   const unknownCodes: string[] = [];
@@ -150,6 +161,7 @@ export async function syncLectureAttendance(
       status: statusForCheckIn(entry.time, c.checkedInTime),
       checked_in_at: checkInToISO(dateISO, c.checkedInTime),
       source: "macgai7",
+      absence_reason: reasonFor(entry.studentId, c.studentCode),
     });
   }
 
@@ -164,6 +176,7 @@ export async function syncLectureAttendance(
       status: "결석",
       checked_in_at: null,
       source: "macgai7",
+      absence_reason: reasonFor(e.studentId, e.studentCode),
     });
   }
 
@@ -293,6 +306,8 @@ export interface LectureAttendanceEntry {
   makeupTime: string | null;
   /** 결석인데 보강 일정이 아직 없음 */
   needsMakeup: boolean;
+  /** 결석/지각 사유 — 맥가이7에서 들어오거나 조교가 적은 것 */
+  absenceReason: string | null;
 }
 
 /**
@@ -328,6 +343,7 @@ export async function getLectureAttendanceBoard(date: Date): Promise<LectureAtte
         makeupDay: override?.movedDay ?? null,
         makeupTime: override?.movedTime ?? null,
         needsMakeup: status ? needsMakeup(status, !!override) : false,
+        absenceReason: record?.absence_reason ?? null,
       };
     })
     .sort((a, b) => (a.time === b.time ? a.name.localeCompare(b.name) : a.time.localeCompare(b.time)));
@@ -345,6 +361,32 @@ export async function setLectureAttendanceManually(
       session_date: dateISO,
       status,
       source: "manual",
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,session_date" }
+  );
+}
+
+/**
+ * 조교·종주T가 직접 적는 결석/지각 사유.
+ *
+ * 출결 상태는 건드리지 않는다 — 사유를 적었다고 자동 동기화를 멈추면, 뒤늦게
+ * 온 학생이 키오스크를 찍어도 결석으로 굳어버린다. 대신 사유 칸 자체는 한 번
+ * 채워지면 맥가이7이 덮지 않는다(syncLectureAttendance 참고).
+ *
+ * 빈 값으로 저장하면 지운다.
+ */
+export async function setLectureAbsenceReason(
+  studentId: number,
+  dateISO: string,
+  reason: string
+) {
+  const trimmed = reason.trim();
+  await supabase.from("lecture_attendance").upsert(
+    {
+      student_id: studentId,
+      session_date: dateISO,
+      absence_reason: trimmed || null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "student_id,session_date" }

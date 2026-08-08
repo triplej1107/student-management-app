@@ -45,3 +45,4 @@ SQL Editor에서 실행해 "성공했어" 확인해줄 때 이 파일에 한 줄
 - [x] 0038_exam_timer_student_id.sql — 2026-08-07 확인
 - [x] 0039_lecture_attendance.sql — 2026-08-07 확인
 - [x] 0040_lecture_status_adjusted.sql — 2026-08-07 확인
+- [x] 0041_lecture_absence_reason.sql — 2026-08-08 확인

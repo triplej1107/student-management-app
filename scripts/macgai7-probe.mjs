@@ -1003,6 +1003,17 @@ if (attendDate) {
         // 5자리 숫자가 든 칸을 짚어준다 — 우리 앱 학번이 5자리라 그게 열쇠다.
         const fiveDigit = Object.keys(r0).filter((k) => /^\d{5}$/.test(String(r0[k] ?? "").trim()));
         console.log(`\n  5자리 숫자가 든 칸: ${fiveDigit.join(", ") || "(없음)"}`);
+
+        // 칸마다 몇 줄이나 값이 차 있는지. 결석/지각사유처럼 **몇 줄에만** 있는
+        // 값은 첫 줄만 봐서는 못 찾는다 — 그래서 전체를 세고 예시를 보여준다.
+        console.log(`\n  칸별 채워진 줄 수 (전체 ${parsedAtt.rows.length}줄):`);
+        for (const k of Object.keys(r0)) {
+          const filled = parsedAtt.rows.filter((r) => String(r[k] ?? "").trim() !== "");
+          const sample = filled.find((r) => /[가-힣]/.test(String(r[k])));
+          const eg = sample ? `  예: ${shape(String(sample[k]))}` : "";
+          console.log(`    ${k.padEnd(16)} ${String(filled.length).padStart(3)}줄${eg}`);
+        }
+        console.log("    ↳ 몇 줄에만 한글이 든 칸이 '결석/지각사유'일 가능성이 큽니다.");
       } else {
         console.log("  ── 출결 응답 전문 ──");
         console.log(maskNames(att.text).slice(0, 2500).replace(/^/gm, "    "));

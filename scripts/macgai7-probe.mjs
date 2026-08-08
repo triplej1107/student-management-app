@@ -982,16 +982,27 @@ if (attendDate) {
       console.log(`\n  [출결 목록] → ${att.res.status} · ${att.text.length}자 · STATUS ${parsedAtt.ok ? "OK" : parsedAtt.desc || "?"}`);
       console.log(`  줄 수: ${parsedAtt.rows.length}`);
       if (parsedAtt.rows.length > 0) {
-        console.log("  🎯 출결 줄을 받았습니다! 앞 3줄 (값은 모양만):");
-        for (const r of parsedAtt.rows.slice(0, 3)) {
+        console.log("  🎯 출결 줄을 받았습니다!");
+        // **칸을 골라 보여주면 안 된다** — 찾는 값(학번 같은)이 예상 못 한
+        // 칸에 들어 있으면 통째로 놓친다. 실제로 그래서 한 번 헛돌았다.
+        // 값은 모양만 남기므로(김민찬→●●●, 51801→99999) 다 보여줘도 안전하다.
+        console.log("  줄 1 — 모든 칸 (값은 모양만, 실제 값 아님):");
+        const r0 = parsedAtt.rows[0];
+        for (const k of Object.keys(r0)) {
+          console.log(`    ${k.padEnd(16)} = ${shape(String(r0[k] ?? ""))}`);
+        }
+        console.log("\n  줄 2~4 — 등원 관련 칸만:");
+        for (const r of parsedAtt.rows.slice(1, 4)) {
           const brief = Object.fromEntries(
             Object.entries(r)
-              .filter(([k]) => /M_IDX|M_NAME|IN_TIME|OUT_TIME|C_NAME|S_DATE|M_SCHOOL|STUNO|학번/i.test(k))
+              .filter(([k]) => /IDX|NAME|TIME|CODE|NO|STU/i.test(k))
               .map(([k, v]) => [k, shape(String(v ?? ""))])
           );
           console.log(`    ${JSON.stringify(brief)}`);
         }
-        console.log(`  전체 칸: ${parsedAtt.cols.join(", ")}`);
+        // 5자리 숫자가 든 칸을 짚어준다 — 우리 앱 학번이 5자리라 그게 열쇠다.
+        const fiveDigit = Object.keys(r0).filter((k) => /^\d{5}$/.test(String(r0[k] ?? "").trim()));
+        console.log(`\n  5자리 숫자가 든 칸: ${fiveDigit.join(", ") || "(없음)"}`);
       } else {
         console.log("  ── 출결 응답 전문 ──");
         console.log(maskNames(att.text).slice(0, 2500).replace(/^/gm, "    "));

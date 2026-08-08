@@ -11,6 +11,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+      // `import "server-only"`는 클라이언트 번들에서 일부러 터지는 표시일 뿐이라
+      // 테스트에서는 빈 모듈로 바꾼다. 안 그러면 서버 전용 파일(macgai7.ts 등)을
+      // 아예 불러올 수가 없어 네트워크 흐름을 시험할 방법이 없다.
+      "server-only": path.resolve(import.meta.dirname, "./src/test/serverOnlyStub.ts"),
     },
   },
 });

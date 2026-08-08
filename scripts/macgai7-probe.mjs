@@ -124,6 +124,47 @@ function tables(html) {
   });
 }
 
+// ── 자바스크립트 뒤지기 ──────────────────────────────────────────
+// 로그인이 폼 전송이 아니라 **AJAX 호출**인 사이트가 있다(맥가이7이 그렇다).
+// 그러면 진짜 로그인 주소는 HTML이 아니라 스크립트 안에 적혀 있다.
+
+/** 페이지에 붙은 스크립트 — 인라인 본문과 외부 파일 주소. */
+function scriptSources(html) {
+  const inline = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+    .map((m) => m[1])
+    .filter((s) => s.trim().length > 20);
+  const srcs = [...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
+  return { inline, srcs };
+}
+
+/** 중괄호 짝을 맞춰 함수 하나를 통째로 잘라낸다. */
+function extractFunction(js, name) {
+  const start = js.search(new RegExp(`function\\s+${name}\\s*\\(`));
+  if (start < 0) return null;
+  const open = js.indexOf("{", start);
+  if (open < 0) return null;
+  let depth = 0;
+  for (let i = open; i < js.length; i++) {
+    if (js[i] === "{") depth++;
+    else if (js[i] === "}") {
+      depth--;
+      if (depth === 0) return js.slice(start, i + 1);
+    }
+  }
+  return js.slice(start, start + 2000);
+}
+
+/** AJAX로 어디를 부르는지 — url:, $.ajax, PageMethods, .asmx/.ashx 등. */
+function ajaxHints(js) {
+  const out = new Set();
+  for (const m of js.matchAll(/\burl\s*:\s*["'`]([^"'`]{2,160})["'`]/g)) out.add(`url: ${m[1]}`);
+  for (const m of js.matchAll(/\$\.(ajax|post|get)\s*\(\s*["']([^"']{2,160})["']/g)) out.add(`$.${m[1]}: ${m[2]}`);
+  for (const m of js.matchAll(/PageMethods\.(\w+)/g)) out.add(`PageMethods.${m[1]}`);
+  for (const m of js.matchAll(/["'`]([^"'`]*\.(?:asmx|ashx|json|do)(?:\/\w+)?)["'`]/gi)) out.add(`파일: ${m[1]}`);
+  for (const m of js.matchAll(/["'`](\/[A-Za-z0-9_\-/]*(?:login|Login|LOGIN)[A-Za-z0-9_\-/.]*)["'`]/g)) out.add(`경로: ${m[1]}`);
+  return [...out].slice(0, 25);
+}
+
 /**
  * `__doPostBack('컨트롤이름','')` 로 넘어가는 대상들.
  *
@@ -163,11 +204,18 @@ function clickables(html) {
   return out;
 }
 
-/** 로그인 실패 사유가 보통 alert()이나 짧은 안내문으로 돌아온다. */
+/**
+ * 로그인 실패 사유로 **실제로 돌아온** 문구.
+ *
+ * 스크립트 블록은 먼저 걷어낸다 — 페이지 JS에는 "아이디를 입력해 주세요"
+ * 같은 **모든 경우의 메시지**가 다 적혀 있어서, 그걸 같이 긁으면 서버가
+ * 하지도 않은 말을 한 것처럼 보인다. 실제로 그렇게 잘못 읽은 적이 있다.
+ */
 function messages(html) {
+  const noScript = html.replace(/<script\b[\s\S]*?<\/script>/gi, " ");
   const found = [];
-  for (const m of html.matchAll(/alert\s*\(\s*['"]([^'"]{2,120})['"]/g)) found.push(m[1]);
-  for (const m of html.matchAll(/(아이디|비밀번호|패스워드|로그인)[^<>{}]{0,60}(않|없|틀|실패|확인|오류|잠)[^<>{}]{0,20}/g)) {
+  for (const m of noScript.matchAll(/alert\s*\(\s*['"]([^'"]{2,120})['"]/g)) found.push(m[1]);
+  for (const m of noScript.matchAll(/(아이디|비밀번호|패스워드|로그인)[^<>{}]{0,60}(않|없|틀|실패|확인|오류|잠)[^<>{}]{0,20}/g)) {
     found.push(strip(m[0]));
   }
   // 같은 문구가 alert에서 한 번, 본문 훑기에서 한 번 잡혀 두 줄로 찍히는 걸 막는다.
@@ -263,6 +311,41 @@ console.log(`\n추정한 아이디 칸: ${idField?.name ?? "(못 찾음)"} / 비
 // submit 버튼이 없으면 링크가 __doPostBack을 부른다 — 그 이름을 같이 보내야 한다.
 const targets = postBackTargets(html);
 const clicks = clickables(html);
+
+// 로그인이 AJAX면 진짜 주소가 스크립트 안에 있다. 외부 .js까지 받아서 뒤진다.
+const { inline, srcs } = scriptSources(html);
+let allJs = inline.join("\n");
+if (srcs.length) console.log(`\n  외부 스크립트 ${srcs.length}개: ${srcs.slice(0, 10).join(", ")}`);
+for (const src of srcs.slice(0, 12)) {
+  try {
+    const u = new URL(src, loginUrl);
+    if (u.origin !== new URL(loginUrl).origin) continue; // 남의 서버(jQuery CDN 등)는 건너뛴다
+    const r = await get(u.toString());
+    if (r.ok) allJs += "\n/* ==== " + src + " ==== */\n" + (await r.text());
+  } catch {
+    // 못 받아도 그만 — 인라인 스크립트만으로 찾아지는 경우가 많다.
+  }
+}
+
+// 버튼이 부르는 함수(onclick의 fn_XXX())를 통째로 꺼내 본다.
+const fnNames = new Set();
+for (const c of clicks) for (const m of (c.hint ?? "").matchAll(/\b(fn_\w+|\w*[Ll]ogin\w*)\s*\(/g)) fnNames.add(m[1]);
+let dug = 0;
+for (const name of fnNames) {
+  if (dug++ >= 6) break; // 함수가 서로를 부르며 끝없이 번지지 않게.
+  const body = extractFunction(allJs, name);
+  if (!body) continue;
+  console.log(`\n  ── ${name}() 내용 ──`);
+  for (const line of body.split("\n").slice(0, 45)) console.log(`    ${line.trim().slice(0, 150)}`);
+  // 그 함수가 또 다른 함수를 부르면 그것도 한 겹 따라간다.
+  for (const m of body.matchAll(/\b(fn_\w+)\s*\(/g)) if (m[1] !== name) fnNames.add(m[1]);
+}
+
+const hints = ajaxHints(allJs);
+if (hints.length) {
+  console.log("\n  AJAX/주소 단서:");
+  for (const h of hints) console.log(`    ${h}`);
+}
 if (targets.size) {
   console.log("\n  __doPostBack 대상:");
   for (const [t, a] of targets) console.log(`    ${t}${a ? ` (인자 ${a})` : ""}`);
@@ -280,8 +363,16 @@ const guessed =
   clicks.find((c) => c.name)?.name ??
   [...targets.keys()][0];
 
+// 로그인이 AJAX인데 폼을 전송해봐야 로그인 화면만 돌아온다. 살아있는 시스템에
+// 헛된 로그인 실패를 쌓지 않도록 건너뛴다(계정 잠금 위험도 줄인다).
+const looksAjax = hints.length > 0 && targets.size === 0 && !clicks.some((c) => c.name);
+
 if (!idField || !pwField) {
   console.log("\n⚠️ 로그인 칸을 못 찾았어요. --save 로 HTML을 남겨 확인이 필요합니다.");
+} else if (looksAjax && !args.includes("--force-form")) {
+  console.log("\n📌 이 사이트는 **폼 전송이 아니라 AJAX로 로그인**하는 것으로 보입니다.");
+  console.log("   위 'AJAX/주소 단서'와 함수 내용이 진짜 로그인 주소입니다.");
+  console.log("   폼 전송은 어차피 실패하므로 건너뜁니다 (굳이 해보려면 --force-form).");
 } else {
   const action = forms(html)[0]?.action;
   const postUrl = !action || action === "(없음)" ? loginUrl : new URL(action, loginUrl).toString();

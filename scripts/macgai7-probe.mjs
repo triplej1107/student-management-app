@@ -918,11 +918,30 @@ if (attendDate) {
     // in_class가 비면 줄이 안 온다. fn_query가 dsCLASS에서 C_IDX·T_TEMP를
     // 모아 "||"로 이어 붙이는 것을 그대로 흉내낸다.
     console.log("\n── 2단계: 학급 목록 → 출결 조회 ──");
-    const cls = await jobCall("/job/class_reset_S03.aspx", {
+    // fn_class_change가 넘기는 조건 여섯 개를 그대로. 하나라도 빠지면 서버가
+    // "Fatal error"를 뱉는다 — 빈 값은 괜찮지만 **칸 자체가 없으면** 안 된다.
+    const staffOpt = selects(html).find((s) => s.name === "sel_staff")?.options ?? [];
+    const staff = staffOpt.map((o) => o.split("=")[0]).find(Boolean) ?? "";
+    console.log(`  강사(sel_staff) = ${staff || "(비움)"}`);
+
+    const classArgs = (teacher) => ({
       in_c_branch: branch,
       in_c_yyyymmdd: attendDate,
+      in_c_grade: "",
+      in_c_category: "",
+      in_c_bigcategory: "",
+      in_c_teacher: teacher,
     });
-    const parsedCls = parseJobResponse(cls.text);
+
+    let cls = await jobCall("/job/class_reset_S03.aspx", classArgs(staff));
+    let parsedCls = parseJobResponse(cls.text);
+    // 강사를 좁혀 아무것도 안 나오면 전체로 한 번 더 — 조회 전용 계정이
+    // 다른 강사로 잡혀 있을 수 있다.
+    if (parsedCls.rows.length === 0 && staff) {
+      console.log("  (그 강사로는 학급이 없어 전체 강사로 다시 시도합니다)");
+      cls = await jobCall("/job/class_reset_S03.aspx", classArgs(""));
+      parsedCls = parseJobResponse(cls.text);
+    }
     console.log(`  [학급 목록] → ${cls.res.status} · ${cls.text.length}자 · STATUS ${parsedCls.ok ? "OK" : parsedCls.desc || "?"}`);
     console.log(`  칸: ${parsedCls.cols.join(", ") || "(못 읽음)"}`);
     console.log(`  줄 수: ${parsedCls.rows.length}`);
@@ -955,6 +974,7 @@ if (attendDate) {
       console.log(`  학급 ${cIdx.length}개를 찾았습니다. 이걸로 출결을 다시 조회합니다.`);
       const att = await jobCall("/job/attend_S01.aspx", {
         ...fields,
+        in_teacher: staff, // fn_query도 sel_staff 값을 그대로 넘긴다
         in_class: cIdx.join("||"),
         in_temp: tTemp.join("||"),
       });

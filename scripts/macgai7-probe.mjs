@@ -536,10 +536,11 @@ function resolveArg(expr, html, branch) {
   if (/M_BRANCH/.test(expr)) return branch;
   const id = expr.match(/\$\(\s*["']#([\w$]+)["']\s*\)/)?.[1];
   if (!id) return "";
-  const input = html.match(new RegExp(`<input\\b[^>]*id\\s*=\\s*["']${id}["'][^>]*>`, "i"))?.[0];
-  if (input) return input.match(/value\s*=\s*["']([^"']*)["']/i)?.[1] ?? "";
+  // **id로만 찾으면 안 된다** — 그 칸이 name으로만 있는 경우가 있다(실제로
+  // in_s_date가 그래서 빈 값으로 나가 서버가 DATETIME 오류를 냈다).
+  // inputs()는 name과 id를 둘 다 보고 값을 뽑아준다.
+  return inputs(html).find((i) => i.name === id)?.value ?? "";
   // select면 첫 option 값을 쓰기보다 빈 값(=전체)이 안전하다.
-  return "";
 }
 
 /** 그 화면 스크립트가 정의한 fn_* 함수 이름들 — 조회 함수가 여기 있다. */
@@ -888,9 +889,9 @@ if (targetPath) {
     console.log(`\n── 이 화면의 조회 ${queries.length}개를 실제로 불러봅니다 (지점 ${branch}) ──`);
     for (const q of queries) {
       // 화면에 적힌 조회 기간 — 값 표현식이 JS 변수라 못 읽은 날짜 칸을 채운다.
-      const pageDate = (id) =>
-        html.match(new RegExp(`<input\\b[^>]*id\\s*=\\s*["']${id}["'][^>]*>`, "i"))?.[0]
-          ?.match(/value\s*=\s*["']([^"']*)["']/i)?.[1] ?? "";
+      // name/id 어느 쪽으로 붙어 있어도 잡히도록 inputs()를 쓴다.
+      const pageInputs = inputs(html);
+      const pageDate = (key) => pageInputs.find((i) => i.name === key)?.value ?? "";
       const sDate = pageDate("in_s_date");
       const eDate = pageDate("in_e_date");
 

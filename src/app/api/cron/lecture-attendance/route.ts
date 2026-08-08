@@ -6,16 +6,14 @@ import {
   recordSyncRun,
   syncLectureAttendance,
 } from "@/lib/lectureAttendance";
-import { isSyncStale } from "@/lib/lectureRules";
+import { shouldNotifyStale } from "@/lib/lectureRules";
 import { getPushSubscriptionsForZongju, sendReminderPush } from "@/lib/clinicPush";
+import { nowKST } from "@/lib/weeks";
 
 /**
- * 맥가이7 등원 명단을 읽어와 강의 출결에 반영한다. GitHub Actions가 주말
- * 강의 시간대에 10분마다 호출한다(Vercel Hobby는 크론이 하루 한 번뿐이라
+ * 맥가이7 등하원 명단을 읽어와 강의·클리닉 출결에 반영한다. GitHub Actions가
+ * 학원이 도는 시간대에 5분마다 호출한다(Vercel Hobby는 크론이 하루 한 번뿐이라
  * "잊지마"와 같은 방식으로 우회한다).
- *
- * 이 라우트의 몸통은 이미 다 있고, 비어 있는 것은 macgai7.ts의
- * fetchTodayCheckIns 하나뿐이다.
  *
  * 성공/실패를 매번 macgai_sync_log에 남긴다 — 맥가이7이 화면을 개편하면
  * 긁어오기가 **조용히** 멈추기 때문에, 아무도 모르는 상태가 제일 위험하다.
@@ -48,10 +46,12 @@ export async function GET(req: Request) {
   }
 }
 
-/** 한참 성공이 없으면 종주T에게 한 번 알린다. */
+/** 한참 성공이 없으면 종주T에게 알린다 — **시간당 한 번까지만.**
+ * 동기화는 5분마다 도는데 끊기면 매번 죽은 상태라, 제한이 없으면 폰이
+ * 시간당 12번 울린다(shouldNotifyStale 참고). */
 async function notifyIfStale() {
   const lastOk = await getLastSuccessfulSyncAt();
-  if (!isSyncStale(lastOk, Date.now())) return;
+  if (!shouldNotifyStale(lastOk, Date.now(), nowKST().getUTCMinutes())) return;
   const subs = await getPushSubscriptionsForZongju();
   if (subs.length === 0) return;
   await sendReminderPush(

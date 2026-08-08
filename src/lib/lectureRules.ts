@@ -291,3 +291,26 @@ export function isSyncStale(
   if (Number.isNaN(last)) return true;
   return nowMs - last > staleHours * 60 * 60 * 1000;
 }
+
+/**
+ * "멈췄어요" 알림을 지금 보내도 되는지 — 죽었는지 + **너무 자주 울리지 않는지.**
+ *
+ * 죽었는지만 보고 보내면 안 된다. 동기화는 5분마다 도는데 끊기면 매번 죽은
+ * 상태이므로, 그대로 두면 종주T 폰이 **시간당 12번** 울린다. 실제로 그렇게
+ * 될 뻔했다 — 예전엔 크론이 하루 5~8번만 돌아서 티가 안 났을 뿐이다.
+ *
+ * 어디에도 "언제 알렸는지"를 안 남기고 막으려고 시계를 쓴다. **매시 첫
+ * 5분 안에만** 보낸다. 5분 간격으로 부르면 그 창에 정확히 한 번 걸리므로
+ * 시간당 한 번이 된다. 부르는 간격이 밀려 그 시간에 한 번도 안 걸리면 그
+ * 시간은 건너뛰는데, 조건이 그대로 남아 다음 시간에 울린다 — 덜 울리는 쪽이
+ * 더 울리는 쪽보다 낫다.
+ */
+export function shouldNotifyStale(
+  lastOkAtISO: string | null,
+  nowMs: number,
+  kstMinute: number,
+  staleHours = SYNC_STALE_HOURS
+): boolean {
+  if (!isSyncStale(lastOkAtISO, nowMs, staleHours)) return false;
+  return kstMinute < 5;
+}

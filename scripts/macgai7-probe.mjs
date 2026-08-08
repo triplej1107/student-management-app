@@ -393,14 +393,32 @@ function allClickables(html) {
   return out;
 }
 
+/**
+ * 화면이 부르는 /job/*.aspx 주소를 앞뒤 문맥과 함께 — 목록을 채우는 데
+ * 필요한 **다른 조회**(학급 목록 등)가 어디서 오는지 찾는 데 쓴다.
+ */
+function jobCalls(js) {
+  const out = new Set();
+  for (const m of js.matchAll(/["'](\/job\/[\w./-]+\.aspx)["']/g)) {
+    const around = js.slice(Math.max(0, m.index - 90), m.index + 150).replace(/\s+/g, " ").trim();
+    out.add(`${m[1]}\n        …${around}…`);
+  }
+  return [...out];
+}
+
 /** 그 화면 스크립트가 정의한 fn_* 함수 이름들 — 조회 함수가 여기 있다. */
 function definedFunctions(js) {
   return [...new Set([...js.matchAll(/function\s+(fn_\w+)\s*\(/g)].map((m) => m[1]))];
 }
 
-/** 사람 이름이 들어올 만한 자리만 가린다(한글). 날짜·숫자는 그대로 둔다. */
+/** 한글만 가린다 — 길이는 안 자른다. 응답 본문처럼 통째로 봐야 할 때 쓴다. */
+function maskNames(s) {
+  return s.replace(/[가-힣]/g, "●");
+}
+
+/** 칸 값처럼 짧게 보여줄 자리용 — 가리고 40자에서 자른다. */
 function maskKorean(s) {
-  return s.replace(/[가-힣]/g, "●").slice(0, 40);
+  return maskNames(s).slice(0, 40);
 }
 
 function selects(html) {
@@ -752,12 +770,14 @@ if (attendDate) {
     const target = `${BASE}/job/attend_S01.aspx`;
 
     /** 응답이 쓸 만한지 — 길이와 앞부분 모양(값은 가림)으로 판단한다. */
+    const tried = [];
     const describe = async (label, r) => {
       const body = await r.text();
       const head = maskKorean(body.replace(/\s+/g, " ").slice(0, 220));
-      const rowish = (body.match(/56\d{3}|\d{5}/g) ?? []).length;
+      const rowish = (body.match(/\b\d{5}\b/g) ?? []).length;
       console.log(`  [${label}] → ${r.status} · ${body.length}자 · 5자리숫자 ${rowish}개`);
       console.log(`     앞부분: ${head}`);
+      tried.push({ label, body });
       return body.length;
     };
 
@@ -776,6 +796,28 @@ if (attendDate) {
     await describe("③ GET 쿼리스트링", await get(`${target}?${new URLSearchParams(fields)}`));
 
     console.log("  ↳ 셋 중 길이가 길고 5자리 숫자(학번)가 여럿 보이는 것이 정답입니다.");
+
+    // 이긴 응답은 통째로 본다. 줄이 0개일 때 "왜 비었나"(칸 이름은 뭔지,
+    // 어떤 조건이 빠졌는지)가 응답 안에 적혀 있는 경우가 많다.
+    const best = tried.sort((a, b) => b.body.length - a.body.length)[0];
+    if (best) {
+      console.log(`\n  ── ${best.label} 응답 전문 ──`);
+      console.log(maskNames(best.body).slice(0, 2500).replace(/^/gm, "    "));
+    }
+
+    // 학급 목록(dsCLASS)을 어디서 받아오는지 — in_class가 비면 줄이 안 온다.
+    const calls = jobCalls(pageJs);
+    if (calls.length) {
+      console.log(`\n  이 화면이 부르는 /job/ 주소 ${calls.length}개:`);
+      for (const c of calls.slice(0, 20)) console.log(`    ${c}`);
+    }
+    const dsLines = [...new Set(
+      pageJs.split("\n").map((l) => l.trim()).filter((l) => /dsCLASS/.test(l) && /Reset|progid|\/job\//.test(l))
+    )];
+    if (dsLines.length) {
+      console.log("\n  dsCLASS(학급 목록) 관련 줄:");
+      for (const l of dsLines.slice(0, 15)) console.log(`    ${l.slice(0, 170)}`);
+    }
   }
 }
 

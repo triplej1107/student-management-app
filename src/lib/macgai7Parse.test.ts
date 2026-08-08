@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   absenceReasonFrom,
   buildArgString,
+  checkOutTimesFromLog,
   classQueryParts,
   macgaiMarkedPresent,
   normalizeCheckInTime,
@@ -10,6 +11,7 @@ import {
   sanitizeMacgaiInput,
   studentCodeFrom,
   toCheckIns,
+  toCheckInsFromLog,
 } from "./macgai7Parse";
 
 describe("sanitizeMacgaiInput", () => {
@@ -203,6 +205,68 @@ describe("reasonsByStudentCode", () => {
 
   it("학번을 못 읽으면 건너뛴다", () => {
     expect(reasonsByStudentCode([{ M_GRADE_NAME: "고1", SCHEINFO: "a$$b$일요일" }])).toEqual({});
+  });
+});
+
+describe("toCheckInsFromLog (등하원명단)", () => {
+  // 출결현황 > 등하원명단이 주는 모양 — 학번이 STU_NO라는 제 칸으로 온다.
+  const row = (stuNo: string, inTime: string, outTime = "", status = "수업학생") => ({
+    STU_NO: stuNo,
+    IN_TIME: inTime,
+    OUT_TIME: outTime,
+    STATUS_NAME: status,
+    M_NAME: "이민영",
+    M_PHONE: "010-1111-2222",
+  });
+
+  it("찍고 온 학생만 남긴다", () => {
+    expect(toCheckInsFromLog([row("50861", "10:02"), row("31391", "09:11", "12:01")])).toEqual([
+      { studentCode: "50861", checkedInTime: "10:02" },
+      { studentCode: "31391", checkedInTime: "09:11" },
+    ]);
+  });
+
+  it("수업이 없는 날 온 학생도 잡는다 — 이게 클리닉 자동화의 핵심이다", () => {
+    expect(toCheckInsFromLog([row("50861", "15:30", "", "무수업생")])).toEqual([
+      { studentCode: "50861", checkedInTime: "15:30" },
+    ]);
+  });
+
+  it("하루에 여러 번 드나들면 처음 들어온 때가 등원", () => {
+    expect(toCheckInsFromLog([row("50861", "15:30"), row("50861", "09:02")])).toEqual([
+      { studentCode: "50861", checkedInTime: "09:02" },
+    ]);
+  });
+
+  it("등원 시각이 없으면 뺀다 — 하원만 찍힌 줄", () => {
+    expect(toCheckInsFromLog([row("50861", "", "12:00")])).toEqual([]);
+  });
+
+  it("학번이 5자리가 아니면 뺀다 — 비원생·외부인", () => {
+    expect(toCheckInsFromLog([row("", "10:02"), row("12", "10:02")])).toEqual([]);
+  });
+
+  it("이름·전화번호는 가져오지 않는다", () => {
+    const out = toCheckInsFromLog([row("50861", "10:02")]);
+    expect(Object.keys(out[0])).toEqual(["studentCode", "checkedInTime"]);
+  });
+});
+
+describe("checkOutTimesFromLog", () => {
+  const row = (stuNo: string, outTime: string) => ({ STU_NO: stuNo, IN_TIME: "09:00", OUT_TIME: outTime });
+
+  it("하원 시각을 학번별로 준다", () => {
+    expect(checkOutTimesFromLog([row("50861", "12:01")])).toEqual({ "50861": "12:01" });
+  });
+
+  it("여러 번 드나들었으면 마지막 하원이 그날 나간 시각", () => {
+    expect(checkOutTimesFromLog([row("50861", "12:01"), row("50861", "18:40")])).toEqual({
+      "50861": "18:40",
+    });
+  });
+
+  it("하원을 안 찍은 학생은 없다 — 미귀가", () => {
+    expect(checkOutTimesFromLog([row("50861", "")])).toEqual({});
   });
 });
 

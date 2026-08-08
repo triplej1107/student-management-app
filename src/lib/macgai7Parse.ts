@@ -182,6 +182,48 @@ export function reasonsByStudentCode(rows: Record<string, string>[]): Record<str
   return out;
 }
 
+/**
+ * 등하원 로그 줄들 → 앱이 쓰는 등원 기록.
+ *
+ * 출결현황 > 등하원명단(attend_report_S07)이 주는 모양이다. 강의 출결
+ * 조회(attend_S01)와 달리 **학번이 STU_NO라는 제 칸으로** 온다.
+ *
+ *   STU_NO(학번) · IN_TIME(등원) · OUT_TIME(하원) · STATUS_NAME(수업학생/무수업생/비원생)
+ *
+ * 이쪽이 중요한 이유는 **학급에 묶이지 않은 날것의 기록**이기 때문이다.
+ * 토요일 반 학생이 일요일에 와서 찍어도 그날 로그에 그대로 남고, 수업이 없는
+ * 날 클리닉만 하러 온 학생도 남는다. 학급별 조회로는 둘 다 안 보인다.
+ */
+export function toCheckInsFromLog(rows: Record<string, string>[]): MacgaiCheckIn[] {
+  const out: MacgaiCheckIn[] = [];
+  for (const row of rows) {
+    const studentCode = String(row.STU_NO ?? "").trim();
+    const checkedInTime = normalizeCheckInTime(row.IN_TIME);
+    if (!/^\d{5}$/.test(studentCode) || !checkedInTime) continue;
+    const prev = out.find((c) => c.studentCode === studentCode);
+    if (prev) {
+      // 하루에 여러 번 드나든 학생 — 처음 들어온 때가 등원이다.
+      if (checkedInTime < prev.checkedInTime) prev.checkedInTime = checkedInTime;
+      continue;
+    }
+    out.push({ studentCode, checkedInTime });
+  }
+  return out;
+}
+
+/** 학번 → 하원 시각. "클리닉 전에 가버렸나"를 나중에 따질 때 쓴다. */
+export function checkOutTimesFromLog(rows: Record<string, string>[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const row of rows) {
+    const code = String(row.STU_NO ?? "").trim();
+    const time = normalizeCheckInTime(row.OUT_TIME);
+    if (!/^\d{5}$/.test(code) || !time) continue;
+    // 여러 번 드나들었으면 **마지막** 하원이 그날 나간 시각이다.
+    if (!out[code] || time > out[code]) out[code] = time;
+  }
+  return out;
+}
+
 /** 학급 목록 줄들 → attend 조회에 넣을 C_IDX / T_TEMP 묶음. */
 export function classQueryParts(rows: Record<string, string>[]): { classIds: string; temps: string } {
   const ids = rows.map((r) => r.C_IDX).filter(Boolean);

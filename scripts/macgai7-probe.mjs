@@ -406,6 +406,61 @@ function jobCalls(js) {
   return [...out];
 }
 
+/**
+ * 맥가이7 /job/*.aspx 응답 읽기.
+ *
+ * 모양: `[ {STATUS,DESCRIPTION}, {COL:"A:STRING(-1),B:DECIMAL(-1),…"}, …줄들 ]`
+ * 줄이 객체로 오는지 배열로 오는지는 화면마다 다를 수 있어 둘 다 받아준다.
+ */
+function parseJobResponse(text) {
+  let arr;
+  try {
+    arr = JSON.parse(text);
+  } catch {
+    return { ok: false, cols: [], rows: [], raw: text };
+  }
+  if (!Array.isArray(arr)) return { ok: false, cols: [], rows: [], raw: text };
+
+  const status = arr.find((e) => e && typeof e === "object" && "STATUS" in e);
+  const colDef = arr.find((e) => e && typeof e === "object" && "COL" in e);
+  const cols = colDef
+    ? String(colDef.COL)
+        .split(",")
+        .map((c) => c.split(":")[0].trim())
+        .filter(Boolean)
+    : [];
+
+  // STATUS·COL 칸을 뺀 나머지가 줄이다.
+  const rest = arr.filter((e) => e !== status && e !== colDef);
+  const rows = [];
+  for (const e of rest) {
+    if (Array.isArray(e)) {
+      // 배열로 오면 COL 순서대로 짝지어 준다.
+      for (const r of e) {
+        if (Array.isArray(r)) rows.push(Object.fromEntries(cols.map((c, i) => [c, r[i]])));
+        else if (r && typeof r === "object") rows.push(r);
+      }
+    } else if (e && typeof e === "object") {
+      rows.push(e);
+    }
+  }
+  return { ok: status?.STATUS === "OK", desc: status?.DESCRIPTION ?? "", cols, rows, raw: text };
+}
+
+/** argString 통째로 POST — 맥가이7이 실제로 쓰는 방식(조사로 확인됨). */
+async function jobCall(path, fields) {
+  const argString = Object.entries(fields)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(",");
+  const r = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { cookie: cookieHeader(), "content-type": "application/x-www-form-urlencoded" },
+    body: argString,
+  });
+  storeCookies(r);
+  return { res: r, text: await r.text(), argString };
+}
+
 /** 그 화면 스크립트가 정의한 fn_* 함수 이름들 — 조회 함수가 여기 있다. */
 function definedFunctions(js) {
   return [...new Set([...js.matchAll(/function\s+(fn_\w+)\s*\(/g)].map((m) => m[1]))];
@@ -817,6 +872,61 @@ if (attendDate) {
     if (dsLines.length) {
       console.log("\n  dsCLASS(학급 목록) 관련 줄:");
       for (const l of dsLines.slice(0, 15)) console.log(`    ${l.slice(0, 170)}`);
+    }
+
+    // ── 2단계: 학급 목록을 먼저 받아서 그걸로 출결을 조회한다 ──────
+    // in_class가 비면 줄이 안 온다. fn_query가 dsCLASS에서 C_IDX·T_TEMP를
+    // 모아 "||"로 이어 붙이는 것을 그대로 흉내낸다.
+    console.log("\n── 2단계: 학급 목록 → 출결 조회 ──");
+    const cls = await jobCall("/job/class_reset_S03.aspx", {
+      in_c_branch: branch,
+      in_c_yyyymmdd: attendDate,
+    });
+    const parsedCls = parseJobResponse(cls.text);
+    console.log(`  [학급 목록] → ${cls.res.status} · ${cls.text.length}자 · STATUS ${parsedCls.ok ? "OK" : parsedCls.desc || "?"}`);
+    console.log(`  칸: ${parsedCls.cols.join(", ") || "(못 읽음)"}`);
+    console.log(`  줄 수: ${parsedCls.rows.length}`);
+    if (parsedCls.rows.length === 0) {
+      console.log("  ── 학급 목록 응답 전문 ──");
+      console.log(maskNames(cls.text).slice(0, 2500).replace(/^/gm, "    "));
+    } else {
+      console.log(`  첫 줄: ${maskNames(JSON.stringify(parsedCls.rows[0])).slice(0, 300)}`);
+    }
+
+    const pick = (row, ...names) => {
+      for (const n of names) if (row[n] !== undefined && row[n] !== null) return String(row[n]);
+      return "";
+    };
+    const cIdx = parsedCls.rows.map((r) => pick(r, "C_IDX", "c_idx")).filter(Boolean);
+    const tTemp = parsedCls.rows.map((r) => pick(r, "T_TEMP", "t_temp")).filter(Boolean);
+
+    if (cIdx.length === 0) {
+      console.log("  ↳ 학급 번호(C_IDX)를 못 뽑았습니다. 위 응답 전문을 보고 다음 단계를 정합니다.");
+    } else {
+      console.log(`  학급 ${cIdx.length}개를 찾았습니다. 이걸로 출결을 다시 조회합니다.`);
+      const att = await jobCall("/job/attend_S01.aspx", {
+        ...fields,
+        in_class: cIdx.join("||"),
+        in_temp: tTemp.join("||"),
+      });
+      const parsedAtt = parseJobResponse(att.text);
+      console.log(`\n  [출결 목록] → ${att.res.status} · ${att.text.length}자 · STATUS ${parsedAtt.ok ? "OK" : parsedAtt.desc || "?"}`);
+      console.log(`  줄 수: ${parsedAtt.rows.length}`);
+      if (parsedAtt.rows.length > 0) {
+        console.log("  🎯 출결 줄을 받았습니다! 앞 3줄 (값은 모양만):");
+        for (const r of parsedAtt.rows.slice(0, 3)) {
+          const brief = Object.fromEntries(
+            Object.entries(r)
+              .filter(([k]) => /M_IDX|M_NAME|IN_TIME|OUT_TIME|C_NAME|S_DATE|M_SCHOOL|STUNO|학번/i.test(k))
+              .map(([k, v]) => [k, shape(String(v ?? ""))])
+          );
+          console.log(`    ${JSON.stringify(brief)}`);
+        }
+        console.log(`  전체 칸: ${parsedAtt.cols.join(", ")}`);
+      } else {
+        console.log("  ── 출결 응답 전문 ──");
+        console.log(maskNames(att.text).slice(0, 2500).replace(/^/gm, "    "));
+      }
     }
   }
 }

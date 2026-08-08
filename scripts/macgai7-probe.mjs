@@ -677,7 +677,12 @@ if (targetPath) {
 
     // 조회/목록/엑셀처럼 보이는 함수는 미리 펼쳐둔다 — 목록을 불러오는
     // 방법이 거의 항상 여기 있어서, 한 번 더 왕복하지 않으려는 것.
-    const likely = defs.filter((n) => /search|list|inquiry|excel|grid|load|view|chul|attend/i.test(n));
+    // 목록을 불러오는 함수 이름은 현장마다 다르다. 맥가이7은 fn_query 였는데
+    // search/list만 보다가 놓쳐 왕복을 한 번 더 했다. 조회 계열 낱말을 넓게 본다.
+    // 이름이 짧은 것부터 — fn_query 가 fn_top_student_query 보다 본체일 가능성이 높다.
+    const likely = defs
+      .filter((n) => /query|qry|search|list|inquiry|select|grid|load|view|refresh|chul|attend|출결/i.test(n))
+      .sort((a, b) => a.length - b.length);
     for (const name of likely.slice(0, 4)) {
       if (wanted.includes(name)) continue; // 아래에서 전체로 다시 찍는다
       const body = extractFunction(tjs, name);

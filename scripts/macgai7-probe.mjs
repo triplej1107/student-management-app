@@ -1014,6 +1014,32 @@ if (attendDate) {
           console.log(`    ${k.padEnd(16)} ${String(filled.length).padStart(3)}줄${eg}`);
         }
         console.log("    ↳ 몇 줄에만 한글이 든 칸이 '결석/지각사유'일 가능성이 큽니다.");
+
+        // 사유가 이 응답에 없으면 **다른 자료뭉치**에 있다. 화면 코드의
+        // trSCHE.KeyValue = "attend_T01=dsSCHEsv,attend_T02=dsABSsv,…" 에서
+        // dsABS(결석 관련)가 따로 있는 게 보인다. 후보들을 찔러본다.
+        const hasReason = Object.keys(r0).some((k) =>
+          parsedAtt.rows.some((r) => /[가-힣]{2,}/.test(String(r[k] ?? "")) && !/NAME|SCHOOL|C_NAME|SCHEINFO/.test(k))
+        );
+        if (!hasReason) {
+          console.log("\n── 결석/지각사유 찾기: 다른 조회도 찔러봅니다 ──");
+          for (const [path, fields] of [
+            ["/job/attend_S05.aspx", { in_branch: branch, in_yyyymmdd: attendDate }],
+            ["/job/attend_S04.aspx", { in_branch: branch, in_yyyymmdd: attendDate }],
+          ]) {
+            try {
+              const r = await jobCall(path, fields);
+              const p = parseJobResponse(r.text);
+              console.log(`  [${path}] → ${r.res.status} · ${p.ok ? "OK" : p.desc || "?"} · ${p.rows.length}줄`);
+              if (p.cols.length) console.log(`    칸: ${p.cols.join(", ")}`);
+              const withText = p.rows.find((row) => Object.values(row).some((v) => /[가-힣]{2,}/.test(String(v))));
+              if (withText) console.log(`    한글 있는 줄 예: ${maskNames(JSON.stringify(withText)).slice(0, 300)}`);
+              else if (p.rows[0]) console.log(`    첫 줄: ${maskNames(JSON.stringify(p.rows[0])).slice(0, 300)}`);
+            } catch (e) {
+              console.log(`  [${path}] → 실패: ${String(e).slice(0, 120)}`);
+            }
+          }
+        }
       } else {
         console.log("  ── 출결 응답 전문 ──");
         console.log(maskNames(att.text).slice(0, 2500).replace(/^/gm, "    "));

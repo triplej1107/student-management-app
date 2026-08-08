@@ -887,10 +887,22 @@ if (targetPath) {
     const queries = extractQueries(tjs);
     console.log(`\n── 이 화면의 조회 ${queries.length}개를 실제로 불러봅니다 (지점 ${branch}) ──`);
     for (const q of queries) {
+      // 화면에 적힌 조회 기간 — 값 표현식이 JS 변수라 못 읽은 날짜 칸을 채운다.
+      const pageDate = (id) =>
+        html.match(new RegExp(`<input\\b[^>]*id\\s*=\\s*["']${id}["'][^>]*>`, "i"))?.[0]
+          ?.match(/value\s*=\s*["']([^"']*)["']/i)?.[1] ?? "";
+      const sDate = pageDate("in_s_date");
+      const eDate = pageDate("in_e_date");
+
       const fields = {};
       for (const name of q.names) {
         const src = q.sources.find((s) => s.name === name);
-        fields[name] = src ? resolveArg(src.expr, html, branch) : "";
+        let v = src ? resolveArg(src.expr, html, branch) : "";
+        // 날짜가 비면 서버가 " 23:59:59"를 붙이다 터진다("Incorrect DATETIME value").
+        // 이름만 봐도 날짜인 칸은 화면 기간으로 채워준다.
+        if (!v && /_s_date$|_yyyymmdd$|_date$/.test(name)) v = /_e_date$/.test(name) ? eDate : sDate;
+        if (!v && /_e_date$/.test(name)) v = eDate;
+        fields[name] = v;
       }
       try {
         const r = await jobCall(q.progid, fields);

@@ -90,7 +90,8 @@ function inputs(html) {
     const attr = (n) => (tag.match(new RegExp(`${n}\\s*=\\s*["']([^"']*)["']`, "i")) ?? [])[1];
     const name = attr("name") ?? attr("id");
     if (!name) continue;
-    out.push({ name, type: (attr("type") ?? "text").toLowerCase(), len: (attr("value") ?? "").length });
+    const value = attr("value") ?? "";
+    out.push({ name, type: (attr("type") ?? "text").toLowerCase(), len: value.length, value });
   }
   return out;
 }
@@ -114,14 +115,49 @@ function shape(text) {
     .slice(0, 24);
 }
 
+/**
+ * 표 뜯어보기 — **표 안에 표가 있는 경우**를 제대로 다룬다.
+ *
+ * ASP.NET GridView는 표를 겹쳐 쓴다. 정규식으로 `<table>…</table>`을 대충
+ * 짝지으면 첫 `</table>`에서 끊겨 바깥 표를 통째로 놓친다. 실제로 그래서
+ * 출결 표를 못 찾고 안내문 표만 잡은 적이 있다. 여기서는 여는/닫는 태그를
+ * 세어 짝을 맞추고, 각 표의 **자기 줄만** (안쪽 표의 줄은 빼고) 읽는다.
+ */
 function tables(html) {
-  return [...html.matchAll(/<table\b[\s\S]*?<\/table>/gi)].map((m, i) => {
-    const t = m[0];
-    const rows = [...t.matchAll(/<tr\b[\s\S]*?<\/tr>/gi)].map((r) =>
-      [...r[0].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((c) => strip(c[1]))
+  const marks = [...html.matchAll(/<table\b[^>]*>|<\/table\s*>/gi)];
+  const regions = [];
+  const stack = [];
+  for (const m of marks) {
+    if (m[0][1] !== "/") stack.push(m.index);
+    else {
+      const start = stack.pop();
+      if (start !== undefined) regions.push({ start, end: m.index + m[0].length });
+    }
+  }
+  regions.sort((a, b) => a.start - b.start);
+
+  return regions.map((r, i) => {
+    let body = html.slice(r.start, r.end);
+    // 안쪽 표는 지운다 — 그 줄까지 세면 바깥 표가 엉뚱하게 커진다.
+    for (const inner of regions) {
+      if (inner.start > r.start && inner.end < r.end) {
+        body =
+          body.slice(0, inner.start - r.start) +
+          " ".repeat(inner.end - inner.start) +
+          body.slice(inner.end - r.start);
+      }
+    }
+    const rows = [...body.matchAll(/<tr\b[\s\S]*?<\/tr\s*>/gi)].map((tr) =>
+      [...tr[0].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]\s*>/gi)].map((c) => strip(c[1]))
     );
     return { index: i, rowCount: rows.length, rows };
   });
+}
+
+/** 출결 명단처럼 보이는 표인가 — 학번·등원 같은 머리글이 있으면. */
+function looksLikeAttendance(t) {
+  const head = (t.rows[0] ?? []).join(" ");
+  return /학번|등원|하원|출결|이름/.test(head);
 }
 
 // ── 자바스크립트 뒤지기 ──────────────────────────────────────────
@@ -260,9 +296,21 @@ function report(title, html) {
   if (ins.length) {
     console.log("  input 칸:");
     for (const x of ins) {
-      const hidden = x.type === "hidden" ? `  (hidden, 값 ${x.len}자)` : "";
-      console.log(`    ${x.name}  [${x.type}]${hidden}`);
+      // 조회 조건(날짜·라디오)은 **값을 봐야** 어떻게 불러야 할지 알 수 있다.
+      // 사람 이름이 들어올 자리는 ●로 가린다.
+      const val = x.type === "hidden" ? `  (hidden, 값 ${x.len}자)` : x.value ? `  = "${maskKorean(x.value)}"` : "";
+      console.log(`    ${x.name}  [${x.type}]${val}`);
     }
+  }
+  const sels = selects(html);
+  if (sels.length) {
+    console.log("  select 칸:");
+    for (const s of sels) console.log(`    ${s.name}: ${s.options.slice(0, 12).join(" / ")}`);
+  }
+  const pb = postBackTargets(html);
+  if (pb.size) {
+    console.log(`  __doPostBack 대상 ${pb.size}개 (조회 버튼이 여기 있다):`);
+    for (const [t, a] of [...pb].slice(0, 25)) console.log(`    ${t}${a ? ` (인자 ${a})` : ""}`);
   }
   const ex = excelHints(html);
   if (ex.length) {
@@ -271,16 +319,38 @@ function report(title, html) {
   }
   const ts = tables(html).filter((t) => t.rowCount >= 2);
   if (ts.length) {
-    console.log(`  표 ${ts.length}개:`);
-    for (const t of ts.slice(0, 6)) {
+    // 출결처럼 보이는 표를 먼저 — 안내문 표에 밀려 안 보이면 안 된다.
+    const sorted = [...ts].sort((a, b) => Number(looksLikeAttendance(b)) - Number(looksLikeAttendance(a)));
+    console.log(`  표 ${ts.length}개 (출결처럼 보이는 것 먼저):`);
+    for (const t of sorted.slice(0, 8)) {
       const head = t.rows[0] ?? [];
-      console.log(`    [표#${t.index}] ${t.rowCount}줄 · ${head.length}칸`);
+      const flag = looksLikeAttendance(t) ? " 🎯" : "";
+      console.log(`    [표#${t.index}] ${t.rowCount}줄 · ${head.length}칸${flag}`);
       if (head.length) console.log(`      머리글: ${head.join(" | ")}`);
-      const sample = t.rows[1];
       // 값은 가리고 모양만 — 이름·전화번호가 그대로 찍히면 안 된다.
-      if (sample) console.log(`      첫 줄 모양: ${sample.map(shape).join(" | ")}`);
+      for (const sample of t.rows.slice(1, looksLikeAttendance(t) ? 3 : 2)) {
+        console.log(`      줄 모양: ${sample.map(shape).join(" | ")}`);
+      }
     }
+  } else {
+    console.log("  표를 못 찾았어요 — 조회 버튼을 눌러야 목록이 채워지는 화면일 수 있습니다.");
   }
+}
+
+/** 사람 이름이 들어올 만한 자리만 가린다(한글). 날짜·숫자는 그대로 둔다. */
+function maskKorean(s) {
+  return s.replace(/[가-힣]/g, "●").slice(0, 40);
+}
+
+function selects(html) {
+  return [...html.matchAll(/<select\b([^>]*)>([\s\S]*?)<\/select\s*>/gi)].map((m) => {
+    const attrs = m[1];
+    const name = (attrs.match(/name\s*=\s*["']([^"']*)["']/i) ?? [])[1] ?? "(이름없음)";
+    const options = [...m[2].matchAll(/<option\b[^>]*value\s*=\s*["']([^"']*)["'][^>]*>([\s\S]*?)<\/option>/gi)].map(
+      (o) => `${o[1]}=${maskKorean(strip(o[2]))}`
+    );
+    return { name, options };
+  });
 }
 
 const loginUrl = `${BASE}/`;

@@ -205,6 +205,35 @@ function extractFunction(js, name) {
   return js.slice(start, start + 2000);
 }
 
+/**
+ * 어떤 글자가 들어 있는 **함수를 통째로** 꺼낸다.
+ *
+ * 함수 이름을 모를 때 쓴다 — "class_reset_S03을 부르는 곳"처럼 찾는 대상은
+ * 아는데 어느 함수에 있는지 모르는 경우. 이름을 찍어 맞히다 보면 왕복만 는다.
+ */
+function extractEnclosingFunction(js, needle) {
+  const at = js.indexOf(needle);
+  if (at < 0) return null;
+  // 그 지점 앞의 function 시작점들을 가까운 것부터 훑어, 실제로 감싸는 것을 찾는다.
+  const starts = [...js.slice(0, at).matchAll(/function\s*\w*\s*\(/g)].map((m) => m.index).reverse();
+  for (const start of starts.slice(0, 40)) {
+    const open = js.indexOf("{", start);
+    if (open < 0) continue;
+    let depth = 0;
+    for (let i = open; i < js.length; i++) {
+      if (js[i] === "{") depth++;
+      else if (js[i] === "}") {
+        depth--;
+        if (depth === 0) {
+          if (i > at) return js.slice(start, i + 1); // 이 함수가 needle을 감쌌다
+          break;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /** AJAX로 어디를 부르는지 — url:, $.ajax, PageMethods, .asmx/.ashx 등. */
 function ajaxHints(js) {
   const out = new Set();
@@ -789,6 +818,17 @@ if (targetPath) {
     console.log(`\n  ── [대상 화면] ${name}() 내용 ──`);
     for (const line of body.split("\n").slice(0, 400)) console.log(`    ${line.trim().slice(0, 170)}`);
   }
+
+  // --find=글자 : 그 글자가 든 함수를 통째로. 함수 이름을 모를 때 쓴다.
+  for (const needle of args.filter((a) => a.startsWith("--find=")).map((a) => a.slice("--find=".length))) {
+    const fn = extractEnclosingFunction(tjs, needle);
+    console.log(`\n  ── "${needle}" 가 든 함수 ──`);
+    if (!fn) {
+      console.log("    (못 찾았어요)");
+      continue;
+    }
+    for (const line of fn.split("\n").slice(0, 200)) console.log(`    ${line.trim().slice(0, 170)}`);
+  }
 }
 
 // ── 출결 목록 실제로 불러보기 ────────────────────────────────────
@@ -901,7 +941,16 @@ if (attendDate) {
     const tTemp = parsedCls.rows.map((r) => pick(r, "T_TEMP", "t_temp")).filter(Boolean);
 
     if (cIdx.length === 0) {
-      console.log("  ↳ 학급 번호(C_IDX)를 못 뽑았습니다. 위 응답 전문을 보고 다음 단계를 정합니다.");
+      console.log("  ↳ 학급 번호(C_IDX)를 못 뽑았습니다.");
+      // 조건을 잘못 보냈을 때가 대부분이다. 그 호출이 든 함수를 통째로 보여주면
+      // 뭐가 빠졌는지 바로 드러난다 — 함수 이름을 찍어 맞히느라 왕복하지 않는다.
+      for (const needle of ["class_reset_S03", "class_reset_S02", "category_reset_S01"]) {
+        const fn = extractEnclosingFunction(pageJs, needle);
+        if (!fn) continue;
+        console.log(`\n  ── ${needle} 를 부르는 함수 전문 ──`);
+        for (const line of fn.split("\n").slice(0, 120)) console.log(`    ${line.trim().slice(0, 170)}`);
+        break;
+      }
     } else {
       console.log(`  학급 ${cIdx.length}개를 찾았습니다. 이걸로 출결을 다시 조회합니다.`);
       const att = await jobCall("/job/attend_S01.aspx", {

@@ -381,12 +381,110 @@ const guessed =
 // 헛된 로그인 실패를 쌓지 않도록 건너뛴다(계정 잠금 위험도 줄인다).
 const looksAjax = hints.length > 0 && targets.size === 0 && !clicks.some((c) => c.name);
 
+/**
+ * 맥가이7 로그인 — 조사로 알아낸 실제 흐름 그대로.
+ *
+ *   ① POST /job/member_login_S01.aspx  (IN_M_ID / IN_M_PASSWORD / IN_M_BRANCH)
+ *      → 회원정보 배열. 비어 있으면 아이디·비번 틀림, LOGIN_LEVEL "N"이면 권한 없음.
+ *   ② GET  /c_index.aspx?m_idx=…&token=…   ← 세션은 **여기서** 잡힌다.
+ *
+ * 화면의 Hd_* 숨은 칸들은 채워지기만 하고 전송되지 않는다. 열쇠는 TOKEN이다.
+ */
+async function macgaiLogin() {
+  const r = await post(`${BASE}/job/member_login_S01.aspx`, {
+    IN_M_ID: sanitizeInput(ID),
+    IN_M_PASSWORD: sanitizeInput(PW),
+    IN_M_BRANCH: "",
+  });
+  const text = await r.text();
+  console.log(`\n① POST /job/member_login_S01.aspx → ${r.status} (응답 ${text.length}자)`);
+
+  let rows;
+  try {
+    rows = parseLooseJson(text);
+  } catch {
+    console.log(`   ⚠️ 응답을 못 읽었어요. 앞부분: ${text.slice(0, 200)}`);
+    return false;
+  }
+  if (!Array.isArray(rows) || rows.length === 0) {
+    console.log("   ❌ 회원정보가 비었습니다 — 아이디 또는 비밀번호가 틀렸을 가능성이 큽니다.");
+    return false;
+  }
+  const me = rows[0];
+  console.log(`   받은 칸: ${Object.keys(me).join(", ")}`);
+  if (me.LOGIN_LEVEL === "N") {
+    console.log("   ❌ 이 계정은 로그인 권한이 없습니다(LOGIN_LEVEL=N).");
+    return false;
+  }
+  if (!me.TOKEN || !me.M_IDX) {
+    console.log("   ⚠️ M_IDX 또는 TOKEN이 없어 세션을 못 만듭니다.");
+    return false;
+  }
+
+  const r2 = await get(`${BASE}/c_index.aspx?m_idx=${me.M_IDX}&token=${me.TOKEN}`);
+  console.log(`② GET /c_index.aspx → ${r2.status}`);
+  console.log(`   받은 쿠키: ${[...jar.keys()].join(", ") || "(없음)"}`);
+  html = await r2.text();
+  const stillLogin = /id\s*=\s*["']txt_M_PASSWORD["']/i.test(html);
+  console.log(`   ${stillLogin ? "❌ 아직 로그인 화면" : "✅ 로그인 성공으로 보입니다"}`);
+  return !stillLogin;
+}
+
+/** eval(data)로 받던 응답이라 엄격한 JSON이 아닐 수 있다. 한 번 더 눅여서 읽는다. */
+function parseLooseJson(text) {
+  const t = text.trim().replace(/^﻿/, "");
+  try {
+    return JSON.parse(t);
+  } catch {
+    // 키에 따옴표가 없거나 홑따옴표를 쓰는 경우.
+    const fixed = t.replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g, '$1"$2":').replace(/'/g, '"');
+    return JSON.parse(fixed);
+  }
+}
+
+/** 맥가이7이 아이디·비번에서 지우고 보내는 문자들 — 그대로 흉내내야 한다. */
+function sanitizeInput(input) {
+  return input.replace(/[-'"/\\;]/g, "");
+}
+
+/** 로그인 뒤 어디로 갈 수 있는지 — 메뉴·링크·iframe. 출결현황 주소를 찾는 데 쓴다. */
+function navTargets(html) {
+  const out = [];
+  for (const m of html.matchAll(/<a\b([^>]*)>([\s\S]{0,80}?)<\/a>/gi)) {
+    const attrs = m[1];
+    const attr = (n) => (attrs.match(new RegExp(`${n}\\s*=\\s*["']([^"']*)["']`, "i")) ?? [])[1];
+    const text = strip(m[2]);
+    const to = attr("href") ?? attr("onclick") ?? "";
+    if (!text || !to || to === "#") continue;
+    out.push({ text, to: to.slice(0, 120) });
+  }
+  for (const m of html.matchAll(/<(iframe|frame)\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)) {
+    out.push({ text: `(${m[1]})`, to: m[2].slice(0, 120) });
+  }
+  return out;
+}
+
 if (!idField || !pwField) {
   console.log("\n⚠️ 로그인 칸을 못 찾았어요. --save 로 HTML을 남겨 확인이 필요합니다.");
 } else if (looksAjax && !args.includes("--force-form")) {
-  console.log("\n📌 이 사이트는 **폼 전송이 아니라 AJAX로 로그인**하는 것으로 보입니다.");
-  console.log("   위 'AJAX/주소 단서'와 함수 내용이 진짜 로그인 주소입니다.");
-  console.log("   폼 전송은 어차피 실패하므로 건너뜁니다 (굳이 해보려면 --force-form).");
+  console.log("\n📌 AJAX 로그인 방식입니다. 알아낸 흐름 그대로 실제 로그인해 봅니다.");
+  const ok = await macgaiLogin();
+  if (ok) {
+    await maybeSave("2-after-login", html);
+    const navs = navTargets(html);
+    // 출결 관련이 있으면 먼저 보여준다 — 우리가 찾는 건 등하원명단이다.
+    const hot = navs.filter((n) => /출결|등하원|등원|하원|attend|Attend/.test(`${n.text} ${n.to}`));
+    if (hot.length) {
+      console.log("\n  🎯 출결로 보이는 메뉴:");
+      for (const n of hot.slice(0, 15)) console.log(`    ${n.text}  →  ${n.to}`);
+    }
+    console.log(`\n  로그인 후 화면의 링크·프레임 ${navs.length}개 (앞 30개):`);
+    for (const n of navs.slice(0, 30)) console.log(`    ${n.text}  →  ${n.to}`);
+    if (!targetPath) {
+      console.log("\n  위 목록에서 출결현황(등하원명단) 주소를 찾으면 다시 돌려주세요:");
+      console.log("    node macgai7-probe.mjs /그/경로.aspx");
+    }
+  }
 } else {
   const action = forms(html)[0]?.action;
   const postUrl = !action || action === "(없음)" ? loginUrl : new URL(action, loginUrl).toString();
@@ -427,16 +525,34 @@ if (!idField || !pwField) {
   await maybeSave("2-after-login", html);
   report("로그인 후 화면", html);
 
-  if (targetPath) {
-    const url = new URL(targetPath, BASE).toString();
-    res = await get(url);
-    html = await res.text();
-    console.log(`\nGET ${targetPath} → ${res.status}`);
-    await maybeSave("3-target", html);
-    report(`대상 화면 ${targetPath}`, html);
-  } else {
-    console.log("\n출결현황(등하원명단) 주소를 알면 다시 돌려주세요:");
-    console.log("  npm run macgai:probe -- /그/경로.aspx");
+}
+
+// 대상 화면 조사는 어느 로그인 방식이든 똑같이 해야 하므로 밖으로 뺀다.
+if (targetPath) {
+  const url = new URL(targetPath, BASE).toString();
+  res = await get(url);
+  html = await res.text();
+  console.log(`\nGET ${targetPath} → ${res.status}`);
+  await maybeSave("3-target", html);
+  report(`대상 화면 ${targetPath}`, html);
+
+  // 표가 화면에 없고 AJAX로 채워지는 경우가 많다 — 그 주소도 같이 찾아준다.
+  const { inline: tin, srcs: tsrcs } = scriptSources(html);
+  let tjs = tin.join("\n");
+  for (const src of tsrcs.slice(0, 8)) {
+    try {
+      const u = new URL(src, url);
+      if (u.origin !== new URL(url).origin) continue;
+      const r = await get(u.toString());
+      if (r.ok) tjs += "\n" + (await r.text());
+    } catch {
+      // 못 받아도 인라인만으로 충분한 경우가 많다.
+    }
+  }
+  const th = ajaxHints(tjs);
+  if (th.length) {
+    console.log("  이 화면이 부르는 주소:");
+    for (const h of th) console.log(`    ${h}`);
   }
 }
 

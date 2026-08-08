@@ -169,12 +169,19 @@ describe("조정해둔 학생에게는 결석 알림이 안 간다 (원장님 �
     expect(sun[0].moved).toBe(true);
   });
 
-  it("옮긴 학생은 옮겨간 날에도 **자동 결석으로 안 잡는다**", () => {
-    // 맥가이7엔 일시 조정이 없어서, 김연우가 일요일에 와서 찍어도 그 기록이
-    // 일요일 명단에 안 잡힌다(일요일 반 소속이 아니라서). 자동 판정하면
-    // 정작 온 학생에게 "안 왔어요" 알림이 나간다.
+  it("옮긴 학생이 옮겨간 날에 찍었으면 결석으로 안 잡는다", () => {
+    // 학급별 조회로는 김연우가 일요일에 찍은 기록이 안 잡히지만(일요일 반
+    // 소속이 아니라서), 학급에 안 묶인 등하원 로그에는 그대로 남는다.
     const sun = lectureRosterForDay(students, "일", moved);
-    expect(missingStudents(sun, new Set(), at("23:00"))).toEqual([]);
+    expect(missingStudents(sun, new Set([1]), at("23:00"))).toEqual([]);
+  });
+
+  it("옮겨놓고 안 오면 옮겨간 날에 결석으로 잡는다", () => {
+    // 한동안은 옮긴 학생을 판정에서 통째로 뺐었다. 등하원 로그가 없어서
+    // 온 학생을 결석으로 만들 위험이 있었기 때문인데, 그 대가로 옮겨놓고
+    // 안 온 학생을 아무도 모르게 됐다. 이제는 찍기만 하면 잡히니 뺄 이유가 없다.
+    const sun = lectureRosterForDay(students, "일", moved);
+    expect(missingStudents(sun, new Set(), at("23:00")).map((e) => e.name)).toEqual(["김연우"]);
   });
 
   it("아예 일요일 반인 학생은 토요일 명단에 처음부터 없다", () => {

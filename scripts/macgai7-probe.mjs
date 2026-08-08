@@ -337,6 +337,52 @@ function report(title, html) {
   }
 }
 
+/** 그 화면의 스크립트를 모은다 — 인라인 + 같은 도메인의 외부 .js. */
+async function gatherJs(pageHtml, baseUrl) {
+  const { inline, srcs } = scriptSources(pageHtml);
+  let all = inline.join("\n");
+  for (const src of srcs.slice(0, 12)) {
+    try {
+      const u = new URL(src, baseUrl);
+      if (u.origin !== new URL(baseUrl).origin) continue;
+      const r = await get(u.toString());
+      if (r.ok) all += `\n/* ==== ${src} ==== */\n` + (await r.text());
+    } catch {
+      // 못 받아도 인라인만으로 찾아지는 경우가 많다.
+    }
+  }
+  return all;
+}
+
+/** 누를 수 있는 것 **전부** — 로그인 화면과 달리 여기선 조회 버튼 이름을 모른다. */
+function allClickables(html) {
+  const out = [];
+  for (const m of html.matchAll(/<(a|button)\b([^>]*)>([\s\S]{0,80}?)<\/\1\s*>/gi)) {
+    const attrs = m[2];
+    const attr = (n) => (attrs.match(new RegExp(`${n}\\s*=\\s*["']([^"']*)["']`, "i")) ?? [])[1];
+    const act = (attr("onclick") ?? attr("href") ?? "").trim();
+    const text = strip(m[3]);
+    if (!act || act === "#") continue;
+    out.push(`<${m[1]}> "${maskKorean(text) || "(글자없음)"}" ${attr("id") ? `id=${attr("id")} ` : ""}→ ${act.slice(0, 110)}`);
+  }
+  for (const m of html.matchAll(/<(input|img)\b[^>]*>/gi)) {
+    const tag = m[0];
+    const attr = (n) => (tag.match(new RegExp(`${n}\\s*=\\s*["']([^"']*)["']`, "i")) ?? [])[1];
+    const act = attr("onclick");
+    const type = (attr("type") ?? "").toLowerCase();
+    if (!act && !["submit", "image", "button"].includes(type)) continue;
+    out.push(
+      `<${m[1]}${type ? `:${type}` : ""}> "${maskKorean(attr("value") ?? attr("alt") ?? "")}" ${attr("name") ? `name=${attr("name")} ` : ""}→ ${(act ?? "(submit)").slice(0, 110)}`
+    );
+  }
+  return out;
+}
+
+/** 그 화면 스크립트가 정의한 fn_* 함수 이름들 — 조회 함수가 여기 있다. */
+function definedFunctions(js) {
+  return [...new Set([...js.matchAll(/function\s+(fn_\w+)\s*\(/g)].map((m) => m[1]))];
+}
+
 /** 사람 이름이 들어올 만한 자리만 가린다(한글). 날짜·숫자는 그대로 둔다. */
 function maskKorean(s) {
   return s.replace(/[가-힣]/g, "●").slice(0, 40);
@@ -606,23 +652,49 @@ if (targetPath) {
   await maybeSave("3-target", html);
   report(`대상 화면 ${targetPath}`, html);
 
-  // 표가 화면에 없고 AJAX로 채워지는 경우가 많다 — 그 주소도 같이 찾아준다.
-  const { inline: tin, srcs: tsrcs } = scriptSources(html);
-  let tjs = tin.join("\n");
-  for (const src of tsrcs.slice(0, 8)) {
-    try {
-      const u = new URL(src, url);
-      if (u.origin !== new URL(url).origin) continue;
-      const r = await get(u.toString());
-      if (r.ok) tjs += "\n" + (await r.text());
-    } catch {
-      // 못 받아도 인라인만으로 충분한 경우가 많다.
-    }
-  }
+  // 표가 화면에 없고 조회 버튼을 눌러야 채워지는 경우가 많다. 그 버튼이
+  // 부르는 함수와 주소를 찾아야 스크래퍼가 목록을 불러올 수 있다.
+  const tjs = await gatherJs(html, url);
+
   const th = ajaxHints(tjs);
   if (th.length) {
     console.log("  이 화면이 부르는 주소:");
     for (const h of th) console.log(`    ${h}`);
+  }
+
+  const clicky = allClickables(html);
+  if (clicky.length) {
+    console.log(`\n  누를 수 있는 것 ${clicky.length}개 (조회·엑셀 버튼을 여기서 찾는다):`);
+    for (const c of clicky.slice(0, 45)) console.log(`    ${c}`);
+    if (clicky.length > 45) console.log(`    … ${clicky.length - 45}개 더 있음`);
+  }
+
+  const defs = definedFunctions(tjs);
+  if (defs.length) {
+    console.log(`\n  이 화면이 정의한 함수 ${defs.length}개:`);
+    console.log(`    ${defs.join(", ")}`);
+    console.log(`    (내용을 보려면 --fn=이름 을 붙여서 다시 실행)`);
+
+    // 조회/목록/엑셀처럼 보이는 함수는 미리 펼쳐둔다 — 목록을 불러오는
+    // 방법이 거의 항상 여기 있어서, 한 번 더 왕복하지 않으려는 것.
+    const likely = defs.filter((n) => /search|list|inquiry|excel|grid|load|view|chul|attend/i.test(n));
+    for (const name of likely.slice(0, 4)) {
+      if (wanted.includes(name)) continue; // 아래에서 전체로 다시 찍는다
+      const body = extractFunction(tjs, name);
+      if (!body) continue;
+      const lines = body.split("\n");
+      console.log(`\n  ── ${name}() 내용 ──`);
+      for (const line of lines.slice(0, 60)) console.log(`    ${line.trim().slice(0, 170)}`);
+      if (lines.length > 60) console.log(`    … ${lines.length - 60}줄 더 있음 — --fn=${name}`);
+    }
+  }
+
+  // --fn= 으로 지정한 함수는 이 화면 스크립트에서도 찾아 보여준다.
+  for (const name of wanted) {
+    const body = extractFunction(tjs, name);
+    if (!body) continue;
+    console.log(`\n  ── [대상 화면] ${name}() 내용 ──`);
+    for (const line of body.split("\n").slice(0, 400)) console.log(`    ${line.trim().slice(0, 170)}`);
   }
 }
 

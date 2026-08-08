@@ -5,6 +5,7 @@ import {
   checkOutTimesFromLog,
   classQueryParts,
   macgaiMarkedPresent,
+  mergeCheckIns,
   normalizeCheckInTime,
   parseJobResponse,
   reasonsByStudentCode,
@@ -282,5 +283,35 @@ describe("classQueryParts", () => {
 
   it("학급이 없으면 빈 문자열 — 그날 강의가 없는 날이다", () => {
     expect(classQueryParts([])).toEqual({ classIds: "", temps: "" });
+  });
+});
+
+describe("mergeCheckIns", () => {
+  it("같은 학생은 제일 이른 등원 시각으로 합친다", () => {
+    const out = mergeCheckIns(
+      [{ studentCode: "50861", checkedInTime: "09:02" }],
+      [{ studentCode: "50861", checkedInTime: "08:40" }]
+    );
+    expect(out).toEqual([{ studentCode: "50861", checkedInTime: "08:40" }]);
+  });
+
+  it("한쪽에만 있는 학생도 남는다 — 클리닉만 온 학생이 이 경우다", () => {
+    const out = mergeCheckIns(
+      [{ studentCode: "50861", checkedInTime: "14:05" }],
+      [{ studentCode: "17233", checkedInTime: "09:02" }]
+    );
+    expect(out.map((c) => c.studentCode).sort()).toEqual(["17233", "50861"]);
+  });
+
+  it("한쪽이 통째로 비어도 나머지는 그대로", () => {
+    const only = [{ studentCode: "17233", checkedInTime: "09:02" }];
+    expect(mergeCheckIns([], only)).toEqual(only);
+    expect(mergeCheckIns(only, [])).toEqual(only);
+  });
+
+  it("넘겨받은 배열을 고치지 않는다", () => {
+    const first = [{ studentCode: "50861", checkedInTime: "09:02" }];
+    mergeCheckIns(first, [{ studentCode: "50861", checkedInTime: "08:40" }]);
+    expect(first[0].checkedInTime).toBe("09:02");
   });
 });

@@ -224,6 +224,34 @@ export function checkOutTimesFromLog(rows: Record<string, string>[]): Record<str
   return out;
 }
 
+/**
+ * 여러 곳에서 온 등원 기록 합치기 — 같은 학번은 **제일 이른 시각**을 남긴다.
+ *
+ * 등하원 로그와 강의 출결 조회를 둘 다 읽어서 합치기 때문에 필요하다. 둘 중
+ * 하나만 잡아내는 학생이 양쪽에 다 있다: 클리닉만 하러 온 학생은 로그에만,
+ * 로그가 어떤 이유로 비는 날은 강의 조회에만 나온다. 합쳐두면 어느 쪽이
+ * 비어도 출결이 그만큼 나빠지지 않는다.
+ */
+export function mergeCheckIns(...lists: MacgaiCheckIn[][]): MacgaiCheckIn[] {
+  const out: MacgaiCheckIn[] = [];
+  const at = new Map<string, MacgaiCheckIn>();
+  for (const list of lists) {
+    for (const c of list) {
+      const code = c.studentCode.trim();
+      if (!code) continue;
+      const prev = at.get(code);
+      if (!prev) {
+        const copy = { studentCode: code, checkedInTime: c.checkedInTime };
+        at.set(code, copy);
+        out.push(copy);
+        continue;
+      }
+      if (c.checkedInTime < prev.checkedInTime) prev.checkedInTime = c.checkedInTime;
+    }
+  }
+  return out;
+}
+
 /** 학급 목록 줄들 → attend 조회에 넣을 C_IDX / T_TEMP 묶음. */
 export function classQueryParts(rows: Record<string, string>[]): { classIds: string; temps: string } {
   const ids = rows.map((r) => r.C_IDX).filter(Boolean);

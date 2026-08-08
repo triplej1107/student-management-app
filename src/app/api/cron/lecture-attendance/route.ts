@@ -33,10 +33,12 @@ export async function GET(req: Request) {
   }
 
   try {
-    const { checkIns, reasons } = await fetchTodayAttendance();
+    const { checkIns, reasons, logCount, logError } = await fetchTodayAttendance();
     const result = await syncLectureAttendance(checkIns, undefined, reasons);
     await recordSyncRun({ ok: true, fetchedCount: checkIns.length });
-    return NextResponse.json({ ok: true, fetched: checkIns.length, ...result });
+    // logCount는 등하원 로그에서 읽은 줄 수다. 이게 0으로 계속 나오면 클리닉
+    // 자동 출결이 조용히 안 도는 것이니, 확인할 때 제일 먼저 볼 값이다.
+    return NextResponse.json({ ok: true, fetched: checkIns.length, logCount, logError, ...result });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     await recordSyncRun({ ok: false, error: message });

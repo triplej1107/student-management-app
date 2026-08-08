@@ -330,13 +330,27 @@ for (const src of srcs.slice(0, 12)) {
 // 버튼이 부르는 함수(onclick의 fn_XXX())를 통째로 꺼내 본다.
 const fnNames = new Set();
 for (const c of clicks) for (const m of (c.hint ?? "").matchAll(/\b(fn_\w+|\w*[Ll]ogin\w*)\s*\(/g)) fnNames.add(m[1]);
+// --fn=이름 으로 지정한 함수는 **자르지 않고 전부** 보여준다. 로그인 성공
+// 뒤에 세션을 어떻게 잡는지가 함수 끝자락에 있는 경우가 많아서 필요하다.
+const wanted = args.filter((a) => a.startsWith("--fn=")).map((a) => a.slice("--fn=".length));
+for (const name of wanted) fnNames.add(name);
+
 let dug = 0;
 for (const name of fnNames) {
-  if (dug++ >= 6) break; // 함수가 서로를 부르며 끝없이 번지지 않게.
+  if (dug++ >= 8) break; // 함수가 서로를 부르며 끝없이 번지지 않게.
   const body = extractFunction(allJs, name);
-  if (!body) continue;
-  console.log(`\n  ── ${name}() 내용 ──`);
-  for (const line of body.split("\n").slice(0, 45)) console.log(`    ${line.trim().slice(0, 150)}`);
+  if (!body) {
+    if (wanted.includes(name)) console.log(`\n  (${name} 함수를 못 찾았어요)`);
+    continue;
+  }
+  const full = wanted.includes(name);
+  const lines = body.split("\n");
+  const shown = full ? lines.slice(0, 400) : lines.slice(0, 45);
+  console.log(`\n  ── ${name}() 내용 ──${full ? " (전체)" : ""}`);
+  for (const line of shown) console.log(`    ${line.trim().slice(0, 170)}`);
+  if (lines.length > shown.length) {
+    console.log(`    … ${lines.length - shown.length}줄 더 있음 — --fn=${name} 을 붙이면 전부 나와요`);
+  }
   // 그 함수가 또 다른 함수를 부르면 그것도 한 겹 따라간다.
   for (const m of body.matchAll(/\b(fn_\w+)\s*\(/g)) if (m[1] !== name) fnNames.add(m[1]);
 }

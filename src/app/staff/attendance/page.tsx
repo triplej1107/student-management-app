@@ -13,15 +13,20 @@ import { DAY_ORDER } from "@/lib/types";
 import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
 import { AttendanceRow } from "@/components/staff/AttendanceRow";
 import { SearchableRoster } from "@/components/SearchableRoster";
+import { safeSearchQuery, searchSuffixOf } from "@/lib/backTarget";
 
 export default async function StaffAttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string }>;
+  searchParams: Promise<{ day?: string; q?: string }>;
 }) {
   await requireStaffSession();
   const { weekStart, weekEnd, dayLabel: todayLabel } = getToday();
-  const { day: dayParam } = await searchParams;
+  const { day: dayParam, q: queryParam } = await searchParams;
+  // 검색어를 주소에 실어 두면 학생 기록을 보고 뒤로 나와도 명단이
+  // 처음으로 리셋되지 않는다(SearchableRoster 참고).
+  const search = safeSearchQuery(queryParam);
+  const searchSuffix = searchSuffixOf(search);
 
   const weeklyRoster = await getWeeklyRoster(weekStart, weekEnd);
   const activeDays = activeClinicDaysFrom(weeklyRoster);
@@ -66,7 +71,7 @@ export default async function StaffAttendancePage({
       <ScreenTitle>출결 관리</ScreenTitle>
       <ScrollPillRow>
         {activeDays.map((d) => (
-          <PillLink key={d} href={`/staff/attendance?day=${d}`} active={d === selectedDay}>
+          <PillLink key={d} href={`/staff/attendance?day=${d}${searchSuffix}`} active={d === selectedDay}>
             {d}요일
           </PillLink>
         ))}
@@ -104,6 +109,7 @@ export default async function StaffAttendancePage({
                       clinicHrefBase="/staff/clinic"
                       backlogWeeks={backlogMap.get(entry.student.id)}
                       day={selectedDay}
+                      searchQuery={search}
                     />
                   ))}
                 </div>
@@ -115,6 +121,7 @@ export default async function StaffAttendancePage({
       )}
 
       <SearchableRoster
+        initialQuery={search}
         placeholder="이름/학교로 검색"
         emptyLabel="이 요일에는 학생이 없어요."
         items={roster.map((entry) => ({
@@ -132,6 +139,7 @@ export default async function StaffAttendancePage({
               clinicHrefBase="/staff/clinic"
               backlogWeeks={backlogMap.get(entry.student.id)}
               day={selectedDay}
+                      searchQuery={search}
             />
           ),
         }))}

@@ -26,13 +26,14 @@ export default async function StaffClinicDetailPage({
   searchParams,
 }: {
   params: Promise<{ studentId: string }>;
-  searchParams: Promise<{ week?: string; from?: string; date?: string; day?: string }>;
+  searchParams: Promise<{ week?: string; from?: string; date?: string; day?: string; q?: string }>;
 }) {
   const session = await requireStaffSession();
   const { studentId } = await params;
   // date/day는 출결 화면에서 들어왔을 때 보던 날짜·요일 탭으로 되돌아가기 위한 것.
-  const { week, from, date, day } = await searchParams;
-  const backCtx = { date, day, studentId: Number(studentId) };
+  const { week, from, date, day, q } = await searchParams;
+  // q는 명단에서 치고 있던 검색어 — 뒤로 나갔을 때 명단이 리셋되지 않도록.
+  const backCtx = { date, day, q, studentId: Number(studentId) };
 
   const student = await getStudentById(Number(studentId));
   if (!student) notFound();

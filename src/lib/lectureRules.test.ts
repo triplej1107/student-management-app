@@ -3,6 +3,7 @@ import {
   LATE_AFTER_MINUTES,
   MISSING_AFTER_MINUTES,
   isSyncStale,
+  shouldNotifyStale,
   lectureRosterForDay,
   minutesOfTime,
   missingMessage,
@@ -309,5 +310,41 @@ describe("makeupSlotsFor", () => {
     expect(makeupSlotsFor("가락고1", "토", "09:00").map((s) => `${s.day}${s.time}`)).toEqual(["일10:00"]);
     expect(makeupSlotsFor("배명고1", "일", "19:00").map((s) => `${s.day}${s.time}`)).toEqual(["토16:00"]);
     expect(makeupSlotsFor("배명고2", "토", "19:00").map((s) => `${s.day}${s.time}`)).toEqual(["일13:00"]);
+  });
+});
+
+describe("shouldNotifyStale", () => {
+  const now = Date.parse("2026-08-08T10:00:00Z");
+  const long = "2026-08-08T00:00:00Z"; // 10시간 전 — 죽은 상태
+  const fresh = "2026-08-08T09:55:00Z"; // 5분 전 — 살아 있음
+
+  it("살아 있으면 몇 분이든 안 보낸다", () => {
+    for (const minute of [0, 3, 30, 59]) {
+      expect(shouldNotifyStale(fresh, now, minute)).toBe(false);
+    }
+  });
+
+  it("죽었어도 매시 첫 5분에만 보낸다 — 안 그러면 시간당 12번 울린다", () => {
+    expect(shouldNotifyStale(long, now, 0)).toBe(true);
+    expect(shouldNotifyStale(long, now, 4)).toBe(true);
+    expect(shouldNotifyStale(long, now, 5)).toBe(false);
+    expect(shouldNotifyStale(long, now, 30)).toBe(false);
+    expect(shouldNotifyStale(long, now, 59)).toBe(false);
+  });
+
+  it("5분 간격으로 부르면 한 시간에 정확히 한 번만 걸린다", () => {
+    for (let phase = 0; phase < 5; phase++) {
+      const hits = [];
+      for (let i = 0; i < 12; i++) {
+        const minute = (phase + i * 5) % 60;
+        if (shouldNotifyStale(long, now, minute)) hits.push(minute);
+      }
+      expect(hits).toHaveLength(1);
+    }
+  });
+
+  it("한 번도 성공한 적이 없으면 죽은 것으로 본다", () => {
+    expect(shouldNotifyStale(null, now, 0)).toBe(true);
+    expect(shouldNotifyStale(null, now, 30)).toBe(false);
   });
 });

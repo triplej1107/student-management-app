@@ -107,11 +107,12 @@ export function statusForCheckIn(
  * 아직 수업 시작 전이거나 유예 시간 안이면 아무도 안 잡는다 — 9시 수업인데
  * 8시에 크론이 돌았다고 전원을 결석으로 만들면 안 된다.
  *
- * **그 주만 시간을 옮긴 학생(moved)은 자동 판정에서 뺀다.** 맥가이7에는
- * 일시 조정 기능이 없어서, 토요일 반 학생이 일요일에 와서 키오스크를 찍어도
- * 그 기록이 일요일 명단에 안 잡힌다(일요일 반 소속이 아니라서). 그대로 두면
- * 정작 온 학생에게 "안 왔어요" 알림이 나간다 — 학원이 제일 하면 안 되는 실수다.
- * 옮긴 학생은 화면에 "이 주만 옮겨온 학생"으로 뜨니 조교가 눈으로 확인한다.
+ * 그 주만 시간을 옮긴 학생(moved)도 똑같이 본다. 한동안은 뺐었는데, 맥가이7
+ * **학급별** 조회로는 토요일 반 학생이 일요일에 찍은 기록이 안 잡혀서(일요일
+ * 반 소속이 아니라서) 정작 온 학생에게 "안 왔어요"가 나갈 뻔했기 때문이다.
+ * 지금은 학급에 안 묶인 등하원 로그를 같이 읽으므로 찍기만 하면 잡힌다.
+ * 그래서 옮겨온 학생도 안 오면 제대로 알린다 — 뺀 채로 두면 옮겨놓고 안 온
+ * 학생을 아무도 모르게 된다.
  */
 export function missingStudents(
   roster: LectureRosterEntry[],
@@ -120,7 +121,6 @@ export function missingStudents(
   missingAfterMinutes = MISSING_AFTER_MINUTES
 ): LectureRosterEntry[] {
   return roster.filter((entry) => {
-    if (entry.moved) return false;
     if (checkedInStudentIds.has(entry.studentId)) return false;
     const scheduled = minutesOfTime(entry.time);
     if (scheduled === null) return false;

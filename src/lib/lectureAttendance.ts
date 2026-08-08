@@ -133,15 +133,16 @@ export async function syncLectureAttendance(
   // "모르는 학번"으로 버려져서 클리닉 출결이 자동으로 안 채워졌다.
   const idByCode = new Map(students.map((s) => [s.student_code, s.id]));
   const unknownCodes: string[] = [];
-  /** 그날 문을 통과한 재원생 전부 — 클리닉 출결은 이걸로 채운다. */
-  const kioskIds = new Set<number>();
+  /** 그날 문을 통과한 재원생 → 제일 이른 등원 시각. 클리닉 출결은 이걸로 채운다. */
+  const kioskAt = new Map<number, string>();
   for (const c of checkIns) {
     const id = idByCode.get(c.studentCode.trim());
     if (id == null) {
       unknownCodes.push(c.studentCode);
       continue;
     }
-    kioskIds.add(id);
+    const prev = kioskAt.get(id);
+    if (prev === undefined || c.checkedInTime < prev) kioskAt.set(id, c.checkedInTime);
   }
 
   // 강의가 없는 날(평일 클리닉만)은 강의 출결 계산을 통째로 건너뛴다.
@@ -154,11 +155,11 @@ export async function syncLectureAttendance(
       dateISO,
       nowMinutes,
     });
-    await fillClinicFromKiosk(kioskIds, today, dateISO);
+    await fillClinicFromKiosk(kioskAt, today, dateISO);
     return { recorded: lecture.recorded, unknownCodes, markedMissing: lecture.markedMissing };
   }
 
-  await fillClinicFromKiosk(kioskIds, today, dateISO);
+  await fillClinicFromKiosk(kioskAt, today, dateISO);
   return { recorded: 0, unknownCodes, markedMissing: 0 };
 }
 
@@ -244,22 +245,29 @@ async function syncLectureRows(args: {
 }
 
 /**
- * 키오스크에 찍힌 학생 중 그날 클리닉도 있는 사람의 클리닉 출결을 출석으로
- * 채운다.
+ * 키오스크에 찍힌 학생 중 그날 클리닉도 있는 사람의 클리닉 출결을 채운다.
  *
- * "지각"으로 계산하지 않고 그냥 출석으로 둔다 — 강의 때문에 온 시각이라
- * 클리닉 시작 시각과 비교하는 게 의미가 없다. 늦게 온 사정은 조교가 보고
- * 고치면 되고, 그렇게 고친 것은 이후 동기화가 덮지 않는다.
+ * 등원 시각을 클리닉 시작 시각과 견줘 **출석/지각**을 가른다. 예전에는 무조건
+ * 출석으로 뒀는데, 그때는 강의 학급별 조회밖에 없어서 찍힌 시각이 "강의 때문에
+ * 온 시각"이라 클리닉 시작과 비교하는 게 의미가 없었기 때문이다. 지금은 학급에
+ * 안 묶인 등하원 로그를 읽으므로 그 시각이 곧 문을 통과한 시각이고, 클리닉만
+ * 하러 온 학생도 그대로 잡힌다 — 비교가 의미를 갖는다.
  *
- * 자동 지각(auto_marked)으로 찍혀 있던 학생은 키오스크 기록이 더 정확하므로
- * 덮어쓰고, 그 과정에서 auto_marked도 꺼진다 — 밤 10시 자동 결석 전환
- * 대상에서도 빠진다.
+ * 아침 강의 때문에 일찍 온 학생은 오후 클리닉 시작보다 이르니 그대로 출석이다.
+ *
+ * 자동으로 찍혀 있던 줄(auto_marked)은 키오스크 기록이 더 정확하므로 덮어쓰고,
+ * 그 과정에서 auto_marked도 꺼진다. 안 와서 결석으로 표시됐던 학생이 늦게
+ * 도착하면 이 경로로 지각이 된다.
  */
-async function fillClinicFromKiosk(checkedInIds: Set<number>, date: Date, dateISO: string) {
-  if (checkedInIds.size === 0) return;
+async function fillClinicFromKiosk(
+  checkedInAt: Map<number, string>,
+  date: Date,
+  dateISO: string
+) {
+  if (checkedInAt.size === 0) return;
 
   const clinicRoster = await getRosterForDate(date);
-  const clinicToday = clinicRoster.filter((r) => checkedInIds.has(r.student.id));
+  const clinicToday = clinicRoster.filter((r) => checkedInAt.has(r.student.id));
   if (clinicToday.length === 0) return;
 
   const [existing, autoMarked] = await Promise.all([
@@ -274,7 +282,7 @@ async function fillClinicFromKiosk(checkedInIds: Set<number>, date: Date, dateIS
     .map((r) => ({
       student_id: r.student.id,
       session_date: dateISO,
-      status: "출석",
+      status: statusForCheckIn(r.effTime, checkedInAt.get(r.student.id)!),
       marked_by: null,
       auto_marked: false,
       created_at: new Date().toISOString(),

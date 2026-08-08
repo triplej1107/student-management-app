@@ -7,7 +7,7 @@ import {
   getWeeklyRoster,
   getUnresolvedAutoAbsences,
 } from "@/lib/data";
-import { autoMarkLateStudents } from "@/lib/attendanceAuto";
+import { autoMarkNotArrivedStudents } from "@/lib/attendanceAuto";
 import { getBacklogWeeksByStudent } from "@/lib/clinicBacklog";
 import { DAY_ORDER } from "@/lib/types";
 import { ScreenTitle, ScrollPillRow, PillLink } from "@/components/ui";
@@ -42,7 +42,7 @@ export default async function StaffAttendancePage({
   const isViewingToday = selectedDay === todayLabel;
   let autoMarkedIds = new Set<number>();
   if (isViewingToday) {
-    const result = await autoMarkLateStudents(roster, attendanceMap, sessionDate);
+    const result = await autoMarkNotArrivedStudents(roster, attendanceMap, sessionDate);
     attendanceMap = result.attendanceMap;
     autoMarkedIds = result.autoMarkedIds;
   }

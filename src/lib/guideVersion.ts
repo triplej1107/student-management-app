@@ -8,7 +8,7 @@
  * 날짜만 쓰면 같은 날 두 번 고쳤을 때 구분이 안 되므로 뒤에 무엇을 고쳤는지
  * 붙인다. 형식은 자유고, 값이 **달라지기만** 하면 된다.
  */
-export const GUIDE_VERSION = "2026-08-07-강의출결";
+export const GUIDE_VERSION = "2026-08-08-지각결석뒤집기";
 
 /** 마지막으로 읽은 안내서 버전을 담아두는 localStorage 키. */
 export const GUIDE_SEEN_KEY = "guideSeenVersion";

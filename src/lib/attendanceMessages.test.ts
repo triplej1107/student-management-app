@@ -1,11 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { buildLateMessage, buildAutoAbsentMessage } from "./attendanceMessages";
+import { buildNotArrivedMessage, buildAutoAbsentMessage } from "./attendanceMessages";
 
-describe("buildLateMessage", () => {
-  it("includes the day, time, and reason", () => {
-    expect(buildLateMessage("목", "15:00")).toBe(
-      "목요일 15:00 클리닉인데 아직 출석하지 않아 지각으로 처리됐어요."
-    );
+describe("buildNotArrivedMessage", () => {
+  it("안 온 것은 결석이라고 그대로 말한다", () => {
+    // 예전엔 "지각으로 처리됐어요"였다. 학부모 중에 지각을 "늦었지만 왔다"로
+    // 읽는 분들이 있어서, 안 온 걸 왔다고 받아들이는 일이 생겼다.
+    expect(buildNotArrivedMessage("목", "15:00")).toContain("결석으로 표시했어요");
+    expect(buildNotArrivedMessage("목", "15:00")).not.toContain("지각으로 처리");
+  });
+
+  it("오면 지각으로 바뀐다는 것까지 알려준다", () => {
+    // 이 한 줄이 없으면 5분 늦게 도착한 학생의 학부모가 "결석 처리됐다"만 보고 놀란다.
+    expect(buildNotArrivedMessage("목", "15:00")).toContain("지금이라도 오면 지각으로 바뀝니다");
+  });
+
+  it("요일과 시각을 담는다", () => {
+    expect(buildNotArrivedMessage("목", "15:00")).toContain("목요일 15:00 클리닉");
   });
 });
 

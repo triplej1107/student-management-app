@@ -183,12 +183,16 @@ function minutesOf(hhmm: string): number {
 }
 
 /** 지금(KST)이 그 학생의 클리닉 시각을 이미 지났는지 — 미출석 학생의
- * "지각" 버튼을 자동으로 강조 표시하는 데 쓴다. */
-export function isPastClinicTime(effTime: string): boolean {
+ * 버튼을 자동으로 강조 표시하는 데 쓴다.
+ *
+ * graceMinutes를 주면 그만큼 더 지나야 true다. 자동 결석 판정처럼 **틀리면
+ * 학부모에게 잘못 나가는** 곳에서는 반드시 여유를 둔다 — 정시에 딱 맞춰
+ * 판정하면 3분 늦은 학생이 결석으로 찍힌다. */
+export function isPastClinicTime(effTime: string, graceMinutes = 0): boolean {
   if (!effTime) return false;
   const k = nowKST();
   const nowMinutes = k.getUTCHours() * 60 + k.getUTCMinutes();
-  return nowMinutes >= minutesOf(effTime);
+  return nowMinutes >= minutesOf(effTime) + graceMinutes;
 }
 
 /** "요일+시" 표기(예: 토09) — 동명이인 학생을 구분하는 짧은 태그로 쓴다.
